@@ -1,0 +1,37 @@
+{
+  "name": "onetaxonomy",
+  "private": true,
+  "description": "OneTaxonomy: an open-source framework for importing, curating, browsing and publishing scientifically faithful taxonomic classifications and phylogenetic trees, with a TypeScript core, React components, a Payload plugin and a desktop studio.",
+  "keywords": [
+    "taxonomy",
+    "phylogeny",
+    "phylogenetics",
+    "classification",
+    "cladogram",
+    "biodiversity",
+    "newick",
+    "react",
+    "payload-plugin"
+  ],
+  "homepage": "https://github.com/mgilardi/onetaxonomy#readme",
+  "bugs": {
+    "url": "https://github.com/mgilardi/onetaxonomy/issues"
+  },
+  "license": "MIT",
+  "type": "module",
+  "packageManager": "pnpm@11.2.2",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "test": "pnpm -r test"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.0",
+    "vitest": "^3.2.0"
+  }
+}

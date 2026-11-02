@@ -1,0 +1,40 @@
+# Release: pushing a version tag (vX.Y.Z) builds, tests and *stages* every @onetaxonomy package on npm.
+# Nothing goes public until the maintainer npm account approves each with 2FA
+# (npmjs.com → your avatar → Staged Packages → Approve, or `npm stage approve <id>`).
+# No token is stored: npm trusted publishing (OIDC) lets only this workflow stage.
+name: Release
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: read
+  id-token: write
+jobs:
+  stage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+          registry-url: https://registry.npmjs.org
+      - run: npm install -g npm@^11.15.0
+      - run: pnpm install --frozen-lockfile
+      - name: GitHub description matches package.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          test "$(gh api repos/${{ github.repository }} -q .description)" = "$(node -p "require('./package.json').description")" \
+            || { echo "::error::GitHub's description differs from package.json: sync it (npm run packages:sync in captive-origins) and re-tag."; exit 1; }
+      - name: Tag matches every package
+        run: for p in packages/*/; do test "${GITHUB_REF_NAME#v}" = "$(node -p "require('./${p}package.json').version")"; done
+      - run: pnpm build && pnpm typecheck && pnpm test
+      # pnpm pack turns workspace:^ into real versions.
+      - name: Stage on npm
+        run: |
+          TAG=$(node -p "require('./packages/core/package.json').version.includes('-') ? 'alpha' : 'latest'")
+          for p in packages/*/; do (cd "$p" && pnpm pack --pack-destination ../../dist-packages); done
+          # "./" matters: without it npm reads "dist-packages/x.tgz" as a GitHub repository shorthand.
+          for f in dist-packages/*.tgz; do npm stage publish "./$f" --access public --provenance --tag "$TAG"; done

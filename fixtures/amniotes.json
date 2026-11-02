@@ -1,0 +1,405 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-amniotes",
+  "version": "1",
+  "createdAt": "2026-11-02T00:00:00.000Z",
+  "sources": [
+    {
+      "id": "fixture",
+      "title": "OneTaxonomy illustrative fixture: amniote orders",
+      "citation": "Illustrative teaching data for tests and examples. Not a scientific source.",
+      "license": "CC0-1.0",
+      "illustrative": true
+    }
+  ],
+  "names": [
+    {
+      "id": "n:amniota",
+      "name": "Amniota"
+    },
+    {
+      "id": "n:reptilia",
+      "name": "Reptilia"
+    },
+    {
+      "id": "n:aves",
+      "name": "Aves"
+    },
+    {
+      "id": "n:testudines",
+      "name": "Testudines"
+    },
+    {
+      "id": "n:squamata",
+      "name": "Squamata"
+    },
+    {
+      "id": "n:rhynchocephalia",
+      "name": "Rhynchocephalia"
+    },
+    {
+      "id": "n:crocodylia",
+      "name": "Crocodylia"
+    },
+    {
+      "id": "n:mammalia",
+      "name": "Mammalia"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "c:amniota",
+      "acceptedName": "n:amniota",
+      "rank": "clade",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:reptilia",
+      "acceptedName": "n:reptilia",
+      "rank": "class",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:aves",
+      "acceptedName": "n:aves",
+      "rank": "class",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:testudines",
+      "acceptedName": "n:testudines",
+      "rank": "order",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:squamata",
+      "acceptedName": "n:squamata",
+      "rank": "order",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:rhynchocephalia",
+      "acceptedName": "n:rhynchocephalia",
+      "rank": "order",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:crocodylia",
+      "acceptedName": "n:crocodylia",
+      "rank": "order",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:mammalia",
+      "acceptedName": "n:mammalia",
+      "rank": "class",
+      "provenance": {
+        "source": "fixture"
+      }
+    }
+  ],
+  "classifications": [
+    {
+      "id": "traditional",
+      "title": "Traditional Linnaean classes (illustrative)",
+      "version": "1",
+      "sources": [
+        "fixture"
+      ],
+      "placements": [
+        {
+          "concept": "c:reptilia",
+          "parent": null
+        },
+        {
+          "concept": "c:testudines",
+          "parent": "c:reptilia"
+        },
+        {
+          "concept": "c:squamata",
+          "parent": "c:reptilia"
+        },
+        {
+          "concept": "c:rhynchocephalia",
+          "parent": "c:reptilia"
+        },
+        {
+          "concept": "c:crocodylia",
+          "parent": "c:reptilia"
+        },
+        {
+          "concept": "c:aves",
+          "parent": null
+        },
+        {
+          "concept": "c:mammalia",
+          "parent": null
+        }
+      ]
+    }
+  ],
+  "phylogenies": [
+    {
+      "id": "archelosauria",
+      "title": "Turtles with archosaurs (illustrative)",
+      "version": "1",
+      "sources": [
+        "fixture"
+      ],
+      "rooted": true,
+      "sampling": "complete",
+      "nodes": [
+        {
+          "id": "amniota",
+          "concepts": [
+            "c:amniota"
+          ]
+        },
+        {
+          "id": "sauria"
+        },
+        {
+          "id": "lepidosauria"
+        },
+        {
+          "id": "archelosauria"
+        },
+        {
+          "id": "archosauria"
+        },
+        {
+          "id": "t-mammalia",
+          "label": "Mammalia",
+          "concepts": [
+            "c:mammalia"
+          ]
+        },
+        {
+          "id": "t-squamata",
+          "label": "Squamata",
+          "concepts": [
+            "c:squamata"
+          ]
+        },
+        {
+          "id": "t-rhyncho",
+          "label": "Rhynchocephalia",
+          "concepts": [
+            "c:rhynchocephalia"
+          ]
+        },
+        {
+          "id": "t-testudines",
+          "label": "Testudines",
+          "concepts": [
+            "c:testudines"
+          ]
+        },
+        {
+          "id": "t-crocodylia",
+          "label": "Crocodylia",
+          "concepts": [
+            "c:crocodylia"
+          ]
+        },
+        {
+          "id": "t-aves",
+          "label": "Aves",
+          "concepts": [
+            "c:aves"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "amniota>t-mammalia",
+          "parent": "amniota",
+          "child": "t-mammalia"
+        },
+        {
+          "id": "amniota>sauria",
+          "parent": "amniota",
+          "child": "sauria"
+        },
+        {
+          "id": "sauria>lepidosauria",
+          "parent": "sauria",
+          "child": "lepidosauria"
+        },
+        {
+          "id": "sauria>archelosauria",
+          "parent": "sauria",
+          "child": "archelosauria"
+        },
+        {
+          "id": "lepidosauria>t-squamata",
+          "parent": "lepidosauria",
+          "child": "t-squamata"
+        },
+        {
+          "id": "lepidosauria>t-rhyncho",
+          "parent": "lepidosauria",
+          "child": "t-rhyncho"
+        },
+        {
+          "id": "archelosauria>t-testudines",
+          "parent": "archelosauria",
+          "child": "t-testudines"
+        },
+        {
+          "id": "archelosauria>archosauria",
+          "parent": "archelosauria",
+          "child": "archosauria"
+        },
+        {
+          "id": "archosauria>t-crocodylia",
+          "parent": "archosauria",
+          "child": "t-crocodylia"
+        },
+        {
+          "id": "archosauria>t-aves",
+          "parent": "archosauria",
+          "child": "t-aves"
+        }
+      ]
+    },
+    {
+      "id": "anapsid-turtles",
+      "title": "Turtles outside Sauria (illustrative, conflicting)",
+      "version": "1",
+      "sources": [
+        "fixture"
+      ],
+      "rooted": true,
+      "sampling": "complete",
+      "nodes": [
+        {
+          "id": "amniota",
+          "concepts": [
+            "c:amniota"
+          ]
+        },
+        {
+          "id": "reptiles"
+        },
+        {
+          "id": "diapsida"
+        },
+        {
+          "id": "lepidosauria"
+        },
+        {
+          "id": "archosauria"
+        },
+        {
+          "id": "t-mammalia",
+          "label": "Mammalia",
+          "concepts": [
+            "c:mammalia"
+          ]
+        },
+        {
+          "id": "t-squamata",
+          "label": "Squamata",
+          "concepts": [
+            "c:squamata"
+          ]
+        },
+        {
+          "id": "t-rhyncho",
+          "label": "Rhynchocephalia",
+          "concepts": [
+            "c:rhynchocephalia"
+          ]
+        },
+        {
+          "id": "t-testudines",
+          "label": "Testudines",
+          "concepts": [
+            "c:testudines"
+          ]
+        },
+        {
+          "id": "t-crocodylia",
+          "label": "Crocodylia",
+          "concepts": [
+            "c:crocodylia"
+          ]
+        },
+        {
+          "id": "t-aves",
+          "label": "Aves",
+          "concepts": [
+            "c:aves"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "amniota>t-mammalia",
+          "parent": "amniota",
+          "child": "t-mammalia"
+        },
+        {
+          "id": "amniota>reptiles",
+          "parent": "amniota",
+          "child": "reptiles"
+        },
+        {
+          "id": "reptiles>t-testudines",
+          "parent": "reptiles",
+          "child": "t-testudines"
+        },
+        {
+          "id": "reptiles>diapsida",
+          "parent": "reptiles",
+          "child": "diapsida"
+        },
+        {
+          "id": "diapsida>lepidosauria",
+          "parent": "diapsida",
+          "child": "lepidosauria"
+        },
+        {
+          "id": "diapsida>archosauria",
+          "parent": "diapsida",
+          "child": "archosauria"
+        },
+        {
+          "id": "lepidosauria>t-squamata",
+          "parent": "lepidosauria",
+          "child": "t-squamata"
+        },
+        {
+          "id": "lepidosauria>t-rhyncho",
+          "parent": "lepidosauria",
+          "child": "t-rhyncho"
+        },
+        {
+          "id": "archosauria>t-crocodylia",
+          "parent": "archosauria",
+          "child": "t-crocodylia"
+        },
+        {
+          "id": "archosauria>t-aves",
+          "parent": "archosauria",
+          "child": "t-aves"
+        }
+      ]
+    }
+  ]
+}

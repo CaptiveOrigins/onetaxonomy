@@ -1,0 +1,502 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-structures",
+  "version": "1",
+  "createdAt": "2026-11-02T00:00:00.000Z",
+  "sources": [
+    {
+      "id": "fixture",
+      "title": "OneTaxonomy illustrative fixture: tree structures",
+      "citation": "Invented names (Exemplum) for structural tests. Not a scientific source.",
+      "license": "CC0-1.0",
+      "illustrative": true
+    }
+  ],
+  "names": [
+    {
+      "id": "n:a",
+      "name": "Exemplum a"
+    },
+    {
+      "id": "n:b",
+      "name": "Exemplum b"
+    },
+    {
+      "id": "n:c",
+      "name": "Exemplum c"
+    },
+    {
+      "id": "n:d",
+      "name": "Exemplum d"
+    },
+    {
+      "id": "n:e",
+      "name": "Exemplum e"
+    },
+    {
+      "id": "n:f",
+      "name": "Exemplum f"
+    },
+    {
+      "id": "n:g",
+      "name": "Exemplum g"
+    },
+    {
+      "id": "n:h",
+      "name": "Exemplum h"
+    },
+    {
+      "id": "n:x",
+      "name": "Exemplum x"
+    },
+    {
+      "id": "n:y",
+      "name": "Exemplum y"
+    },
+    {
+      "id": "n:split",
+      "name": "Exemplum magnum"
+    }
+  ],
+  "concepts": [
+    {
+      "id": "c:a",
+      "acceptedName": "n:a",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:b",
+      "acceptedName": "n:b",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:c",
+      "acceptedName": "n:c",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:d",
+      "acceptedName": "n:d",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:e",
+      "acceptedName": "n:e",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:f",
+      "acceptedName": "n:f",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:g",
+      "acceptedName": "n:g",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:h",
+      "acceptedName": "n:h",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:x",
+      "acceptedName": "n:x",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:y",
+      "acceptedName": "n:y",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture"
+      }
+    },
+    {
+      "id": "c:magnum-sl",
+      "acceptedName": "n:split",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture",
+        "note": "sensu lato, before the split"
+      }
+    },
+    {
+      "id": "c:magnum-ss",
+      "acceptedName": "n:split",
+      "rank": "species",
+      "provenance": {
+        "source": "fixture",
+        "note": "sensu stricto, after the split"
+      }
+    }
+  ],
+  "classifications": [],
+  "phylogenies": [
+    {
+      "id": "polytomy",
+      "title": "Root polytomy",
+      "version": "1",
+      "sources": [
+        "fixture"
+      ],
+      "rooted": true,
+      "sampling": "complete",
+      "nodes": [
+        {
+          "id": "root"
+        },
+        {
+          "id": "p"
+        },
+        {
+          "id": "ef"
+        },
+        {
+          "id": "a",
+          "label": "A",
+          "concepts": [
+            "c:a"
+          ]
+        },
+        {
+          "id": "b",
+          "label": "B",
+          "concepts": [
+            "c:b"
+          ]
+        },
+        {
+          "id": "c",
+          "label": "C",
+          "concepts": [
+            "c:c"
+          ]
+        },
+        {
+          "id": "d",
+          "label": "D",
+          "concepts": [
+            "c:d"
+          ]
+        },
+        {
+          "id": "e",
+          "label": "E",
+          "concepts": [
+            "c:e"
+          ]
+        },
+        {
+          "id": "f",
+          "label": "F",
+          "concepts": [
+            "c:f"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "root>p",
+          "parent": "root",
+          "child": "p"
+        },
+        {
+          "id": "root>ef",
+          "parent": "root",
+          "child": "ef"
+        },
+        {
+          "id": "p>a",
+          "parent": "p",
+          "child": "a"
+        },
+        {
+          "id": "p>b",
+          "parent": "p",
+          "child": "b"
+        },
+        {
+          "id": "p>c",
+          "parent": "p",
+          "child": "c"
+        },
+        {
+          "id": "p>d",
+          "parent": "p",
+          "child": "d"
+        },
+        {
+          "id": "ef>e",
+          "parent": "ef",
+          "child": "e"
+        },
+        {
+          "id": "ef>f",
+          "parent": "ef",
+          "child": "f"
+        }
+      ]
+    },
+    {
+      "id": "forest",
+      "title": "Two separate trees",
+      "version": "1",
+      "sources": [
+        "fixture"
+      ],
+      "rooted": true,
+      "sampling": "partial",
+      "nodes": [
+        {
+          "id": "r1"
+        },
+        {
+          "id": "r2"
+        },
+        {
+          "id": "a",
+          "label": "A",
+          "concepts": [
+            "c:a"
+          ]
+        },
+        {
+          "id": "b",
+          "label": "B",
+          "concepts": [
+            "c:b"
+          ]
+        },
+        {
+          "id": "g",
+          "label": "G",
+          "concepts": [
+            "c:g"
+          ]
+        },
+        {
+          "id": "h",
+          "label": "H",
+          "concepts": [
+            "c:h"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "r1>a",
+          "parent": "r1",
+          "child": "a"
+        },
+        {
+          "id": "r1>b",
+          "parent": "r1",
+          "child": "b"
+        },
+        {
+          "id": "r2>g",
+          "parent": "r2",
+          "child": "g"
+        },
+        {
+          "id": "r2>h",
+          "parent": "r2",
+          "child": "h"
+        }
+      ]
+    },
+    {
+      "id": "unrooted",
+      "title": "Unrooted quartet",
+      "version": "1",
+      "sources": [
+        "fixture"
+      ],
+      "rooted": false,
+      "lengthUnit": "substitutions-per-site",
+      "nodes": [
+        {
+          "id": "u0"
+        },
+        {
+          "id": "u1"
+        },
+        {
+          "id": "a",
+          "label": "A",
+          "concepts": [
+            "c:a"
+          ]
+        },
+        {
+          "id": "b",
+          "label": "B",
+          "concepts": [
+            "c:b"
+          ]
+        },
+        {
+          "id": "c",
+          "label": "C",
+          "concepts": [
+            "c:c"
+          ]
+        },
+        {
+          "id": "d",
+          "label": "D",
+          "concepts": [
+            "c:d"
+          ]
+        }
+      ],
+      "edges": [
+        {
+          "id": "u0>a",
+          "parent": "u0",
+          "child": "a",
+          "length": 0.1
+        },
+        {
+          "id": "u0>b",
+          "parent": "u0",
+          "child": "b",
+          "length": 0.2
+        },
+        {
+          "id": "u0>u1",
+          "parent": "u0",
+          "child": "u1",
+          "length": 0.05
+        },
+        {
+          "id": "u1>c",
+          "parent": "u1",
+          "child": "c",
+          "length": 0.1
+        },
+        {
+          "id": "u1>d",
+          "parent": "u1",
+          "child": "d",
+          "length": 0.3
+        }
+      ]
+    },
+    {
+      "id": "fossil",
+      "title": "Time-calibrated with an extinct lineage",
+      "version": "1",
+      "sources": [
+        "fixture"
+      ],
+      "rooted": true,
+      "lengthUnit": "Ma",
+      "timeCalibrated": true,
+      "sampling": "partial",
+      "nodes": [
+        {
+          "id": "f0",
+          "age": {
+            "value": 100,
+            "min": 90,
+            "max": 112
+          }
+        },
+        {
+          "id": "f1",
+          "age": {
+            "value": 40
+          }
+        },
+        {
+          "id": "x",
+          "label": "X",
+          "concepts": [
+            "c:x"
+          ],
+          "status": "extinct",
+          "age": {
+            "value": 66
+          }
+        },
+        {
+          "id": "y",
+          "label": "Y",
+          "concepts": [
+            "c:y"
+          ],
+          "status": "extant",
+          "age": {
+            "value": 0
+          }
+        },
+        {
+          "id": "g",
+          "label": "G",
+          "concepts": [
+            "c:g"
+          ],
+          "status": "unknown",
+          "age": {
+            "value": 0
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "f0>x",
+          "parent": "f0",
+          "child": "x",
+          "length": 34
+        },
+        {
+          "id": "f0>f1",
+          "parent": "f0",
+          "child": "f1",
+          "length": 60
+        },
+        {
+          "id": "f1>y",
+          "parent": "f1",
+          "child": "y",
+          "length": 40
+        },
+        {
+          "id": "f1>g",
+          "parent": "f1",
+          "child": "g",
+          "length": 40
+        }
+      ]
+    }
+  ]
+}
