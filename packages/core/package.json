@@ -1,23 +1,53 @@
 {
   "name": "@captiveorigins/onetaxonomy-core",
   "version": "0.1.0-alpha.0",
-  "description": "OneTaxonomy core: taxon concepts, classifications and phylogenetic hypotheses, validation, bounded traversal, MRCA and tri-state monophyly, with no React, CMS, database or platform dependency.",
-  "keywords": ["taxonomy", "phylogeny", "phylogenetics", "monophyly", "mrca", "classification", "biodiversity"],
+  "description": "OneTaxonomy core: taxon concepts, classifications and phylogenetic hypotheses, with validation, bounded traversal, MRCA, tri-state monophyly, curated selections, coverage reports and snapshot diffs. No React, CMS, database or platform dependency.",
+  "keywords": [
+    "taxonomy",
+    "phylogeny",
+    "phylogenetics",
+    "monophyly",
+    "mrca",
+    "classification",
+    "biodiversity"
+  ],
   "homepage": "https://github.com/mgilardi/onetaxonomy#readme",
-  "bugs": { "url": "https://github.com/mgilardi/onetaxonomy/issues" },
+  "bugs": {
+    "url": "https://github.com/mgilardi/onetaxonomy/issues"
+  },
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/mgilardi/onetaxonomy.git", "directory": "packages/core" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mgilardi/onetaxonomy.git",
+    "directory": "packages/core"
+  },
   "type": "module",
   "sideEffects": false,
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./schema/snapshot.schema.json": "./schema/snapshot.schema.json"
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "README.md", "LICENSE"],
-  "engines": { "node": ">=22" },
+  "files": [
+    "dist",
+    "schema",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --target es2022",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",
     "prepack": "pnpm run build"
+  },
+  "devDependencies": {
+    "ajv": "^8.20.0"
   }
 }

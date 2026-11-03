@@ -160,4 +160,6 @@ export type DatasetSnapshot = {
   classifications: Classification[]
   phylogenies: Phylogeny[]
   profiles?: TaxonProfile[]
+  /** Set when this snapshot was extracted from another one (e.g. a curated selective import). */
+  derivedFrom?: { snapshot: Id; version: string; checksum?: string; selection?: { id: Id; version: string } }
 }

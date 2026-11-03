@@ -21,23 +21,23 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] Name lookup with ambiguity (`findByName`)
 - [x] Newick reader/writer (`@captiveorigins/onetaxonomy-import`): quoting, comments, support, rooting stated explicitly, explicit concept mapping
 - [x] Runnable example (`examples/`)
-- [ ] JSON Schema export of the record types (for non-TypeScript consumers) → M3
+- [x] JSON Schema export of the record types (M3: `packages/core/schema/snapshot.schema.json`)
 
-## M3 — Import, curation, snapshots (next)
+## M3 — Import, curation, snapshots ✅
 
-- [ ] `SourceAdapter` interface: `describe()`, `read()` → normalized records + raw ids + license + warnings
-- [ ] Structured JSON (the schema itself) and CSV (configurable column mapping) adapters
-- [ ] Darwin Core Archive (Taxon core: `taxonID`, `parentNameUsageID`, `acceptedNameUsageID`, `taxonomicStatus`, `taxonRank`, `scientificName`, `scientificNameAuthorship`, vernacular extension)
-- [ ] Name/concept linking and identifier reconciliation across sources (report, never merge silently; synonyms, homonyms, splits/lumps)
-- [ ] `CuratedSelection`: roots with policies (`explicit`, `allAvailableDescendants`, `depth`, `rank`, `representative`, predicate), exclusions, ancestor closure, rationale
-- [ ] Selective import: chosen roots + ancestor paths, nothing from unselected branches; preview of added/omitted; batch of several clades
-- [ ] `getCoverageReport` (in dataset / in hypothesis / known-to-science distinction)
-- [ ] Snapshot diff and migration report (renamed, split, merged, relocated); existing views untouched
-- [ ] Community preset file format (references + policies + style, no shadow data)
-- [ ] Acceptance demo: three nonadjacent taxa → only those + ancestors, omitted coverage shown
+- [x] `SourceAdapter` interface: `describe()`, `read()` → normalized records + raw ids + license + warnings
+- [x] Structured JSON (the schema itself) and CSV (configurable column mapping) adapters
+- [x] Darwin Core Archive (Taxon core: `taxonID`, `parentNameUsageID`, `acceptedNameUsageID`, `taxonomicStatus`, `taxonRank`, `scientificName`, `scientificNameAuthorship`, vernacular extension)
+- [x] Name/concept linking and identifier reconciliation across sources (report, never merge silently; synonyms, homonyms, splits/lumps)
+- [x] `CuratedSelection`: roots with policies (`explicit`, `allAvailableDescendants`, `depth`, `rank`, `representative`, predicate), exclusions, ancestor closure, rationale
+- [x] Selective import: chosen roots + ancestor paths, nothing from unselected branches; preview of added/omitted; batch of several clades
+- [x] `getCoverageReport` (in dataset / in hypothesis / known-to-science distinction)
+- [x] Snapshot diff and migration report (renamed, split, merged, relocated); existing views untouched
+- [x] Community preset file format (references + policies + style, no shadow data)
+- [x] Acceptance demo: three nonadjacent taxa → only those + ancestors, omitted coverage shown
 - [ ] **(owner)** Supply the actual source files/schemas to integrate (taxonomy releases, phylogenies); adapters stay configurable until then
 
-## M4 — Views, layout, React viewer
+## M4 — Views, layout, React viewer (next)
 
 - [ ] `TaxonomicView` + `ViewAction` reducer (`applyViewAction`), undo/redo, `serializeView`, `validateView`, `projectView`
 - [ ] Filters (status incl. unknown, rank, geography, traits, period, source, custom) that disclose hidden counts

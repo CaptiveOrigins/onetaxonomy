@@ -1,0 +1,872 @@
+{
+  "schemaVersion": 1,
+  "id": "fixture-checklist",
+  "version": "1",
+  "createdAt": "2026-11-02T00:00:00.000Z",
+  "sources": [
+    {
+      "id": "fixture-checklist",
+      "title": "OneTaxonomy illustrative checklist (fictional taxa)",
+      "citation": "Illustrative teaching data with invented names. Not a scientific source.",
+      "license": "CC0-1.0",
+      "externalVersion": "1",
+      "illustrative": true
+    }
+  ],
+  "names": [
+    {
+      "id": "fx:name:1",
+      "name": "Exemplaria",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "1"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:2",
+      "name": "Alphiformes",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "2"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:3",
+      "name": "Alphidae",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "3"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:4",
+      "name": "Alphus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "4"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:5",
+      "name": "Alphus primus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "5"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:6",
+      "name": "Alphus secundus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "6"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:7",
+      "name": "Alphus secundus borealis",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "7"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:8",
+      "name": "Betus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "8"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:9",
+      "name": "Betus tertius",
+      "authorship": "(Fixture, 2025)",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "9"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:10",
+      "name": "Gammidae",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "10"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:11",
+      "name": "Gammus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "11"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:12",
+      "name": "Gammus quartus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "12"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:13",
+      "name": "Gammus quintus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "13"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:14",
+      "name": "Deltiformes",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "14"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:15",
+      "name": "Deltidae",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "15"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:16",
+      "name": "Deltus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "16"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:17",
+      "name": "Deltus sextus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "17"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:18",
+      "name": "Deltus septimus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "18"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:19",
+      "name": "Epsilidae",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "19"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:20",
+      "name": "Epsilus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "20"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:21",
+      "name": "Epsilus octavus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "21"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:22",
+      "name": "Zetiformes",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "22"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:23",
+      "name": "Zetidae",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "23"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:24",
+      "name": "Zetus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "24"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:25",
+      "name": "Zetus nonus",
+      "authorship": "Fixture, 2026",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "25"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:26",
+      "name": "Alphus primoides",
+      "authorship": "Fixture, 2020",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "26"
+        }
+      ]
+    },
+    {
+      "id": "fx:name:27",
+      "name": "Betus tertia",
+      "authorship": "Fixture, 2019",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "27"
+        }
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "fx:1",
+      "acceptedName": "fx:name:1",
+      "rank": "class",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "1"
+        }
+      ],
+      "commonNames": [
+        {
+          "name": "exemplars",
+          "locale": "en",
+          "source": "fixture-checklist"
+        },
+        {
+          "name": "Beispieltiere",
+          "locale": "de",
+          "source": "fixture-checklist"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "1"
+      }
+    },
+    {
+      "id": "fx:2",
+      "acceptedName": "fx:name:2",
+      "rank": "order",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "2"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "2"
+      }
+    },
+    {
+      "id": "fx:3",
+      "acceptedName": "fx:name:3",
+      "rank": "family",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "3"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "3"
+      }
+    },
+    {
+      "id": "fx:4",
+      "acceptedName": "fx:name:4",
+      "rank": "genus",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "4"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "4"
+      }
+    },
+    {
+      "id": "fx:5",
+      "acceptedName": "fx:name:5",
+      "rank": "species",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "5"
+        }
+      ],
+      "commonNames": [
+        {
+          "name": "first alpha",
+          "locale": "en",
+          "source": "fixture-checklist"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "5"
+      },
+      "usages": [
+        {
+          "name": "fx:name:26",
+          "status": "synonym",
+          "source": "fixture-checklist"
+        }
+      ]
+    },
+    {
+      "id": "fx:6",
+      "acceptedName": "fx:name:6",
+      "rank": "species",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "6"
+        }
+      ],
+      "commonNames": [
+        {
+          "name": "second alpha",
+          "locale": "en",
+          "source": "fixture-checklist"
+        },
+        {
+          "name": "zweites Alpha",
+          "locale": "de",
+          "source": "fixture-checklist"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "6"
+      }
+    },
+    {
+      "id": "fx:7",
+      "acceptedName": "fx:name:7",
+      "rank": "subspecies",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "7"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "7"
+      }
+    },
+    {
+      "id": "fx:8",
+      "acceptedName": "fx:name:8",
+      "rank": "genus",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "8"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "8"
+      }
+    },
+    {
+      "id": "fx:9",
+      "acceptedName": "fx:name:9",
+      "rank": "species",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "9"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "9"
+      },
+      "usages": [
+        {
+          "name": "fx:name:27",
+          "status": "synonym",
+          "source": "fixture-checklist"
+        }
+      ]
+    },
+    {
+      "id": "fx:10",
+      "acceptedName": "fx:name:10",
+      "rank": "family",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "10"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "10"
+      }
+    },
+    {
+      "id": "fx:11",
+      "acceptedName": "fx:name:11",
+      "rank": "genus",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "11"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "11"
+      }
+    },
+    {
+      "id": "fx:12",
+      "acceptedName": "fx:name:12",
+      "rank": "species",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "12"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "12"
+      }
+    },
+    {
+      "id": "fx:13",
+      "acceptedName": "fx:name:13",
+      "rank": "species",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "13"
+        }
+      ],
+      "commonNames": [
+        {
+          "name": "fifth gamma",
+          "locale": "en",
+          "source": "fixture-checklist"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "13"
+      }
+    },
+    {
+      "id": "fx:14",
+      "acceptedName": "fx:name:14",
+      "rank": "order",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "14"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "14"
+      }
+    },
+    {
+      "id": "fx:15",
+      "acceptedName": "fx:name:15",
+      "rank": "family",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "15"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "15"
+      }
+    },
+    {
+      "id": "fx:16",
+      "acceptedName": "fx:name:16",
+      "rank": "genus",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "16"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "16"
+      }
+    },
+    {
+      "id": "fx:17",
+      "acceptedName": "fx:name:17",
+      "rank": "species",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "17"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "17"
+      }
+    },
+    {
+      "id": "fx:18",
+      "acceptedName": "fx:name:18",
+      "usages": [
+        {
+          "name": "fx:name:18",
+          "status": "provisional",
+          "source": "fixture-checklist"
+        }
+      ],
+      "rank": "species",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "18"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "18"
+      }
+    },
+    {
+      "id": "fx:19",
+      "acceptedName": "fx:name:19",
+      "rank": "family",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "19"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "19"
+      }
+    },
+    {
+      "id": "fx:20",
+      "acceptedName": "fx:name:20",
+      "rank": "genus",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "20"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "20"
+      }
+    },
+    {
+      "id": "fx:21",
+      "acceptedName": "fx:name:21",
+      "rank": "species",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "21"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "21"
+      }
+    },
+    {
+      "id": "fx:22",
+      "acceptedName": "fx:name:22",
+      "rank": "order",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "22"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "22"
+      }
+    },
+    {
+      "id": "fx:23",
+      "acceptedName": "fx:name:23",
+      "rank": "family",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "23"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "23"
+      }
+    },
+    {
+      "id": "fx:24",
+      "acceptedName": "fx:name:24",
+      "rank": "genus",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "24"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "24"
+      }
+    },
+    {
+      "id": "fx:25",
+      "acceptedName": "fx:name:25",
+      "rank": "species",
+      "externalIds": [
+        {
+          "source": "fixture-checklist",
+          "id": "25"
+        }
+      ],
+      "commonNames": [
+        {
+          "name": "ninth zeta",
+          "locale": "en",
+          "source": "fixture-checklist"
+        }
+      ],
+      "provenance": {
+        "source": "fixture-checklist",
+        "externalId": "25"
+      }
+    }
+  ],
+  "classifications": [
+    {
+      "id": "fx:checklist",
+      "title": "Illustrative checklist",
+      "version": "1",
+      "sources": [
+        "fixture-checklist"
+      ],
+      "placements": [
+        {
+          "concept": "fx:1",
+          "parent": null
+        },
+        {
+          "concept": "fx:2",
+          "parent": "fx:1"
+        },
+        {
+          "concept": "fx:3",
+          "parent": "fx:2"
+        },
+        {
+          "concept": "fx:4",
+          "parent": "fx:3"
+        },
+        {
+          "concept": "fx:5",
+          "parent": "fx:4"
+        },
+        {
+          "concept": "fx:6",
+          "parent": "fx:4"
+        },
+        {
+          "concept": "fx:7",
+          "parent": "fx:6"
+        },
+        {
+          "concept": "fx:8",
+          "parent": "fx:3"
+        },
+        {
+          "concept": "fx:9",
+          "parent": "fx:8"
+        },
+        {
+          "concept": "fx:10",
+          "parent": "fx:2"
+        },
+        {
+          "concept": "fx:11",
+          "parent": "fx:10"
+        },
+        {
+          "concept": "fx:12",
+          "parent": "fx:11"
+        },
+        {
+          "concept": "fx:13",
+          "parent": "fx:11"
+        },
+        {
+          "concept": "fx:14",
+          "parent": "fx:1"
+        },
+        {
+          "concept": "fx:15",
+          "parent": "fx:14"
+        },
+        {
+          "concept": "fx:16",
+          "parent": "fx:15"
+        },
+        {
+          "concept": "fx:17",
+          "parent": "fx:16"
+        },
+        {
+          "concept": "fx:18",
+          "parent": "fx:16"
+        },
+        {
+          "concept": "fx:19",
+          "parent": "fx:14"
+        },
+        {
+          "concept": "fx:20",
+          "parent": "fx:19"
+        },
+        {
+          "concept": "fx:21",
+          "parent": "fx:20"
+        },
+        {
+          "concept": "fx:22",
+          "parent": "fx:1"
+        },
+        {
+          "concept": "fx:23",
+          "parent": "fx:22"
+        },
+        {
+          "concept": "fx:24",
+          "parent": "fx:23"
+        },
+        {
+          "concept": "fx:25",
+          "parent": "fx:24"
+        }
+      ]
+    }
+  ],
+  "phylogenies": [],
+  "checksum": "sha256:79f68ecdcd6fad591d1fbf9255fca41a0b6db4cf1ad8f1cc13f40d21f271df10"
+}

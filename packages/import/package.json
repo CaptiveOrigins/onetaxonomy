@@ -1,24 +1,52 @@
 {
   "name": "@captiveorigins/onetaxonomy-import",
   "version": "0.1.0-alpha.0",
-  "description": "OneTaxonomy import: source-agnostic readers and writers (Newick so far; JSON, CSV, Darwin Core Archive and more planned), source adapters, reconciliation and curated selective imports with provenance.",
-  "keywords": ["taxonomy", "phylogeny", "newick", "darwin-core", "import", "biodiversity"],
+  "description": "OneTaxonomy import: source adapters for CSV/TSV checklists, Darwin Core Archives, OneTaxonomy JSON and Newick, plus reconciliation, curated selective imports with provenance, and community presets.",
+  "keywords": [
+    "taxonomy",
+    "phylogeny",
+    "newick",
+    "darwin-core",
+    "dwca",
+    "checklist",
+    "import",
+    "biodiversity"
+  ],
   "homepage": "https://github.com/mgilardi/onetaxonomy#readme",
-  "bugs": { "url": "https://github.com/mgilardi/onetaxonomy/issues" },
+  "bugs": {
+    "url": "https://github.com/mgilardi/onetaxonomy/issues"
+  },
   "license": "MIT",
-  "repository": { "type": "git", "url": "git+https://github.com/mgilardi/onetaxonomy.git", "directory": "packages/import" },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mgilardi/onetaxonomy.git",
+    "directory": "packages/import"
+  },
   "type": "module",
   "sideEffects": false,
-  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "files": ["dist", "README.md", "LICENSE"],
-  "engines": { "node": ">=22" },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsup src/index.ts --format esm --dts --clean --target es2022",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",
     "prepack": "pnpm run build"
   },
-  "dependencies": { "@captiveorigins/onetaxonomy-core": "workspace:^" }
+  "dependencies": {
+    "@captiveorigins/onetaxonomy-core": "workspace:^"
+  }
 }

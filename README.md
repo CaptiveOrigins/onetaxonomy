@@ -2,7 +2,7 @@
 
 An open-source framework for importing, curating, browsing and publishing **scientifically faithful** taxonomic classifications and phylogenetic trees: for developers, and for teachers, museums, researchers and animal keepers who don't write code.
 
-> **Status: early (Phase 1, milestone 2 of 8).** The pure TypeScript core and the Newick reader/writer work and are tested. Curation, views, the React viewer, the Payload plugin and the macOS Studio are planned; see [the phase plan](docs/architecture/phase-plan.md). Packages: `@captiveorigins/onetaxonomy-core` and `@captiveorigins/onetaxonomy-import` (not on npm yet).
+> **Status: early (Phase 1, milestone 3 of 8).** The pure TypeScript core, the importers (Newick, CSV/TSV checklists, Darwin Core Archives, OneTaxonomy JSON) and curated selective imports with coverage reports work and are tested. Views, the React viewer, the Payload plugin and the macOS Studio are planned; see [the phase plan](docs/architecture/phase-plan.md). Packages: `@captiveorigins/onetaxonomy-core` and `@captiveorigins/onetaxonomy-import` (not on npm yet).
 
 ## Principles
 
@@ -18,9 +18,9 @@ The full rules are in [scientific invariants](docs/architecture/scientific-invar
 
 | Package | What it does | Status |
 | --- | --- | --- |
-| [`@captiveorigins/onetaxonomy-core`](packages/core) | Records, validation, bounded traversal, MRCA, tri-state monophyly, snapshot checksums. No dependencies; runs anywhere. | Working |
-| [`@captiveorigins/onetaxonomy-import`](packages/import) | Format readers and writers (Newick so far), source adapters, curation | Newick working |
-| `@captiveorigins/onetaxonomy-layout`, `react`, `education`, `payload` | Layouts, React viewer, lessons, Payload plugin | Planned |
+| [`@captiveorigins/onetaxonomy-core`](packages/core) | Records, validation, bounded traversal, MRCA, tri-state monophyly, curated selections, coverage reports, snapshot checksums and diffs, JSON Schema. No dependencies; runs anywhere. | Working |
+| [`@captiveorigins/onetaxonomy-import`](packages/import) | Source adapters (CSV/TSV, Darwin Core Archive, JSON, Newick), reconciliation, selective imports, community presets | Working |
+| `@captiveorigins/onetaxonomy-layout`, `-react`, `-education`, `@captiveorigins/payload-plugin-onetaxonomy` | Layouts, React viewer, lessons, Payload plugin | Planned |
 | `apps/studio` | Offline macOS studio (Tauri 2) | Planned |
 
 ## Try it
@@ -38,6 +38,20 @@ import { assessTaxon, indexDataset } from '@captiveorigins/onetaxonomy-core'
 const data = indexDataset(snapshot)
 const result = assessTaxon(data.classification('traditional'), 'c:reptilia', data.phylogeny('archelosauria'))
 // { status: 'not-monophyletic', reason: 'missing-descendants', missing: ['t-aves'], hypothesis: { id: 'archelosauria', version: '1' }, … }
+```
+
+Curate a selective import from a checklist (see `examples/selective-import.mjs`):
+
+```js
+import { csvAdapter, selectiveImport, toSnapshot } from '@captiveorigins/onetaxonomy-import'
+
+const read = await csvAdapter({ source: mySource }).read(csvText)        // Darwin Core column names by default
+const full = toSnapshot(read, { id: 'my-checklist', version: '2026-03', createdAt })
+const { snapshot, coverage } = selectiveImport(full, {
+  id: 'my-selection', title: 'Kept groups', version: '1', classification: full.classifications[0].id,
+  roots: [{ concept: turtlesId, policy: { kind: 'rank', ranks: ['species', 'subspecies'] } }],
+}, { id: 'curated', version: '1', createdAt })
+// snapshot: chosen taxa + ancestor paths only; coverage: what was left out, per root
 ```
 
 ## Documentation

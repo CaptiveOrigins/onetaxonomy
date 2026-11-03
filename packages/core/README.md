@@ -24,4 +24,20 @@ assessTaxon(data.classification('traditional'), 'c:reptilia', null)
 - **Unrooted trees** give no MRCA or clade claims; **forests** get no invented common ancestor; **polytomies** are unresolved (`indeterminate`) unless you pass `{ polytomies: 'hard' }`.
 - **Traversal** (`getChildren`, `getAncestors`, `getLineage`, `getDescendants`) is iterative and accepts `maxDepth` / `limit`, returning `truncated` when cut.
 
+## Curation, coverage and releases
+
+```js
+import { applySelection, diffSnapshots, extractSubset, getCoverageReport, referenceImpact } from '@captiveorigins/onetaxonomy-core'
+
+const result = applySelection(data, selection)            // curated + ancestor paths, omitted branches, diagnostics
+const coverage = getCoverageReport(data, {
+  classification: selection.classification, included: result, phylogeny: 'my-tree',
+  knownToScience: { [turtles]: { count: describedSpecies, rank: 'species', source: 'the checklist you cite' } },
+})                                                        // dataset · hypothesis · known to science (only as you state it)
+const subset = extractSubset(snapshot, { id, version, createdAt, classification: selection.classification, include: result })
+const changes = referenceImpact(diffSnapshots(oldRelease, newRelease), mySavedIds) // renamed, relocated, split/merge candidates…
+```
+
+`schema/snapshot.schema.json` (exported as `@captiveorigins/onetaxonomy-core/schema/snapshot.schema.json`) describes the snapshot format for non-TypeScript tools.
+
 See the [data schema](../../docs/architecture/data-schema.md) and [invariants](../../docs/architecture/scientific-invariants.md).

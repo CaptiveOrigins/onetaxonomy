@@ -22,7 +22,22 @@ The TypeScript types in [`packages/core/src/model.ts`](../../packages/core/src/m
 | `PhyloEdge` | Directed parent → child | `length` (in the phylogeny's `lengthUnit`), `support` |
 | `TaxonProfile` | Optional facts about a concept | `summary`, `status`, `geography`, `morphology`, `ecology`, `media[]` (with license/credit), `citations`, `extensions` (consumer-namespaced) |
 
-Planned for later milestones (types are added with the code that uses them): `CuratedSelection` (M3), `TaxonomicView`, `ViewAction`, `Highlight` (M4), `Lesson`, `Scene`, `Workspace` and the `.onetaxonomy` bundle manifest (M5–M6).
+`DatasetSnapshot.derivedFrom` records the snapshot (id, version, checksum) and selection a subset was extracted from. A JSON Schema for snapshots ships in `@captiveorigins/onetaxonomy-core/schema/snapshot.schema.json` for non-TypeScript consumers.
+
+## Curation (M3)
+
+| Record | Purpose | Key fields |
+| --- | --- | --- |
+| `CuratedSelection` | What to take from one classification, and why | `classification`, `roots[{ concept, policy, label, rationale }]`, `exclude[{ concept, rationale }]` |
+| `SelectionPolicy` | How much of a root's subtree | `explicit` (the root), `allAvailableDescendants`, `depth`, `rank` (stated ranks, case-insensitive), `representative` (chosen descendants), `predicate` (named; the function is supplied when applying) |
+| `SelectionResult` | The applied selection | `curated` (chosen), `ancestors` (paths added as context), `included`, `excluded`, `roots[{ status, curated, omitted, omittedBranches }]`, `diagnostics`, `truncated` |
+| `GroupCoverage` | Coverage for one group | `dataset { total, included, omitted, includedByRank, omittedBranches }`, `hypothesis { mapped, unmapped, sampling }`, `knownToScience` (caller-stated count + source, or `not-stated`) |
+| `SnapshotDiff` | Release-to-release changes by concept id | `added`, `removed`, `renamed`, `rankChanged`, `relocated`, `splitCandidates`, `mergeCandidates` |
+| `CommunityPreset` (import) | Shareable curation | pinned `references[{ snapshot, version, checksum }]`, `selections`, `style` hints by id; no taxonomic records (refused by `validatePreset`) |
+
+Results list ids in the classification's own order (the source's order), not traversal order. Exclusion wins over every policy.
+
+Planned for later milestones (types are added with the code that uses them): `TaxonomicView`, `ViewAction`, `Highlight` (M4), `Lesson`, `Scene`, `Workspace` and the `.onetaxonomy` bundle manifest (M5–M6).
 
 ## Semantics that matter
 

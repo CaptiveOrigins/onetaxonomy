@@ -1,0 +1,196 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/mgilardi/onetaxonomy/blob/main/packages/core/schema/snapshot.schema.json",
+  "title": "OneTaxonomy dataset snapshot (schema version 1)",
+  "description": "Structure only. Referential integrity, cycles, units and scientific caveats are checked by validateDataset in @captiveorigins/onetaxonomy-core; see docs/architecture/data-schema.md.",
+  "type": "object",
+  "required": ["schemaVersion", "id", "version", "createdAt", "sources", "names", "concepts", "classifications", "phylogenies"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "id": { "$ref": "#/$defs/id" },
+    "version": { "type": "string" },
+    "createdAt": { "type": "string" },
+    "checksum": { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+    "sources": { "type": "array", "items": { "$ref": "#/$defs/source" } },
+    "names": { "type": "array", "items": { "$ref": "#/$defs/name" } },
+    "concepts": { "type": "array", "items": { "$ref": "#/$defs/concept" } },
+    "classifications": { "type": "array", "items": { "$ref": "#/$defs/classification" } },
+    "phylogenies": { "type": "array", "items": { "$ref": "#/$defs/phylogeny" } },
+    "profiles": { "type": "array", "items": { "$ref": "#/$defs/profile" } },
+    "derivedFrom": {
+      "type": "object",
+      "required": ["snapshot", "version"],
+      "additionalProperties": false,
+      "properties": {
+        "snapshot": { "$ref": "#/$defs/id" },
+        "version": { "type": "string" },
+        "checksum": { "type": "string" },
+        "selection": { "type": "object", "required": ["id", "version"], "additionalProperties": false, "properties": { "id": { "$ref": "#/$defs/id" }, "version": { "type": "string" } } }
+      }
+    }
+  },
+  "$defs": {
+    "id": { "type": "string", "minLength": 1 },
+    "externalId": { "type": "object", "required": ["source", "id"], "additionalProperties": false, "properties": { "source": { "$ref": "#/$defs/id" }, "id": { "type": "string" } } },
+    "provenance": {
+      "type": "object",
+      "required": ["source"],
+      "additionalProperties": false,
+      "properties": { "source": { "$ref": "#/$defs/id" }, "externalId": { "type": "string" }, "retrievedAt": { "type": "string" }, "note": { "type": "string" } }
+    },
+    "source": {
+      "type": "object",
+      "required": ["id", "title"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string" },
+        "citation": { "type": "string" },
+        "url": { "type": "string" },
+        "license": { "type": "string" },
+        "retrievedAt": { "type": "string" },
+        "externalVersion": { "type": "string" },
+        "provenance": { "type": "string" },
+        "illustrative": { "type": "boolean" }
+      }
+    },
+    "name": {
+      "type": "object",
+      "required": ["id", "name"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "name": { "type": "string", "minLength": 1 },
+        "authorship": { "type": "string" },
+        "externalIds": { "type": "array", "items": { "$ref": "#/$defs/externalId" } }
+      }
+    },
+    "nameStatus": { "enum": ["accepted", "synonym", "misapplied", "provisional", "unknown"] },
+    "lifeStatus": { "enum": ["extant", "extinct", "unknown"] },
+    "concept": {
+      "type": "object",
+      "required": ["id", "acceptedName"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "acceptedName": { "$ref": "#/$defs/id" },
+        "usages": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "status"],
+            "additionalProperties": false,
+            "properties": { "name": { "$ref": "#/$defs/id" }, "status": { "$ref": "#/$defs/nameStatus" }, "source": { "$ref": "#/$defs/id" } }
+          }
+        },
+        "rank": { "type": "string" },
+        "externalIds": { "type": "array", "items": { "$ref": "#/$defs/externalId" } },
+        "commonNames": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "locale"],
+            "additionalProperties": false,
+            "properties": { "name": { "type": "string" }, "locale": { "type": "string" }, "source": { "$ref": "#/$defs/id" } }
+          }
+        },
+        "provenance": { "$ref": "#/$defs/provenance" }
+      }
+    },
+    "classification": {
+      "type": "object",
+      "required": ["id", "title", "version", "sources", "placements"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string" },
+        "version": { "type": "string" },
+        "sources": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "placements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["concept", "parent"],
+            "additionalProperties": false,
+            "properties": { "concept": { "$ref": "#/$defs/id" }, "parent": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] }, "provenance": { "$ref": "#/$defs/provenance" } }
+          }
+        }
+      }
+    },
+    "support": { "type": "object", "required": ["value"], "additionalProperties": false, "properties": { "value": { "type": "number" }, "method": { "type": "string" } } },
+    "phylogeny": {
+      "type": "object",
+      "required": ["id", "title", "version", "sources", "rooted", "nodes", "edges"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string" },
+        "version": { "type": "string" },
+        "sources": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+        "citation": { "type": "string" },
+        "rooted": { "type": "boolean" },
+        "rooting": { "type": "object", "required": ["method"], "additionalProperties": false, "properties": { "method": { "type": "string" }, "note": { "type": "string" } } },
+        "lengthUnit": { "enum": ["substitutions-per-site", "changes", "Ma", "ka", "years", "unspecified"] },
+        "timeCalibrated": { "type": "boolean" },
+        "sampling": { "enum": ["complete", "partial", "unknown"] },
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "label": { "type": "string" },
+              "concepts": { "type": "array", "items": { "$ref": "#/$defs/id" } },
+              "support": { "$ref": "#/$defs/support" },
+              "status": { "$ref": "#/$defs/lifeStatus" },
+              "age": { "type": "object", "required": ["value"], "additionalProperties": false, "properties": { "value": { "type": "number" }, "min": { "type": "number" }, "max": { "type": "number" } } },
+              "annotations": { "type": "object" }
+            }
+          }
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "parent", "child"],
+            "additionalProperties": false,
+            "properties": {
+              "id": { "$ref": "#/$defs/id" },
+              "parent": { "$ref": "#/$defs/id" },
+              "child": { "$ref": "#/$defs/id" },
+              "length": { "type": "number" },
+              "support": { "$ref": "#/$defs/support" }
+            }
+          }
+        }
+      }
+    },
+    "profile": {
+      "type": "object",
+      "required": ["concept"],
+      "additionalProperties": false,
+      "properties": {
+        "concept": { "$ref": "#/$defs/id" },
+        "summary": { "type": "string" },
+        "status": { "$ref": "#/$defs/lifeStatus" },
+        "geography": { "type": "string" },
+        "morphology": { "type": "string" },
+        "ecology": { "type": "string" },
+        "media": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["url"],
+            "additionalProperties": false,
+            "properties": { "url": { "type": "string" }, "caption": { "type": "string" }, "license": { "type": "string" }, "credit": { "type": "string" } }
+          }
+        },
+        "citations": { "type": "array", "items": { "type": "string" } },
+        "extensions": { "type": "object" }
+      }
+    }
+  }
+}

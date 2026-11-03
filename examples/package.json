@@ -3,8 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node reptilia-is-not-a-clade.mjs && node newick.mjs",
-    "test": "node reptilia-is-not-a-clade.mjs > /dev/null && node newick.mjs > /dev/null"
+    "start": "node reptilia-is-not-a-clade.mjs && node newick.mjs && node selective-import.mjs",
+    "test": "node reptilia-is-not-a-clade.mjs > /dev/null && node newick.mjs > /dev/null && node selective-import.mjs > /dev/null",
+    "fixtures": "node build-fixtures.mjs"
   },
   "dependencies": {
     "@captiveorigins/onetaxonomy-core": "workspace:^",
