@@ -1,3 +1,5 @@
+'use client'
+
 import type { Id, Projection, ProjectedNode } from '@captiveorigins/onetaxonomy-core'
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react'
 

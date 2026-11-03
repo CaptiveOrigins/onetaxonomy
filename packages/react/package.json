@@ -43,7 +43,7 @@
     "node": ">=22"
   },
   "scripts": {
-    "build": "tsup src/index.ts --format esm --dts --clean --target es2022 --external react && cp src/styles.css dist/styles.css",
+    "build": "rm -rf dist && tsc -p tsconfig.build.json && cp src/styles.css dist/styles.css",
     "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
     "test": "vitest run",
     "prepack": "pnpm run build"

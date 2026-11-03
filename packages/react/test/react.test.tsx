@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createView, indexDataset, makeHighlight, projectView, snapshotChecksum, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
 import { rectangular } from '@captiveorigins/onetaxonomy-layout'
-import { Explorer, TreeOutline, TreeView } from '../src'
+import { dropOrder, drawnSubtree, Explorer, TreeOutline, TreeView } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 import amniotesJson from '../../../fixtures/amniotes.json'
 
@@ -85,5 +85,49 @@ describe('Explorer', () => {
     expect(orders).toEqual(['Deltiformes', 'Alphiformes', 'Zetiformes'])
     fireEvent.keyDown(screen.getAllByRole('treeitem').find((i) => i.textContent?.startsWith('Zetus nonus'))!, { key: ' ' })
     expect(screen.getByRole('region', { name: 'Details' }).textContent).toContain('Zetus nonus')
+  })
+})
+
+describe('click-and-drag rearranging', () => {
+  const p = () => projectView(cl, clView())
+
+  it('moves a node among its siblings by where it is dropped (rectangular)', () => {
+    const proj = p()
+    const l = rectangular(proj, { leafGap: 10 })
+    const y = (id: string) => l.nodes.find((n) => n.id === id)!.y
+    // Drag Zetiformes (last order) above Alphiformes (first).
+    const order = dropOrder(proj, l, 'fx:22', { dx: 0, dy: y('fx:2') - y('fx:22') - 1 }, ['fx:2', 'fx:14', 'fx:22'])
+    expect(order).toEqual(['fx:22', 'fx:2', 'fx:14'])
+    // A small nudge that doesn't pass a sibling changes nothing.
+    expect(dropOrder(proj, l, 'fx:22', { dx: 0, dy: -2 }, ['fx:2', 'fx:14', 'fx:22'])).toBeNull()
+    // Roots can't be dragged (no parent to reorder within).
+    expect(dropOrder(proj, l, 'fx:1', { dx: 0, dy: 50 }, [])).toBeNull()
+  })
+
+  it('keeps hidden siblings in place relative to their neighbours', () => {
+    const v = { ...clView(), hidden: ['fx:14'] }
+    const proj = projectView(cl, v)
+    const l = rectangular(proj, { leafGap: 10 })
+    const y = (id: string) => l.nodes.find((n) => n.id === id)!.y
+    expect(dropOrder(proj, l, 'fx:22', { dx: 0, dy: y('fx:2') - y('fx:22') - 1 }, ['fx:2', 'fx:14', 'fx:22'])).toEqual(['fx:22', 'fx:2', 'fx:14'])
+  })
+
+  it('moves a whole drawn subtree while dragging', () => {
+    expect([...drawnSubtree(p(), 'fx:15')].sort()).toEqual(['fx:15', 'fx:16', 'fx:17', 'fx:18'])
+  })
+})
+
+describe('brand controls', () => {
+  it('pairs toolbar text with icons and offers canvas tools', () => {
+    render(<Explorer dataset={cl} initialView={clView()} title="Checklist" />)
+    const undo = screen.getByRole('button', { name: 'Undo' })
+    expect(undo.querySelector('svg.ot-icon')).toBeTruthy()
+    for (const name of ['Zoom in', 'Zoom out', 'Fit to view', 'Download SVG', 'Print']) expect(screen.getByRole('button', { name })).toBeTruthy()
+    const svg = () => document.querySelector('.ot-canvas svg.ot-root')!.getAttribute('viewBox')
+    const before = svg()
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+    expect(svg()).not.toBe(before)
+    fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }))
+    expect(svg()).toBe(before)
   })
 })

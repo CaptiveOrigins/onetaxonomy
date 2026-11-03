@@ -14,7 +14,9 @@ export type TreeViewProps = {
   /** Room for labels to the right of leaves (rectangular layouts). Default 220. */
   labelWidth?: number
   /** Override the viewBox (zoom and pan). */
-  viewBox?: { x: number; y: number; width: number; height: number }
+  viewBox?: ViewBox
+  /** A node being dragged: it and its drawn subtree are shown offset (layout units). */
+  drag?: { ids: ReadonlySet<Id>; dx: number; dy: number } | null
   /** Nodes are focusable and clickable. */
   interactive?: boolean
   onNodeClick?: (id: Id, event: MouseEvent<SVGGElement>) => void
@@ -25,6 +27,21 @@ export type TreeViewProps = {
 }
 
 const DEFAULT_HIDDEN = (n: number) => `+${n} not shown`
+
+export type ViewBox = { x: number; y: number; width: number; height: number }
+
+/** The box that shows the whole drawing with room for labels (the "fit" view). */
+export function treeViewBox(layout: TreeLayout, { padding = 16, labelWidth }: { padding?: number; labelWidth?: number } = {}): ViewBox {
+  const radialLayout = layout.kind === 'radial'
+  const lw = labelWidth ?? (radialLayout ? 160 : 220)
+  const xs = layout.nodes.map((n) => n.x)
+  const ys = layout.nodes.map((n) => n.y)
+  const minX = Math.min(0, ...xs) - padding - (radialLayout ? lw : 0)
+  const minY = Math.min(0, ...ys) - padding - (radialLayout ? lw / 2 : 0)
+  const maxX = Math.max(0, ...xs) + padding + lw
+  const maxY = Math.max(0, ...ys) + padding + (layout.axis ? 36 : 0) + (radialLayout ? lw / 2 : 0)
+  return { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+}
 
 /**
  * The tree as SVG. Renders on the server (no effects, no measuring) and in the
@@ -37,17 +54,12 @@ export function TreeView(props: TreeViewProps) {
   const titleId = useId()
   const descId = useId()
   const radialLayout = layout.kind === 'radial'
-  const labelWidth = props.labelWidth ?? (radialLayout ? 160 : 220)
-  const xs = layout.nodes.map((n) => n.x)
-  const ys = layout.nodes.map((n) => n.y)
-  const minX = Math.min(0, ...xs) - padding - (radialLayout ? labelWidth : 0)
-  const minY = Math.min(0, ...ys) - padding - (radialLayout ? labelWidth / 2 : 0)
-  const maxX = Math.max(0, ...xs) + padding + labelWidth
-  const maxY = Math.max(0, ...ys) + padding + (layout.axis ? 36 : 0) + (radialLayout ? labelWidth / 2 : 0)
-  const box = props.viewBox ?? { x: minX, y: minY, width: maxX - minX, height: maxY - minY }
+  const box = props.viewBox ?? treeViewBox(layout, { padding, ...(props.labelWidth !== undefined ? { labelWidth: props.labelWidth } : {}) })
   const node = new Map(projection.nodes.map((n) => [n.id, n]))
   const color = new Map(highlights.map((h) => [h.id, h.color]))
   const hidden = props.hiddenLabel ?? DEFAULT_HIDDEN
+  const moving = (id: Id) => Boolean(props.drag?.ids.has(id))
+  const offset = props.drag ? `translate(${props.drag.dx} ${props.drag.dy})` : undefined
 
   return (
     <svg
@@ -63,7 +75,14 @@ export function TreeView(props: TreeViewProps) {
       <desc id={descId}>{`${layout.notice} ${projection.counts.shown} of ${projection.counts.total} shown.`}</desc>
       <g className="ot-edges">
         {layout.edges.map((e) => (
-          <path key={`${e.parent}>${e.child}`} className="ot-edge" d={edgePath(e)} data-highlighted={node.get(e.child)?.highlights.length ? '' : undefined} />
+          <path
+            key={`${e.parent}>${e.child}`}
+            className="ot-edge"
+            d={edgePath(e)}
+            data-highlighted={node.get(e.child)?.highlights.length ? '' : undefined}
+            data-dragging={moving(e.child) ? '' : undefined}
+            transform={moving(e.child) ? offset : undefined}
+          />
         ))}
       </g>
       {layout.axis && (
@@ -96,7 +115,8 @@ export function TreeView(props: TreeViewProps) {
             <g
               key={ln.id}
               className="ot-node"
-              transform={`translate(${ln.x} ${ln.y})`}
+              transform={`translate(${ln.x + (moving(ln.id) ? props.drag!.dx : 0)} ${ln.y + (moving(ln.id) ? props.drag!.dy : 0)})`}
+              data-dragging={moving(ln.id) ? '' : undefined}
               data-id={ln.id}
               data-leaf={ln.leaf ? '' : undefined}
               data-collapsed={n.collapsed ? '' : undefined}
