@@ -146,6 +146,19 @@ export type TaxonProfile = {
   extensions?: Record<string, unknown>
 }
 
+/**
+ * Observed character states for concepts, from one cited source (e.g. "Reproduction:
+ * oviparous / viviparous"). Only stated values: OneTaxonomy never infers ancestral or
+ * missing states here (inferred states are a separate, labelled method; see limitations).
+ */
+export type TraitSet = {
+  id: Id
+  title: string
+  source: Id
+  states: { id: Id; label: string; color?: string }[]
+  values: { concept: Id; state: Id; note?: string }[]
+}
+
 /** An immutable, versioned dataset. */
 export type DatasetSnapshot = {
   schemaVersion: typeof SCHEMA_VERSION
@@ -160,6 +173,7 @@ export type DatasetSnapshot = {
   classifications: Classification[]
   phylogenies: Phylogeny[]
   profiles?: TaxonProfile[]
+  traits?: TraitSet[]
   /** Set when this snapshot was extracted from another one (e.g. a curated selective import). */
   derivedFrom?: { snapshot: Id; version: string; checksum?: string; selection?: { id: Id; version: string } }
 }

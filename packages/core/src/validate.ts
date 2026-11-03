@@ -137,6 +137,19 @@ export function validateDataset(s: DatasetSnapshot): Diagnostic[] {
   s.profiles?.forEach((pr, i) => {
     if (!concepts.has(pr.concept)) add('error', 'dangling-reference', `profiles[${i}].concept`, `Profile for unknown concept “${pr.concept}”.`, { ids: [pr.concept] })
   })
+  s.traits?.forEach((t, i) => {
+    const p = `traits[${i}]`
+    needSource(`${p}.source`, t.source)
+    const states = new Set(t.states.map((x) => x.id))
+    const seen = new Set<Id>()
+    t.values.forEach((v, j) => {
+      if (!concepts.has(v.concept)) add('error', 'dangling-reference', `${p}.values[${j}].concept`, `Trait value for unknown concept “${v.concept}”.`, { ids: [v.concept] })
+      if (!states.has(v.state)) add('error', 'dangling-reference', `${p}.values[${j}].state`, `Unknown state “${v.state}” in “${t.title}”.`, { ids: [v.state] })
+      if (seen.has(v.concept)) add('error', 'duplicate-id', `${p}.values[${j}]`, `“${t.title}” states a value for “${v.concept}” twice.`, { ids: [v.concept], suggestion: 'One value per concept; describe polymorphism as its own state.' })
+      seen.add(v.concept)
+    })
+  })
+  unique('traits', (s.traits ?? []).map((x) => x.id))
   return out
 }
 

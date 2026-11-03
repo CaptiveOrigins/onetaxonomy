@@ -13,7 +13,7 @@ The TypeScript types in [`packages/core/src/model.ts`](../../packages/core/src/m
 | Record | Purpose | Key fields |
 | --- | --- | --- |
 | `Source` | Supplied by the project owner | `title`, `citation`, `url`, `license` (of the data), `externalVersion`, `retrievedAt`, `illustrative` (fixtures) |
-| `DatasetSnapshot` | Immutable, versioned container | `schemaVersion`, `id`, `version`, `createdAt`, `checksum` (`sha256:` of canonical JSON, set by `sealSnapshot`), `sources`, `names`, `concepts`, `classifications`, `phylogenies`, `profiles` |
+| `DatasetSnapshot` | Immutable, versioned container | `schemaVersion`, `id`, `version`, `createdAt`, `checksum` (`sha256:` of canonical JSON, set by `sealSnapshot`), `sources`, `names`, `concepts`, `classifications`, `phylogenies`, `profiles`, `traits` |
 | `ScientificName` | A name string | `name`, `authorship`, `externalIds` |
 | `TaxonConcept` | A taxon according to a source | `acceptedName`, `usages[]`, `rank` (free text), `externalIds`, `commonNames[{ name, locale }]`, `provenance` |
 | `Classification` | A taxonomic hierarchy (tree or forest) | `title`, `version`, `sources`, `placements[{ concept, parent \| null }]` |
@@ -21,6 +21,7 @@ The TypeScript types in [`packages/core/src/model.ts`](../../packages/core/src/m
 | `PhyloNode` | Node of a hypothesis | `label` (display only), `concepts[]` (explicit mapping; absent = unmapped), `support`, `status` (`extant`/`extinct`/`unknown`), `age { value, min, max }` |
 | `PhyloEdge` | Directed parent → child | `length` (in the phylogeny's `lengthUnit`), `support` |
 | `TaxonProfile` | Optional facts about a concept | `summary`, `status`, `geography`, `morphology`, `ecology`, `media[]` (with license/credit), `citations`, `extensions` (consumer-namespaced) |
+| `TraitSet` | Observed character states from one cited source | `title`, `source`, `states[] { id, label, color? }`, `values[] { concept, state, note? }` (one value per concept; never inferred: unstated concepts stay uncolored) |
 
 `DatasetSnapshot.derivedFrom` records the snapshot (id, version, checksum) and selection a subset was extracted from. A JSON Schema for snapshots ships in `@captiveorigins/onetaxonomy-core/schema/snapshot.schema.json` for non-TypeScript consumers.
 

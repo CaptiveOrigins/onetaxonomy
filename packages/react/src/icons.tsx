@@ -26,6 +26,11 @@ export const ICON_PATHS = {
   open: 'M14 4h6v6M20 4l-9 9M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5',
   grip: 'M9 6h.01M15 6h.01M9 12h.01M15 12h.01M9 18h.01M15 18h.01',
   info: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18zM12 11v6M12 7.5h.01',
+  check: 'M5 12.5 9.5 17 19 7',
+  dagger: 'M12 3v18M7 8h10',
+  image: 'M4 5h16v14H4zM4 16l5-5 4 4 3-3 4 4M15.5 9h.01',
+  file: 'M7 3h7l5 5v13H7zM14 3v5h5',
+  book: 'M5 5.5A2.5 2.5 0 0 1 7.5 3H19v15H7.5A2.5 2.5 0 0 0 5 20.5zM5 20.5A2.5 2.5 0 0 0 7.5 23H19v-5',
 } as const
 
 export type IconName = keyof typeof ICON_PATHS

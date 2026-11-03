@@ -10,7 +10,8 @@ describe('JSON Schema export', () => {
   it('accepts every fixture and derived snapshots', () => {
     const r = applySelection(indexDataset(checklist), { id: 's', title: 's', version: '1', classification: 'fx:checklist', roots: [{ concept: 'fx:6', policy: { kind: 'explicit' } }] })
     const subset = extractSubset(checklist, { id: 'x', version: '1', createdAt: 'x', classification: 'fx:checklist', include: r })
-    for (const s of [amniotes, structures, checklist, checklistV2, subset]) expect(validate(s), JSON.stringify(validate.errors)).toBe(true)
+    const traits = { ...clone(amniotes), traits: [{ id: 't', title: 'T', source: 'fixture', states: [{ id: 'a', label: 'A', color: '#fff' }], values: [{ concept: 'c:aves', state: 'a', note: 'n' }] }] }
+    for (const s of [amniotes, structures, checklist, checklistV2, subset, traits]) expect(validate(s), JSON.stringify(validate.errors)).toBe(true)
   })
 
   it('rejects structural mistakes', () => {

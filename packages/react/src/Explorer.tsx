@@ -2,7 +2,11 @@
 
 import {
   createHistory,
+  describeView,
   dispatch as dispatchAction,
+  inspectNode,
+  nodeOverlays,
+  serializeView,
   layoutProblem,
   projectView,
   redo as redoHistory,
@@ -14,13 +18,16 @@ import {
   type LifeStatus,
   type Projection,
   type TaxonomicView,
+  type TraitSet,
   type ViewAction,
   type ViewHistory,
+  type ViewOverlays,
 } from '@captiveorigins/onetaxonomy-core'
 import { radial, rectangular, type TreeLayout } from '@captiveorigins/onetaxonomy-layout'
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type WheelEvent } from 'react'
 
 import { dropOrder, drawnSubtree } from './drag.js'
+import { citationLine, disclosureLines, downloadBlob, standaloneSvg, svgToPng } from './export.js'
 import { Icon } from './icons.js'
 import { TreeOutline } from './TreeOutline.js'
 import { treeViewBox, TreeView, type ViewBox } from './TreeView.js'
@@ -85,7 +92,9 @@ export function layoutFor(projection: Projection, kind: LayoutKind): TreeLayout 
 
 export type ExplorerLabels = Record<
   | 'undo' | 'redo' | 'expandAll' | 'collapseAll' | 'rotate' | 'layout' | 'status' | 'allStatuses' | 'outline' | 'details' | 'nothingSelected' | 'clade' | 'group' | 'hidden' | 'rank' | 'lifeStatus' | 'focus' | 'unfocus'
-  | 'zoomIn' | 'zoomOut' | 'fit' | 'download' | 'print' | 'canvas' | 'controls' | 'dragHint',
+  | 'zoomIn' | 'zoomOut' | 'fit' | 'download' | 'print' | 'canvas' | 'controls' | 'dragHint'
+  | 'overlays' | 'support' | 'extinction' | 'trait' | 'noTrait' | 'noStatedValue' | 'mixed' | 'weakSupport'
+  | 'downloadSvg' | 'downloadPng' | 'downloadView' | 'about' | 'sources' | 'references' | 'synonyms' | 'commonNames' | 'age' | 'branchLength' | 'unmapped' | 'traits',
   string
 >
 
@@ -111,15 +120,32 @@ const LABELS: ExplorerLabels = {
   zoomIn: 'Zoom in',
   zoomOut: 'Zoom out',
   fit: 'Fit to view',
-  download: 'Download SVG',
+  download: 'Download',
   print: 'Print',
   canvas: 'Tree drawing: drag to pan, Ctrl or ⌘ + scroll to zoom, drag a taxon to reorder it among its siblings, double-click to fold',
   controls: 'Drawing controls',
   dragHint: 'Drag a taxon up or down to reorder it among its siblings; double-click a branch to fold it.',
+  overlays: 'Overlays',
+  support: 'Support values',
+  extinction: 'Extinct and fossils',
+  trait: 'Color by',
+  noTrait: 'No trait',
+  noStatedValue: 'No stated value',
+  mixed: 'Mixed states',
+  weakSupport: 'Weak support (dashed)',
+  downloadSvg: 'Drawing (SVG)',
+  downloadPng: 'Image (PNG)',
+  downloadView: 'View file (JSON)',
+  about: 'About this diagram',
+  sources: 'Sources',
+  references: 'References',
+  synonyms: 'Synonyms',
+  commonNames: 'Common names',
+  age: 'Age',
+  branchLength: 'Branch length',
+  unmapped: 'Not linked to a named taxon (a sample, population or unnamed lineage).',
+  traits: 'Traits',
 }
-
-/** Properties copied into downloaded SVGs (they carry no stylesheet). */
-const INLINE = ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-dasharray', 'opacity', 'font-family', 'font-size', 'font-weight', 'font-style', 'visibility', 'display']
 
 /** Prints only this drawing: everything else on the page is hidden while printing. */
 function printDrawing(el: HTMLElement | null) {
@@ -164,6 +190,14 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   const node = selected ? projection.nodes.find((n) => n.id === selected) : undefined
   const statusValue = STATUS_FILTERS.find((f) => JSON.stringify(f.statuses ?? null) === JSON.stringify(view.filter.status ?? null))?.value ?? 'all'
   const hidden = (n: number) => `${n} ${labels.hidden}`
+  const marks = useMemo(() => nodeOverlays(dataset, view, projection, { mixedLabel: labels.mixed }), [dataset, view, projection, labels.mixed])
+  const disclosure = useMemo(() => describeView(dataset, view, projection), [dataset, view, projection])
+  const details = useMemo(() => (selected && node ? inspectNode(dataset, view, selected) : null), [dataset, view, selected, node])
+  const traits = dataset.snapshot.traits ?? []
+  const hasSupport = projection.nodes.some((n) => n.support !== undefined)
+  const hasExtinct = projection.nodes.some((n) => n.status === 'extinct')
+  const overlays = view.overlays ?? {}
+  const setOverlays = (next: ViewOverlays) => dispatch({ type: 'setOverlays', overlays: next })
 
   // Pan and zoom (same controls as OnePedigree): the box resets when the layout or focus changes.
   const full = useMemo(() => treeViewBox(layout), [layout])
@@ -251,20 +285,18 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
       pan(e.key === 'ArrowLeft' ? -0.1 : e.key === 'ArrowRight' ? 0.1 : 0, e.key === 'ArrowUp' ? -0.1 : e.key === 'ArrowDown' ? 0.1 : 0)
     } else if (e.key === 'Escape') dispatch({ type: 'select', nodes: [] })
   }
-  const download = () => {
-    const svg = canvas.current?.querySelector('svg.ot-root')
-    if (!svg) return
-    const copy = svg.cloneNode(true) as SVGSVGElement
-    const src = svg.querySelectorAll('*')
-    copy.querySelectorAll('*').forEach((el, i) => {
-      const cs = getComputedStyle(src[i]!)
-      for (const prop of INLINE) (el as SVGElement).style.setProperty(prop, cs.getPropertyValue(prop))
-    })
-    copy.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
-    const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(copy)], { type: 'image/svg+xml' }))
-    const a = Object.assign(document.createElement('a'), { href: url, download: `${view.id}.svg` })
-    a.click()
-    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  const exported = () => {
+    const svg = canvas.current?.querySelector('svg.ot-root') as SVGSVGElement | null
+    return svg ? standaloneSvg(svg, disclosure, { sourcesLabel: labels.sources }) : null
+  }
+  const [menu, setMenu] = useState(false)
+  const download = async (kind: 'svg' | 'png' | 'view') => {
+    setMenu(false)
+    if (kind === 'view') return downloadBlob(new Blob([serializeView(view)], { type: 'application/json' }), `${view.id}.onetaxonomy-view.json`)
+    const text = exported()
+    if (!text) return
+    if (kind === 'svg') return downloadBlob(new Blob([text], { type: 'image/svg+xml' }), `${view.id}.svg`)
+    downloadBlob(await svgToPng(text), `${view.id}.png`)
   }
 
   return (
@@ -320,6 +352,33 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
             ))}
           </select>
         </label>
+        {(hasSupport || hasExtinct || traits.length > 0) && <span className="ot-toolbar-gap" aria-hidden="true" />}
+        {hasSupport && (
+          <button type="button" aria-pressed={Boolean(overlays.support)} onClick={() => { const { support, ...rest } = overlays; setOverlays(support ? rest : { ...rest, support: {} }) }}>
+            <Icon name="check" />
+            {labels.support}
+          </button>
+        )}
+        {hasExtinct && (
+          <button type="button" aria-pressed={Boolean(overlays.extinction)} onClick={() => { const { extinction, ...rest } = overlays; setOverlays(extinction ? rest : { ...rest, extinction: true }) }}>
+            <Icon name="dagger" />
+            {labels.extinction}
+          </button>
+        )}
+        {traits.length > 0 && (
+          <label className="ot-select">
+            <Icon name="palette" />
+            <span>{labels.trait}</span>
+            <select value={overlays.trait ?? ''} onChange={(e) => { const { trait: _, ...rest } = overlays; setOverlays(e.target.value ? { ...rest, trait: e.target.value } : rest) }}>
+              <option value="">{labels.noTrait}</option>
+              {traits.map((tr) => (
+                <option key={tr.id} value={tr.id}>
+                  {tr.title}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
       </div>
       {t.error && (
         <p className="ot-error" role="status">
@@ -356,14 +415,37 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
             <button type="button" onClick={() => setBox(null)} aria-label={labels.fit} title={labels.fit}>
               <Icon name="fit" />
             </button>
-            <button type="button" onClick={download} aria-label={labels.download} title={labels.download}>
-              <Icon name="download" />
-            </button>
+            <div className="ot-menu">
+              <button type="button" onClick={() => setMenu((m) => !m)} aria-label={labels.download} title={labels.download} aria-expanded={menu} aria-haspopup="menu">
+                <Icon name="download" />
+              </button>
+              {menu && (
+                <div className="ot-menu-list" role="menu" onKeyDown={(e) => e.key === 'Escape' && setMenu(false)}>
+                  <button type="button" role="menuitem" onClick={() => download('svg')}>
+                    <Icon name="download" />
+                    {labels.downloadSvg}
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => download('png')}>
+                    <Icon name="image" />
+                    {labels.downloadPng}
+                  </button>
+                  <button type="button" role="menuitem" onClick={() => download('view')}>
+                    <Icon name="file" />
+                    {labels.downloadView}
+                  </button>
+                </div>
+              )}
+            </div>
             <button type="button" onClick={() => printDrawing(canvas.current)} aria-label={labels.print} title={labels.print}>
               <Icon name="print" />
             </button>
           </div>
-          <TreeView projection={projection} layout={layout} highlights={view.highlights} title={title} interactive hiddenLabel={hidden} viewBox={shown} drag={drag} />
+          <TreeView projection={projection} layout={layout} highlights={view.highlights} title={title} interactive hiddenLabel={hidden} viewBox={shown} drag={drag} overlays={marks} />
+          <div className="ot-print-disclosure" aria-hidden="true">
+            {disclosureLines(disclosure, labels.sources).map((l, i) => (
+              <p key={i}>{l}</p>
+            ))}
+          </div>
         </div>
         <div className="ot-side">
           <TreeOutline
@@ -387,7 +469,34 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
                   )}
                   <dt>{labels.lifeStatus}</dt>
                   <dd>{node.status}</dd>
+                  {details?.age && (
+                    <>
+                      <dt>{labels.age}</dt>
+                      <dd>
+                        {details.age.value}
+                        {details.age.min !== undefined && details.age.max !== undefined ? ` (${details.age.min}–${details.age.max})` : ''} {details.age.unit !== 'unspecified' ? details.age.unit : ''}
+                      </dd>
+                    </>
+                  )}
+                  {details?.support && (
+                    <>
+                      <dt>{labels.support}</dt>
+                      <dd>
+                        {details.support.value}
+                        {details.support.method ? ` (${details.support.method})` : ''}
+                      </dd>
+                    </>
+                  )}
+                  {details?.branchLength && (
+                    <>
+                      <dt>{labels.branchLength}</dt>
+                      <dd>
+                        {details.branchLength.value} {details.branchLength.unit !== 'unspecified' ? details.branchLength.unit : ''}
+                      </dd>
+                    </>
+                  )}
                 </dl>
+                {details && <NodeFacts details={details} labels={labels} />}
                 {node.hiddenDescendants > 0 && <p>{hidden(node.hiddenDescendants)}</p>}
                 <HighlightList highlights={view.highlights.filter((h) => node.highlights.includes(h.id))} labels={labels} />
                 <div className="ot-inspector-actions">
@@ -413,7 +522,65 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
           </section>
         </div>
       </div>
-      <Legend layout={layout} highlights={view.highlights} labels={labels} />
+      <Legend layout={layout} highlights={view.highlights} labels={labels} trait={traits.find((tr) => tr.id === overlays.trait)} support={Boolean(overlays.support)} />
+      <details className="ot-about">
+        <summary>
+          <Icon name="book" />
+          {labels.about}
+        </summary>
+        <ul>
+          {disclosure.lines.map((l, i) => (
+            <li key={i}>{l}</li>
+          ))}
+        </ul>
+        {disclosure.citations.length > 0 && (
+          <>
+            <h4>{labels.sources}</h4>
+            <ul>
+              {disclosure.citations.map((c) => (
+                <li key={c.source}>{citationLine(c)}</li>
+              ))}
+            </ul>
+          </>
+        )}
+      </details>
+    </div>
+  )
+}
+
+function NodeFacts({ details, labels }: { details: NonNullable<ReturnType<typeof inspectNode>>; labels: ExplorerLabels }) {
+  const c = details.concepts.length === 1 ? details.concepts[0] : undefined
+  const profile = c?.profile
+  return (
+    <div className="ot-facts">
+      {details.unmapped && <p className="ot-hint">{labels.unmapped}</p>}
+      {c?.authorship && <p className="ot-authorship">{c.name} {c.authorship}</p>}
+      {profile?.summary && <p>{profile.summary}</p>}
+      {c && c.synonyms.length > 0 && (
+        <p>
+          <span className="ot-fact-label">{labels.synonyms}:</span> {c.synonyms.join(', ')}
+        </p>
+      )}
+      {c && c.commonNames.length > 0 && (
+        <p>
+          <span className="ot-fact-label">{labels.commonNames}:</span> {c.commonNames.map((n) => `${n.name} (${n.locale})`).join(', ')}
+        </p>
+      )}
+      {details.traits.length > 0 && (
+        <p>
+          <span className="ot-fact-label">{labels.traits}:</span> {details.traits.map((tr) => `${tr.title}: ${tr.state}${tr.note ? ` (${tr.note})` : ''}`).join('; ')}
+        </p>
+      )}
+      {details.references.length > 0 && (
+        <p>
+          <span className="ot-fact-label">{labels.references}:</span> {details.references.join('; ')}
+        </p>
+      )}
+      {details.citations.length > 0 && (
+        <p className="ot-citations">
+          <span className="ot-fact-label">{labels.sources}:</span> {details.citations.map(citationLine).join('; ')}
+        </p>
+      )}
     </div>
   )
 }
@@ -442,12 +609,44 @@ function HighlightList({ highlights, labels }: { highlights: Highlight[]; labels
 }
 
 /** What the drawing is (classification vs phylogeny) and what each highlight is. */
-export function Legend({ layout, highlights, labels: custom }: { layout: TreeLayout; highlights: Highlight[]; labels?: Partial<Pick<ExplorerLabels, 'clade' | 'group'>> }) {
-  const labels = { clade: LABELS.clade, group: LABELS.group, ...custom }
+export function Legend({
+  layout,
+  highlights,
+  labels: custom,
+  trait,
+  support,
+}: {
+  layout: TreeLayout
+  highlights: Highlight[]
+  labels?: Partial<Pick<ExplorerLabels, 'clade' | 'group' | 'noStatedValue' | 'weakSupport' | 'mixed'>>
+  /** The trait set the drawing is colored by (its states become legend entries). */
+  trait?: TraitSet | undefined
+  support?: boolean
+}) {
+  const labels = { clade: LABELS.clade, group: LABELS.group, noStatedValue: LABELS.noStatedValue, weakSupport: LABELS.weakSupport, mixed: LABELS.mixed, ...custom }
   return (
     <div className="ot-legend">
       <p className="ot-notice">{layout.notice}</p>
       <HighlightList highlights={highlights} labels={labels} />
+      {trait && (
+        <ul className="ot-legend-traits" aria-label={trait.title}>
+          {trait.states.map((s) => (
+            <li key={s.id}>
+              <span className="ot-swatch" data-trait={s.id} style={s.color ? { background: s.color } : undefined} aria-hidden="true" />
+              {s.label}
+            </li>
+          ))}
+          <li>
+            <span className="ot-swatch" data-trait="mixed" aria-hidden="true" />
+            {labels.mixed}
+          </li>
+          <li>
+            <span className="ot-swatch" data-trait="none" aria-hidden="true" />
+            {labels.noStatedValue}
+          </li>
+        </ul>
+      )}
+      {support && <p className="ot-notice">{labels.weakSupport}</p>}
     </div>
   )
 }

@@ -2,9 +2,9 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it } from 'vitest'
-import { createView, indexDataset, makeHighlight, projectView, snapshotChecksum, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { createView, describeView, indexDataset, makeHighlight, nodeOverlays, projectView, snapshotChecksum, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
 import { rectangular } from '@captiveorigins/onetaxonomy-layout'
-import { dropOrder, drawnSubtree, Explorer, TreeOutline, TreeView } from '../src'
+import { dropOrder, drawnSubtree, Explorer, standaloneSvg, TreeOutline, TreeView } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 import amniotesJson from '../../../fixtures/amniotes.json'
 
@@ -122,12 +122,62 @@ describe('brand controls', () => {
     render(<Explorer dataset={cl} initialView={clView()} title="Checklist" />)
     const undo = screen.getByRole('button', { name: 'Undo' })
     expect(undo.querySelector('svg.ot-icon')).toBeTruthy()
-    for (const name of ['Zoom in', 'Zoom out', 'Fit to view', 'Download SVG', 'Print']) expect(screen.getByRole('button', { name })).toBeTruthy()
+    for (const name of ['Zoom in', 'Zoom out', 'Fit to view', 'Download', 'Print']) expect(screen.getByRole('button', { name })).toBeTruthy()
     const svg = () => document.querySelector('.ot-canvas svg.ot-root')!.getAttribute('viewBox')
     const before = svg()
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
     expect(svg()).not.toBe(before)
     fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }))
     expect(svg()).toBe(before)
+  })
+})
+
+describe('M5: overlays, inspector, exports', () => {
+  const traitData = (): DatasetSnapshot => ({
+    ...(JSON.parse(JSON.stringify(amniotesJson)) as DatasetSnapshot),
+    traits: [{ id: 'repro', title: 'Reproduction', source: 'fixture', states: [{ id: 'egg', label: 'Lays eggs', color: '#eeb684' }, { id: 'live', label: 'Live birth' }], values: [{ concept: 'c:testudines', state: 'egg' }, { concept: 'c:mammalia', state: 'live' }] }],
+    profiles: [{ concept: 'c:testudines', summary: 'Turtles and tortoises.', citations: ['Example 2026'] }],
+  })
+
+  it('draws support values, weak edges, fossil ages and observed trait states', () => {
+    const d = indexDataset(traitData())
+    const v = { ...createView(d, { id: 'v', title: 't', target: { kind: 'classification', id: 'traditional' } }), overlays: { trait: 'repro' } }
+    const p = projectView(d, v)
+    const html = renderToStaticMarkup(<TreeView projection={p} layout={rectangular(p)} title="t" overlays={nodeOverlays(d, v, p)} />)
+    expect(html.match(/class="ot-trait"/g)).toHaveLength(2)
+    expect(html).toContain('data-trait="egg"')
+    expect(html).toContain('fill:#eeb684')
+  })
+
+  it('colors by a trait, inspects with citations, and explains itself', () => {
+    const d = indexDataset(traitData())
+    const { container } = render(<Explorer dataset={d} initialView={createView(d, { id: 'v', title: 'Amniotes', target: { kind: 'classification', id: 'traditional' } })} title="Amniotes" />)
+    fireEvent.change(screen.getByRole('combobox', { name: /Color by/ }), { target: { value: 'repro' } })
+    expect(container.querySelectorAll('.ot-trait')).toHaveLength(2)
+    expect(screen.getByRole('list', { name: 'Reproduction' }).textContent).toContain('No stated value')
+    const turtle = container.querySelector('.ot-node[data-id="c:testudines"]')!
+    fireEvent.pointerDown(turtle, { clientX: 5, clientY: 5 })
+    fireEvent.pointerUp(turtle, { clientX: 5, clientY: 5 })
+    const inspector = screen.getByRole('region', { name: 'Details' })
+    expect(inspector.textContent).toContain('Turtles and tortoises.')
+    expect(inspector.textContent).toContain('Reproduction: Lays eggs')
+    expect(inspector.textContent).toContain('Example 2026')
+    expect(inspector.textContent).toMatch(/illustrative data/)
+    const about = container.querySelector('.ot-about')!.textContent!
+    expect(about).toMatch(/not common ancestry/)
+    expect(about).toMatch(/nothing is inferred/)
+  })
+
+  it('offers SVG, PNG and view downloads; the SVG carries the disclosure', () => {
+    const d = indexDataset(traitData())
+    const { container } = render(<Explorer dataset={d} initialView={createView(d, { id: 'v', title: 'Amniotes', target: { kind: 'classification', id: 'traditional' } })} title="Amniotes" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Download' }))
+    expect(screen.getAllByRole('menuitem').map((b) => b.textContent)).toEqual(['Drawing (SVG)', 'Image (PNG)', 'View file (JSON)'])
+    const v = createView(d, { id: 'v', title: 'Amniotes', target: { kind: 'classification', id: 'traditional' } })
+    const text = standaloneSvg(container.querySelector('svg.ot-root') as SVGSVGElement, describeView(d, v, projectView(d, v)))
+    expect(text).toContain('class="ot-disclosure"')
+    expect(text).toMatch(/Classification: .*not common ancestry/)
+    expect(text).toMatch(/Sources:/)
+    expect(text).toContain('fill="#ffffff"')
   })
 })

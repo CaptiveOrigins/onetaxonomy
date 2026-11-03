@@ -36,6 +36,20 @@ export type Highlight = {
   assessment?: MonophylyResult
 }
 
+/**
+ * Scientific overlays drawn over the tree. All optional; absent = off. They only show
+ * what the data states: support values and node ages from the hypothesis, life status,
+ * and observed trait states from a cited trait set (never inferred states).
+ */
+export type ViewOverlays = {
+  /** Show support values; values below `threshold` (in the hypothesis' own scale) are marked weak. */
+  support?: { threshold?: number }
+  /** Mark extinct taxa and show fossil ages where the hypothesis dates them. */
+  extinction?: boolean
+  /** Color nodes by the observed states of one trait set (`DatasetSnapshot.traits`). */
+  trait?: Id
+}
+
 export type LayoutKind = 'rectangular' | 'radial' | 'phylogram' | 'time' | 'sunburst'
 
 export type TaxonomicView = {
@@ -55,6 +69,7 @@ export type TaxonomicView = {
   highlights: Highlight[]
   layout: { kind: LayoutKind }
   selected: Id[]
+  overlays?: ViewOverlays
 }
 
 export type ViewAction =
@@ -74,6 +89,7 @@ export type ViewAction =
   | { type: 'removeHighlight'; id: Id }
   | { type: 'setLayout'; layout: LayoutKind }
   | { type: 'select'; nodes: Id[] }
+  | { type: 'setOverlays'; overlays: ViewOverlays }
 
 export class ViewActionError extends Error {
   constructor(
@@ -182,6 +198,18 @@ export function applyViewAction(view: TaxonomicView, action: ViewAction, dataset
     case 'select':
       for (const n of action.nodes) known(n)
       return { ...view, selected: [...new Set(action.nodes)] }
+    case 'setOverlays': {
+      const o = action.overlays
+      if (o.trait !== undefined && !(dataset.snapshot.traits ?? []).some((t) => t.id === o.trait)) throw new ViewActionError(`Unknown trait set ${o.trait}`, action)
+      if (o.support && view.target.kind !== 'phylogeny') throw new ViewActionError('Support values belong to a phylogeny; a classification has none', action)
+      const next: ViewOverlays = {
+        ...(o.support ? { support: o.support.threshold !== undefined ? { threshold: o.support.threshold } : {} } : {}),
+        ...(o.extinction ? { extinction: true } : {}),
+        ...(o.trait !== undefined ? { trait: o.trait } : {}),
+      }
+      const { overlays: _, ...rest } = view
+      return Object.keys(next).length ? { ...rest, overlays: next } : rest
+    }
   }
 }
 
@@ -226,7 +254,7 @@ export function makeHighlight(dataset: DatasetIndex, view: TaxonomicView, o: { i
 
 export type ViewDiagnostic = {
   severity: 'error' | 'warning'
-  code: 'format' | 'snapshot-mismatch' | 'unknown-target' | 'unknown-node' | 'bad-order' | 'unsupported-clade' | 'stale-assessment' | 'layout'
+  code: 'format' | 'snapshot-mismatch' | 'unknown-target' | 'unknown-node' | 'bad-order' | 'unsupported-clade' | 'stale-assessment' | 'layout' | 'unknown-trait'
   message: string
   ids?: Id[]
 }
@@ -257,6 +285,8 @@ export function validateView(view: TaxonomicView, dataset: DatasetIndex): ViewDi
     if (now.kind !== 'clade') out.push({ severity: 'error', code: 'unsupported-clade', message: `“${h.label}” is shown as a clade but is ${now.assessment?.status ?? 'not assessed'} here: show it as a group`, ids: [h.id] })
     else if (JSON.stringify(hypothesisOf(now.assessment)) !== JSON.stringify(hypothesisOf(h.assessment))) out.push({ severity: 'warning', code: 'stale-assessment', message: `“${h.label}” was assessed against another hypothesis version`, ids: [h.id] })
   }
+  if (view.overlays?.trait !== undefined && !(dataset.snapshot.traits ?? []).some((t) => t.id === view.overlays!.trait))
+    out.push({ severity: 'error', code: 'unknown-trait', message: `Trait set ${view.overlays.trait} is not in this snapshot` })
   const lp = layoutProblem(dataset, view.target, view.layout.kind)
   if (lp) out.push({ severity: 'error', code: 'layout', message: lp })
   return out

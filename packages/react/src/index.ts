@@ -4,3 +4,4 @@ export { Explorer, Legend, layoutFor, useTaxonomyView, type ExplorerProps, type 
 export { treeViewBox, type ViewBox } from './TreeView.js'
 export { dropOrder, drawnSubtree } from './drag.js'
 export { Icon, ICON_PATHS, type IconName } from './icons.js'
+export { citationLine, disclosureLines, downloadBlob, standaloneSvg, svgToPng } from './export.js'

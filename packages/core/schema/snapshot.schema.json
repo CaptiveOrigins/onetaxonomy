@@ -18,6 +18,7 @@
     "classifications": { "type": "array", "items": { "$ref": "#/$defs/classification" } },
     "phylogenies": { "type": "array", "items": { "$ref": "#/$defs/phylogeny" } },
     "profiles": { "type": "array", "items": { "$ref": "#/$defs/profile" } },
+    "traits": { "type": "array", "items": { "$ref": "#/$defs/traitSet" } },
     "derivedFrom": {
       "type": "object",
       "required": ["snapshot", "version"],
@@ -190,6 +191,18 @@
         },
         "citations": { "type": "array", "items": { "type": "string" } },
         "extensions": { "type": "object" }
+      }
+    },
+    "traitSet": {
+      "type": "object",
+      "required": ["id", "title", "source", "states", "values"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/id" },
+        "title": { "type": "string" },
+        "source": { "$ref": "#/$defs/id" },
+        "states": { "type": "array", "items": { "type": "object", "required": ["id", "label"], "additionalProperties": false, "properties": { "id": { "$ref": "#/$defs/id" }, "label": { "type": "string" }, "color": { "type": "string" } } } },
+        "values": { "type": "array", "items": { "type": "object", "required": ["concept", "state"], "additionalProperties": false, "properties": { "concept": { "$ref": "#/$defs/id" }, "state": { "$ref": "#/$defs/id" }, "note": { "type": "string" } } } }
       }
     }
   }

@@ -90,6 +90,13 @@ describe('extractSubset', () => {
     expect(verifySnapshot(sealSnapshot(clone(sub)))).toBe(true)
   })
 
+  it('keeps trait values only for copied concepts, with their source', () => {
+    const src = { ...clone(checklist), traits: [{ id: 't', title: 'T', source: checklist.sources[0]!.id, states: [{ id: 'a', label: 'A' }], values: [{ concept: 'fx:5', state: 'a' }, { concept: 'fx:9', state: 'a' }] }] }
+    const sub = extractSubset(src, { id: 's', version: '1', createdAt: 'x', classification: 'fx:checklist', include: applySelection(ds, sel({ roots: [{ concept: 'fx:5', policy: { kind: 'explicit' } }] })) })
+    expect(sub.traits).toEqual([{ ...src.traits[0], values: [{ concept: 'fx:5', state: 'a' }] }])
+    expect(hasErrors(validateDataset(sub))).toBe(false)
+  })
+
   it('refuses a set that would orphan a placement', () => {
     expect(() => extractSubset(checklist, { id: 's', version: '1', createdAt: 'x', classification: 'fx:checklist', include: ['fx:5'] })).toThrow(/lose its parent/)
   })

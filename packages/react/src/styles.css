@@ -46,6 +46,12 @@
 .ot-node[role='button'] { cursor: pointer; }
 .ot-node:focus-visible { outline: 2px solid var(--ot-focus); }
 .ot-axis-line, .ot-axis-tick { stroke: var(--ot-muted); }
+/* Overlays (M5): only stated values are drawn. */
+.ot-trait { fill: var(--ot-muted); opacity: 0.85; }
+.ot-node[data-trait='mixed'] .ot-trait { fill: none; stroke: var(--ot-muted); stroke-dasharray: 2 2; }
+.ot-support { fill: var(--ot-muted); font-size: 10px; }
+.ot-support[data-weak] { fill: #b45309; }
+.ot-edge[data-weak] { stroke-dasharray: 5 4; }
 .ot-axis-label, .ot-axis-unit { fill: var(--ot-muted); font-size: 11px; }
 
 .ot-icon { flex: none; }
@@ -92,11 +98,32 @@
 .ot-highlights { list-style: none; padding: 0; margin: 0.5rem 0; }
 .ot-swatch { display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 50%; margin-inline-end: 0.375rem; background: var(--ot-muted); }
 .ot-error { color: #b91c1c; }
+.ot-explorer button[aria-pressed='true'] { border-color: var(--ot-selected); background: color-mix(in srgb, var(--ot-selected) 14%, var(--ot-surface)); }
+.ot-menu { position: relative; }
+.ot-menu-list { position: absolute; top: 36px; right: 0; display: flex; flex-direction: column; gap: 2px; padding: 4px; min-width: 12rem; border: 1px solid var(--ot-border); border-radius: 10px; background: var(--ot-surface); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12); }
+.ot-floating .ot-menu-list button { width: auto; justify-content: flex-start; padding: 0 10px; border-color: transparent; }
+.ot-facts { font-size: 13px; }
+.ot-facts p { margin: 0.375rem 0; }
+.ot-fact-label { color: var(--ot-muted); }
+.ot-citations { color: var(--ot-muted); overflow-wrap: anywhere; }
+.ot-legend { margin-top: 8px; }
+.ot-legend-traits { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 0; margin: 6px 0; font-size: 13px; }
+.ot-swatch[data-trait='mixed'] { background: transparent; border: 1px dashed var(--ot-muted); }
+.ot-swatch[data-trait='none'] { background: transparent; border: 1px solid var(--ot-border); }
+.ot-about { margin-top: 8px; font-size: 13px; color: var(--ot-muted); }
+.ot-about summary { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; color: var(--ot-text); }
+.ot-about h4 { margin: 8px 0 4px; font-size: 13px; color: var(--ot-text); }
+.ot-about ul { margin: 4px 0; padding-inline-start: 1.25rem; overflow-wrap: anywhere; }
+.ot-print-disclosure { display: none; }
 @media print {
   html[data-ot-printing] body * { visibility: hidden; }
   html[data-ot-printing] [data-ot-printing], html[data-ot-printing] [data-ot-printing] * { visibility: visible; }
   html[data-ot-printing] [data-ot-printing] { position: fixed; inset: 0; height: 100% !important; border: 0; border-radius: 0; }
   .ot-floating { display: none; }
+  html[data-ot-printing] [data-ot-printing] { display: flex; flex-direction: column; }
+  html[data-ot-printing] [data-ot-printing] > svg { flex: 1; min-height: 0; }
+  .ot-print-disclosure { display: block; padding: 8px 12px; font-size: 9pt; color: #4c312c; }
+  .ot-print-disclosure p { margin: 0 0 2px; }
 }
 @media (prefers-reduced-motion: no-preference) {
   .ot-node:not([data-dragging]) { transition: transform 150ms ease; }

@@ -1,4 +1,4 @@
-import type { Highlight, Id, Projection } from '@captiveorigins/onetaxonomy-core'
+import type { Highlight, Id, NodeOverlay, Projection } from '@captiveorigins/onetaxonomy-core'
 import { edgePath, type TreeLayout } from '@captiveorigins/onetaxonomy-layout'
 import { useId, type KeyboardEvent, type MouseEvent } from 'react'
 
@@ -17,6 +17,8 @@ export type TreeViewProps = {
   viewBox?: ViewBox
   /** A node being dragged: it and its drawn subtree are shown offset (layout units). */
   drag?: { ids: ReadonlySet<Id>; dx: number; dy: number } | null
+  /** Overlay marks per node (`nodeOverlays` from core): support, fossil ages, observed trait states. */
+  overlays?: ReadonlyMap<Id, NodeOverlay>
   /** Nodes are focusable and clickable. */
   interactive?: boolean
   onNodeClick?: (id: Id, event: MouseEvent<SVGGElement>) => void
@@ -60,6 +62,7 @@ export function TreeView(props: TreeViewProps) {
   const hidden = props.hiddenLabel ?? DEFAULT_HIDDEN
   const moving = (id: Id) => Boolean(props.drag?.ids.has(id))
   const offset = props.drag ? `translate(${props.drag.dx} ${props.drag.dy})` : undefined
+  const marks = props.overlays
 
   return (
     <svg
@@ -80,6 +83,7 @@ export function TreeView(props: TreeViewProps) {
             className="ot-edge"
             d={edgePath(e)}
             data-highlighted={node.get(e.child)?.highlights.length ? '' : undefined}
+            data-weak={marks?.get(e.child)?.support?.weak ? '' : undefined}
             data-dragging={moving(e.child) ? '' : undefined}
             transform={moving(e.child) ? offset : undefined}
           />
@@ -109,7 +113,9 @@ export function TreeView(props: TreeViewProps) {
           const angle = ln.angle ?? 0
           const flip = radialLayout && Math.cos(angle) < 0
           const labelTransform = radialLayout ? `rotate(${(-angle * 180) / Math.PI + (flip ? 180 : 0)})` : undefined
-          const name = `${n.label}${n.status === 'extinct' ? ' †' : ''}`
+          const mark = marks?.get(ln.id)
+          const fossil = mark?.fossilAge ? ` ${mark.fossilAge.value}${mark.fossilAge.unit && mark.fossilAge.unit !== 'unspecified' ? ` ${mark.fossilAge.unit}` : ''}` : ''
+          const name = `${n.label}${n.status === 'extinct' ? ` †${fossil}` : ''}`
           const text = n.collapsed && n.hiddenDescendants ? `${name} (${hidden(n.hiddenDescendants)})` : name
           return (
             <g
@@ -123,6 +129,7 @@ export function TreeView(props: TreeViewProps) {
               data-selected={n.selected ? '' : undefined}
               data-status={n.status}
               data-rank={n.rank}
+              data-trait={mark?.trait?.state}
               {...(interactive
                 ? {
                     tabIndex: -1,
@@ -134,6 +141,12 @@ export function TreeView(props: TreeViewProps) {
                 : {})}
             >
               {hl && <circle className="ot-node-halo" r={7} style={{ fill: hl }} />}
+              {mark?.trait && <circle className="ot-trait" r={5.5} style={'color' in mark.trait && mark.trait.color ? { fill: mark.trait.color } : undefined} />}
+              {mark?.support && (
+                <text className="ot-support" x={-5} y={-5} textAnchor="end" data-weak={mark.support.weak ? '' : undefined}>
+                  {mark.support.value}
+                </text>
+              )}
               {n.collapsed ? <path className="ot-node-collapsed" d="M0 0 L12 -6 L12 6 Z" /> : <circle className="ot-node-dot" r={ln.leaf ? 3 : 2.5} />}
               {(ln.leaf || !radialLayout) && text && (
                 <text className="ot-label" x={ln.leaf ? (flip ? -8 : 8) : 4} y={ln.leaf ? 4 : -6} textAnchor={ln.leaf && flip ? 'end' : 'start'} transform={ln.leaf ? labelTransform : undefined} data-italic={/^(genus|species|subspecies|variety|form)$/i.test(n.rank ?? '') ? '' : undefined}>

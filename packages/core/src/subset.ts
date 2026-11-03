@@ -19,7 +19,7 @@ export type SubsetOptions = {
 
 /**
  * A new, unsealed snapshot holding only the chosen concepts, the names and sources
- * they use, their placements and profiles, with `derivedFrom` provenance. Refuses an
+ * they use, their placements, profiles and trait values, with `derivedFrom` provenance. Refuses an
  * include set that would orphan a placement (no silent re-parenting).
  */
 export function extractSubset(source: DatasetSnapshot, o: SubsetOptions): DatasetSnapshot {
@@ -52,6 +52,8 @@ export function extractSubset(source: DatasetSnapshot, o: SubsetOptions): Datase
   const phylogenies: Phylogeny[] =
     o.phylogenies === 'keep' ? source.phylogenies.filter((p) => p.nodes.every((n) => (n.concepts ?? []).every((c) => keep.has(c)))) : []
   for (const p of phylogenies) for (const s of p.sources) sourceIds.add(s)
+  const traits = (source.traits ?? []).map((t) => ({ ...t, values: t.values.filter((v) => keep.has(v.concept)) })).filter((t) => t.values.length)
+  for (const t of traits) sourceIds.add(t.source)
 
   const classification: Classification = { ...cls, placements }
   const out: DatasetSnapshot = {
@@ -73,5 +75,6 @@ export function extractSubset(source: DatasetSnapshot, o: SubsetOptions): Datase
   }
   const profiles = source.profiles?.filter((p) => keep.has(p.concept))
   if (profiles?.length) out.profiles = profiles
+  if (traits.length) out.traits = traits
   return out
 }

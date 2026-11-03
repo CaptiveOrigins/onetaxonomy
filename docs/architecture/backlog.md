@@ -48,10 +48,10 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] `apps/playground`
 - [x] Acceptance (core): drag/collapse/filter/rotate with undo/redo; snapshot checksum unchanged (`view.test.ts`) and through the explorer (`react.test.tsx`)
 
-## M5 — Profiles, overlays, exports, education (next)
+## M5 — Profiles, overlays, exports, education (in progress)
 
-- [ ] Profiles and evidence in the inspector; support, fossil, extinction and trait overlays; citations
-- [ ] Export SVG/PNG/PDF (labelled classification vs phylogeny, hidden branches disclosed), JSON view, embeds
+- [x] Profiles and evidence in the inspector; support, fossil, extinction and trait overlays (observed traits: `TraitSet`); citations
+- [x] Export SVG/PNG/PDF (labelled classification vs phylogeny, hidden branches disclosed), JSON view, embeds (PDF via print; embeds = server-rendered `TreeView`)
 - [ ] `@captiveorigins/onetaxonomy-education`: scenes, annotations, camera states, reveal animations, lesson decks, worksheets; Explore vs Studio modes
 
 ## M6 — Studio (macOS)
