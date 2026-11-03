@@ -181,3 +181,27 @@ describe('M5: overlays, inspector, exports', () => {
     expect(text).toContain('fill="#ffffff"')
   })
 })
+
+describe('clade selector', () => {
+  it('checks a multiple selection, explains it, and keeps it as a clade or a group', () => {
+    const { container } = render(<Explorer dataset={am} initialView={createView(am, { id: 'v', title: 'A', target: { kind: 'phylogeny', id: 'archelosauria' } })} title="A" />)
+    const pick = (id: string, shiftKey = false) => {
+      const el = container.querySelector(`.ot-node[data-id="${id}"]`)!
+      fireEvent.pointerDown(el, { clientX: 1, clientY: 1, shiftKey })
+      fireEvent.pointerUp(el, { clientX: 1, clientY: 1 })
+    }
+    pick('t-crocodylia')
+    pick('t-aves', true)
+    const panel = screen.getByRole('region', { name: 'Details' })
+    expect(panel.textContent).toMatch(/Selected \(2\)/)
+    expect(screen.getByRole('status').textContent).toMatch(/A clade in/)
+    fireEvent.click(screen.getByRole('button', { name: /Highlight \(Clade\)/ }))
+    expect(container.querySelector('.ot-legend')!.textContent).toMatch(/Clade/)
+
+    pick('t-squamata', true) // squamates + crocs + birds: not a clade (turtles left out)
+    expect(screen.getByRole('status').textContent).toMatch(/Not a clade/)
+    expect(screen.getByRole('button', { name: /Highlight \(Group\)/ })).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: /Remove/ }))
+    expect(container.querySelector('.ot-legend .ot-highlights')).toBeNull()
+  })
+})

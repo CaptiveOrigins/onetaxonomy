@@ -9,8 +9,8 @@ export type TreeOutlineProps = {
   label: string
   /** Expand or collapse a node (Enter on a branch, Left/Right arrows). */
   onToggle?: (id: Id) => void
-  /** Choose a node (Space, click). */
-  onSelect?: (id: Id) => void
+  /** Choose a node (Space, click). `additive` (Shift/Ctrl/⌘) adds or removes it from a multiple selection. */
+  onSelect?: (id: Id, options?: { additive: boolean }) => void
   /** Move a node among its siblings (Alt+Up/Down): a keyboard alternative to dragging. */
   onMove?: (id: Id, direction: -1 | 1) => void
   /** Extra text after a node's name, e.g. its rank. */
@@ -91,7 +91,7 @@ export function TreeOutline({ projection, label, onToggle, onSelect, onMove, ren
         return
       case ' ':
         handled()
-        return onSelect?.(n.id)
+        return onSelect?.(n.id, { additive: e.shiftKey || e.ctrlKey || e.metaKey })
       case '*':
         handled()
         for (const s of siblings) if (byId.get(s)!.collapsed) onToggle?.(s)
@@ -133,9 +133,9 @@ export function TreeOutline({ projection, label, onToggle, onSelect, onMove, ren
       >
         <span
           className="ot-outline-row"
-          onClick={() => {
+          onClick={(e) => {
             setActive(id)
-            onSelect?.(id)
+            onSelect?.(id, { additive: e.shiftKey || e.ctrlKey || e.metaKey })
           }}
         >
           {branch ? (

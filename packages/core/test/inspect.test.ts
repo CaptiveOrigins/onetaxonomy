@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyViewAction, createView, describeView, indexDataset, inspectNode, nodeOverlays, projectView, validateDataset, validateView, ViewActionError, type DatasetSnapshot } from '../src'
+import { applyViewAction, createView, describeAssessment, describeView, indexDataset, inspectNode, makeHighlight, nodeOverlays, projectView, validateDataset, validateView, ViewActionError, type DatasetSnapshot } from '../src'
 import { amniotes, clone, structures } from './helpers'
 
 const withTraits = (): DatasetSnapshot => {
@@ -80,5 +80,19 @@ describe('inspector, overlays and disclosures (M5)', () => {
     const c = indexDataset(amniotes)
     const cv = createView(c, { id: 'c', title: 'C', target: { kind: 'classification', id: 'traditional' } })
     expect(describeView(c, cv, projectView(c, cv)).lines[0]).toMatch(/not common ancestry/)
+  })
+})
+
+describe('describeAssessment', () => {
+  it('explains clades, non-clades and missing hypotheses in words, with names', () => {
+    const d = indexDataset(amniotes)
+    const v = createView(d, { id: 'v', title: 'A', target: { kind: 'phylogeny', id: 'archelosauria' } })
+    const yes = describeAssessment(d, makeHighlight(d, v, { id: 'h', label: 'Archosaurs', members: ['t-crocodylia', 't-aves'] }).assessment!)
+    expect(yes.headline).toMatch(/^A clade in Turtles with archosaurs \(illustrative\) \(version /)
+    const no = describeAssessment(d, makeHighlight(d, v, { id: 'h', label: 'Reptiles', members: ['t-squamata', 't-testudines', 't-crocodylia'] }).assessment!)
+    expect(no.headline).toMatch(/^Not a clade/)
+    expect(no.details[0]).toMatch(/Also descended from that ancestor: .*Aves/)
+    const cls = createView(d, { id: 'c', title: 'C', target: { kind: 'classification', id: 'traditional' } })
+    expect(describeAssessment(d, makeHighlight(d, cls, { id: 'h', label: 'R', members: ['c:reptilia'] }).assessment!).headline).toMatch(/Choose a phylogenetic hypothesis/)
   })
 })

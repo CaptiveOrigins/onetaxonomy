@@ -44,7 +44,9 @@
 .ot-node[data-status='extinct'] .ot-node-dot { fill: none; stroke: var(--ot-node); }
 .ot-node[data-selected] .ot-label { fill: var(--ot-selected); font-weight: 600; }
 .ot-node[role='button'] { cursor: pointer; }
+.ot-node:focus { outline: none; }
 .ot-node:focus-visible { outline: 2px solid var(--ot-focus); }
+.ot-canvas { user-select: none; -webkit-user-select: none; }
 .ot-axis-line, .ot-axis-tick { stroke: var(--ot-muted); }
 /* Overlays (M5): only stated values are drawn. */
 .ot-trait { fill: var(--ot-muted); opacity: 0.85; }
@@ -115,6 +117,14 @@
 .ot-about h4 { margin: 8px 0 4px; font-size: 13px; color: var(--ot-text); }
 .ot-about ul { margin: 4px 0; padding-inline-start: 1.25rem; overflow-wrap: anywhere; }
 .ot-print-disclosure { display: none; }
+.ot-clade-check { display: flex; flex-direction: column; gap: 8px; }
+.ot-selection { margin: 0; font-size: 13px; }
+.ot-assessment-box { border-inline-start: 3px solid var(--ot-muted); padding: 4px 10px; background: var(--ot-surface); border-radius: 6px; }
+.ot-assessment-box p { margin: 4px 0; }
+.ot-clade-check[data-status='monophyletic'] .ot-assessment-box { border-color: #2f7d5c; }
+.ot-clade-check[data-status='not-monophyletic'] .ot-assessment-box { border-color: #b45309; }
+.ot-select input { font: inherit; border: 0; background: transparent; color: inherit; min-width: 6rem; }
+.ot-explorer .ot-remove { height: 20px; width: 20px; padding: 0; justify-content: center; margin-inline-start: 6px; vertical-align: middle; }
 @media print {
   html[data-ot-printing] body * { visibility: hidden; }
   html[data-ot-printing] [data-ot-printing], html[data-ot-printing] [data-ot-printing] * { visibility: visible; }

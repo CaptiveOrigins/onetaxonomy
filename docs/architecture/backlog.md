@@ -44,7 +44,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] Highlights: `group` vs validated `clade` (I3)
 - [x] `@captiveorigins/onetaxonomy-layout`: rectangular cladogram, radial, phylogram/time-scaled only when valid, classification sunburst (labelled as classification)
 - [x] `@captiveorigins/onetaxonomy-react`: SVG tree viewer, explorer state hook, inspector, view controls; keyboard and screen-reader navigation; reduced motion
-- [ ] Clade selector UI (pick members, see the assessment) → M5; Canvas rendering with level of detail for very large trees → M8
+- [x] Clade selector UI (pick members, see the assessment) (M5, 2026-11-02); Canvas rendering with level of detail for very large trees → M8
 - [x] `apps/playground`
 - [x] Acceptance (core): drag/collapse/filter/rotate with undo/redo; snapshot checksum unchanged (`view.test.ts`) and through the explorer (`react.test.tsx`)
 

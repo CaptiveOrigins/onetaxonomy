@@ -1,5 +1,6 @@
 import type { DatasetIndex } from './dataset'
 import type { CommonName, Id, LengthUnit, LifeStatus, Provenance, Source, Support, TaxonProfile } from './model'
+import type { MonophylyResult } from './monophyly'
 import type { Projection } from './project'
 import type { PhylogenyIndex } from './tree'
 import { viewTree, type TaxonomicView } from './view'
@@ -203,4 +204,42 @@ export function describeView(dataset: DatasetIndex, view: TaxonomicView, project
   const illustrative = citations.some((x) => x.illustrative)
   if (illustrative) lines.push('Contains illustrative (fixture) data: not for scientific use.')
   return { title: view.title, lines, citations, illustrative }
+}
+
+/**
+ * A monophyly result in words (clade selector, lessons, plugin admin). Names come
+ * from the dataset; ids are only shown when a node has no name.
+ */
+export function describeAssessment(dataset: DatasetIndex, result: MonophylyResult): { headline: string; details: string[] } {
+  const h = result.hypothesis
+  const phy = h ? dataset.phylogeny(h.id) : null
+  const nameOf = (id: Id) => {
+    const n = phy?.node.get(id)
+    if (n?.label) return n.label
+    if (n?.concepts?.length) return n.concepts.map((c) => dataset.nameOf(c) ?? c).join(' / ')
+    return dataset.nameOf(id) ?? id
+  }
+  const names = (ids: Id[], max = 8) => (ids.length > max ? `${ids.slice(0, max).map(nameOf).join(', ')} and ${ids.length - max} more` : ids.map(nameOf).join(', '))
+  const where = h ? `in ${phy?.phylogeny.title ?? h.id} (version ${h.version})` : ''
+  const headlines: Record<MonophylyResult['reason'], string> = {
+    'complete-clade': `A clade ${where}: everything descended from their most recent common ancestor is included.`,
+    'missing-descendants': `Not a clade ${where}: their most recent common ancestor has other descendants.`,
+    'different-trees': `Not a clade ${where}: the selection spans separate trees of the hypothesis.`,
+    'unresolved-polytomy': `Can't tell ${where}: it depends on how an unresolved branching point (polytomy) resolves.`,
+    unrooted: `Can't tell ${where}: the hypothesis is unrooted, so it states no ancestry.`,
+    'classification-only': 'Can’t tell: a classification states placements, not common ancestry. Choose a phylogenetic hypothesis to check against.',
+    'unknown-node': `Can't tell ${where}: some of the selection isn't in this hypothesis.`,
+    empty: 'Nothing selected.',
+    'no-mapped-members': `Can't tell ${where}: none of the taxon's members are linked to this hypothesis.`,
+  }
+  const details: string[] = []
+  if (result.missing.length) details.push(result.reason === 'unresolved-polytomy' ? `Also under the same branching point: ${names(result.missing)}.` : `Also descended from that ancestor: ${names(result.missing)}.`)
+  const caveat: Record<MonophylyResult['caveats'][number], string> = {
+    'single-terminal': 'A single tip is trivially a clade.',
+    'partial-sampling': 'The hypothesis samples only part of the group: taxa missing from it may still belong.',
+    'sampling-unknown': 'The hypothesis doesn’t state how completely it samples the group.',
+    'unmapped-members': `${result.unmapped?.length ?? 0} member(s) aren't linked to this hypothesis and were not checked.`,
+  }
+  for (const c of result.caveats) details.push(caveat[c])
+  return { headline: headlines[result.reason].replace(/\s+:/, ':').replace(/ {2,}/g, ' '), details }
 }

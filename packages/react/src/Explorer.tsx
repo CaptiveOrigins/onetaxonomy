@@ -2,7 +2,9 @@
 
 import {
   createHistory,
+  describeAssessment,
   describeView,
+  makeHighlight,
   dispatch as dispatchAction,
   inspectNode,
   nodeOverlays,
@@ -94,6 +96,7 @@ export type ExplorerLabels = Record<
   | 'undo' | 'redo' | 'expandAll' | 'collapseAll' | 'rotate' | 'layout' | 'status' | 'allStatuses' | 'outline' | 'details' | 'nothingSelected' | 'clade' | 'group' | 'hidden' | 'rank' | 'lifeStatus' | 'focus' | 'unfocus'
   | 'zoomIn' | 'zoomOut' | 'fit' | 'download' | 'print' | 'canvas' | 'controls' | 'dragHint'
   | 'overlays' | 'support' | 'extinction' | 'trait' | 'noTrait' | 'noStatedValue' | 'mixed' | 'weakSupport'
+  | 'selection' | 'checkClade' | 'addHighlight' | 'highlightName' | 'checkAgainst' | 'clearSelection' | 'remove' | 'multiHint'
   | 'downloadSvg' | 'downloadPng' | 'downloadView' | 'about' | 'sources' | 'references' | 'synonyms' | 'commonNames' | 'age' | 'branchLength' | 'unmapped' | 'traits',
   string
 >
@@ -133,6 +136,14 @@ const LABELS: ExplorerLabels = {
   noStatedValue: 'No stated value',
   mixed: 'Mixed states',
   weakSupport: 'Weak support (dashed)',
+  selection: 'Selected',
+  checkClade: 'Is this a clade?',
+  addHighlight: 'Highlight',
+  highlightName: 'Name',
+  checkAgainst: 'Check against',
+  clearSelection: 'Clear selection',
+  remove: 'Remove',
+  multiHint: 'Shift-click (or Ctrl/⌘) to select several taxa and check whether they form a clade.',
   downloadSvg: 'Drawing (SVG)',
   downloadPng: 'Image (PNG)',
   downloadView: 'View file (JSON)',
@@ -198,6 +209,8 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   const hasExtinct = projection.nodes.some((n) => n.status === 'extinct')
   const overlays = view.overlays ?? {}
   const setOverlays = (next: ViewOverlays) => dispatch({ type: 'setOverlays', overlays: next })
+  const choose = (id: Id, additive = false) =>
+    dispatch({ type: 'select', nodes: additive ? (view.selected.includes(id) ? view.selected.filter((x) => x !== id) : [...view.selected, id]) : [id] })
 
   // Pan and zoom (same controls as OnePedigree): the box resets when the layout or focus changes.
   const full = useMemo(() => treeViewBox(layout), [layout])
@@ -205,7 +218,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   const shown = box ?? full
   useEffect(() => setBox(null), [view.layout.kind, view.focus, view.target.id])
   const canvas = useRef<HTMLDivElement>(null)
-  const pointer = useRef<{ x: number; y: number; box: ViewBox; node: Id | null; moved: boolean } | null>(null)
+  const pointer = useRef<{ x: number; y: number; box: ViewBox; node: Id | null; moved: boolean; additive: boolean } | null>(null)
   const [drag, setDrag] = useState<{ id: Id; ids: Set<Id>; dx: number; dy: number } | null>(null)
 
   const scale = () => {
@@ -236,7 +249,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
     const target = e.target as Element
     if (target.closest('button, a, select, .ot-floating')) return
     const nodeId = target.closest('.ot-node')?.getAttribute('data-id') ?? null
-    pointer.current = { x: e.clientX, y: e.clientY, box: shown, node: nodeId, moved: false }
+    pointer.current = { x: e.clientX, y: e.clientY, box: shown, node: nodeId, moved: false, additive: e.shiftKey || e.ctrlKey || e.metaKey }
     e.currentTarget.setPointerCapture?.(e.pointerId)
   }
   const onPointerMove = (e: PointerEvent<HTMLDivElement>) => {
@@ -262,7 +275,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
       if (order && parent) dispatch({ type: 'reorder', node: parent, children: order })
       return
     }
-    if (!p.moved && p.node) dispatch({ type: 'select', nodes: [p.node] })
+    if (!p.moved && p.node) choose(p.node, p.additive)
   }
   const onDoubleClick = (e: { target: EventTarget }) => {
     const id = (e.target as Element).closest('.ot-node')?.getAttribute('data-id')
@@ -453,11 +466,13 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
             label={labels.outline}
             hiddenLabel={hidden}
             onToggle={(id) => dispatch({ type: 'toggle', node: id })}
-            onSelect={(id) => dispatch({ type: 'select', nodes: [id] })}
+            onSelect={(id, o) => choose(id, o?.additive)}
             onMove={move}
           />
           <section className="ot-inspector" aria-label={labels.details}>
-            {node ? (
+            {view.selected.length > 1 ? (
+              <CladeCheck dataset={dataset} view={view} projection={projection} dispatch={dispatch} labels={labels} />
+            ) : node ? (
               <>
                 <h3 className="ot-inspector-title">{node.label}</h3>
                 <dl>
@@ -511,18 +526,19 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
                     {view.focus === node.id ? labels.unfocus : labels.focus}
                   </button>
                 </div>
+                {(view.target.kind === 'classification' && dataset.snapshot.phylogenies.length > 0) && <CladeCheck dataset={dataset} view={view} projection={projection} dispatch={dispatch} labels={labels} single />}
                 {renderDetails?.(node.id)}
               </>
             ) : (
               <p className="ot-hint">
                 <Icon name="info" />
-                {labels.nothingSelected} {labels.dragHint}
+                {labels.nothingSelected} {labels.dragHint} {labels.multiHint}
               </p>
             )}
           </section>
         </div>
       </div>
-      <Legend layout={layout} highlights={view.highlights} labels={labels} trait={traits.find((tr) => tr.id === overlays.trait)} support={Boolean(overlays.support)} />
+      <Legend layout={layout} highlights={view.highlights} labels={labels} trait={traits.find((tr) => tr.id === overlays.trait)} support={Boolean(overlays.support)} onRemoveHighlight={(id) => dispatch({ type: 'removeHighlight', id })} />
       <details className="ot-about">
         <summary>
           <Icon name="book" />
@@ -544,6 +560,88 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
           </>
         )}
       </details>
+    </div>
+  )
+}
+
+const PALETTE = ['#cf8137', '#2f7d5c', '#91645d', '#3b6fb6', '#b9a8d9', '#d9a400']
+
+/**
+ * The clade selector: check whether the selected taxa form a clade in the hypothesis
+ * (or, for one taxon of a classification, in a chosen phylogeny), with the reason in
+ * words, then keep it as a highlight: a clade only when supported, otherwise a group.
+ */
+function CladeCheck({ dataset, view, projection, dispatch, labels, single = false }: { dataset: DatasetIndex; view: TaxonomicView; projection: Projection; dispatch: (a: ViewAction) => void; labels: ExplorerLabels; single?: boolean }) {
+  const phylogenies = dataset.snapshot.phylogenies
+  const [against, setAgainst] = useState(phylogenies[0]?.id ?? '')
+  const [name, setName] = useState('')
+  const members = view.selected
+  const result = useMemo(() => {
+    if (view.target.kind === 'classification' && members.length !== 1) return null
+    return makeHighlight(dataset, view, { id: `h-${members.join('-')}`, label: name || members.map((m) => projection.nodes.find((n) => n.id === m)?.label ?? m).join(', '), members, ...(view.target.kind === 'classification' && against ? { hypothesis: against } : {}) })
+  }, [dataset, view, members, name, against, projection])
+  const words = result?.assessment ? describeAssessment(dataset, result.assessment) : null
+  const nameOf = (id: Id) => projection.nodes.find((n) => n.id === id)?.label ?? id
+  return (
+    <div className="ot-clade-check" data-status={result?.assessment?.status}>
+      {!single && (
+        <>
+          <h3 className="ot-inspector-title">
+            {labels.selection} ({members.length})
+          </h3>
+          <p className="ot-selection">{members.map(nameOf).join(', ')}</p>
+        </>
+      )}
+      {view.target.kind === 'classification' && (
+        <label className="ot-select">
+          <span>{labels.checkAgainst}</span>
+          <select value={against} onChange={(e) => setAgainst(e.target.value)}>
+            {phylogenies.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
+      {words && (
+        <div className="ot-assessment-box" role="status">
+          <p>
+            <strong>{labels.checkClade}</strong> {words.headline}
+          </p>
+          {words.details.map((d, i) => (
+            <p key={i} className="ot-hint">
+              {d}
+            </p>
+          ))}
+        </div>
+      )}
+      {result && (
+        <form
+          className="ot-inspector-actions"
+          onSubmit={(e) => {
+            e.preventDefault()
+            const id = `h${Date.now().toString(36)}`
+            dispatch({ type: 'addHighlight', highlight: { ...result, id, color: PALETTE[view.highlights.length % PALETTE.length]! } })
+            setName('')
+          }}
+        >
+          <label className="ot-select">
+            <span>{labels.highlightName}</span>
+            <input value={name} onChange={(e) => setName(e.target.value)} placeholder={result.label} />
+          </label>
+          <button type="submit">
+            <Icon name="palette" />
+            {labels.addHighlight} ({result.kind === 'clade' ? labels.clade : labels.group})
+          </button>
+        </form>
+      )}
+      {!single && (
+        <button type="button" onClick={() => dispatch({ type: 'select', nodes: [] })}>
+          <Icon name="close" />
+          {labels.clearSelection}
+        </button>
+      )}
     </div>
   )
 }
@@ -588,7 +686,7 @@ function NodeFacts({ details, labels }: { details: NonNullable<ReturnType<typeof
 const viewChildren = (dataset: DatasetIndex, view: TaxonomicView, id: Id): readonly Id[] =>
   (view.target.kind === 'classification' ? dataset.classification(view.target.id) : dataset.phylogeny(view.target.id)).children.get(id) ?? []
 
-function HighlightList({ highlights, labels }: { highlights: Highlight[]; labels: Pick<ExplorerLabels, 'clade' | 'group'> }) {
+function HighlightList({ highlights, labels, onRemove }: { highlights: Highlight[]; labels: Pick<ExplorerLabels, 'clade' | 'group'> & Partial<Pick<ExplorerLabels, 'remove'>>; onRemove?: (id: Id) => void }) {
   if (!highlights.length) return null
   return (
     <ul className="ot-highlights">
@@ -601,6 +699,11 @@ function HighlightList({ highlights, labels }: { highlights: Highlight[]; labels
               {' '}
               ({h.assessment.status}, {h.assessment.hypothesis.id} v{h.assessment.hypothesis.version})
             </span>
+          )}
+          {onRemove && (
+            <button type="button" className="ot-remove" onClick={() => onRemove(h.id)} aria-label={`${labels.remove ?? 'Remove'} ${h.label}`} title={labels.remove}>
+              <Icon name="close" size={12} />
+            </button>
           )}
         </li>
       ))}
@@ -615,19 +718,21 @@ export function Legend({
   labels: custom,
   trait,
   support,
+  onRemoveHighlight,
 }: {
   layout: TreeLayout
   highlights: Highlight[]
-  labels?: Partial<Pick<ExplorerLabels, 'clade' | 'group' | 'noStatedValue' | 'weakSupport' | 'mixed'>>
+  labels?: Partial<Pick<ExplorerLabels, 'clade' | 'group' | 'noStatedValue' | 'weakSupport' | 'mixed' | 'remove'>>
   /** The trait set the drawing is colored by (its states become legend entries). */
   trait?: TraitSet | undefined
   support?: boolean
+  onRemoveHighlight?: (id: Id) => void
 }) {
-  const labels = { clade: LABELS.clade, group: LABELS.group, noStatedValue: LABELS.noStatedValue, weakSupport: LABELS.weakSupport, mixed: LABELS.mixed, ...custom }
+  const labels = { clade: LABELS.clade, group: LABELS.group, noStatedValue: LABELS.noStatedValue, weakSupport: LABELS.weakSupport, mixed: LABELS.mixed, remove: LABELS.remove, ...custom }
   return (
     <div className="ot-legend">
       <p className="ot-notice">{layout.notice}</p>
-      <HighlightList highlights={highlights} labels={labels} />
+      <HighlightList highlights={highlights} labels={labels} {...(onRemoveHighlight ? { onRemove: onRemoveHighlight } : {})} />
       {trait && (
         <ul className="ot-legend-traits" aria-label={trait.title}>
           {trait.states.map((s) => (
