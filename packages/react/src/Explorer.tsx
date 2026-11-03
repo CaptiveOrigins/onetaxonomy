@@ -368,13 +368,13 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
         {(hasSupport || hasExtinct || traits.length > 0) && <span className="ot-toolbar-gap" aria-hidden="true" />}
         {hasSupport && (
           <button type="button" aria-pressed={Boolean(overlays.support)} onClick={() => { const { support, ...rest } = overlays; setOverlays(support ? rest : { ...rest, support: {} }) }}>
-            <Icon name="check" />
+            <Icon name="support" />
             {labels.support}
           </button>
         )}
         {hasExtinct && (
           <button type="button" aria-pressed={Boolean(overlays.extinction)} onClick={() => { const { extinction, ...rest } = overlays; setOverlays(extinction ? rest : { ...rest, extinction: true }) }}>
-            <Icon name="dagger" />
+            <Icon name="fossil" />
             {labels.extinction}
           </button>
         )}
@@ -419,17 +419,17 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
           onKeyDown={onKeyDown}
         >
           <div className="ot-floating" role="toolbar" aria-label={labels.controls}>
-            <button type="button" onClick={() => zoom(0.8)} aria-label={labels.zoomIn} title={labels.zoomIn}>
-              <Icon name="plus" />
+            <button type="button" onClick={() => zoom(0.8)} aria-label={labels.zoomIn} data-tip={labels.zoomIn}>
+              <Icon name="zoomIn" />
             </button>
-            <button type="button" onClick={() => zoom(1.25)} aria-label={labels.zoomOut} title={labels.zoomOut}>
-              <Icon name="minus" />
+            <button type="button" onClick={() => zoom(1.25)} aria-label={labels.zoomOut} data-tip={labels.zoomOut}>
+              <Icon name="zoomOut" />
             </button>
-            <button type="button" onClick={() => setBox(null)} aria-label={labels.fit} title={labels.fit}>
+            <button type="button" onClick={() => setBox(null)} aria-label={labels.fit} data-tip={labels.fit}>
               <Icon name="fit" />
             </button>
             <div className="ot-menu">
-              <button type="button" onClick={() => setMenu((m) => !m)} aria-label={labels.download} title={labels.download} aria-expanded={menu} aria-haspopup="menu">
+              <button type="button" onClick={() => setMenu((m) => !m)} aria-label={labels.download} data-tip={labels.download} aria-expanded={menu} aria-haspopup="menu">
                 <Icon name="download" />
               </button>
               {menu && (
@@ -449,7 +449,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
                 </div>
               )}
             </div>
-            <button type="button" onClick={() => printDrawing(canvas.current)} aria-label={labels.print} title={labels.print}>
+            <button type="button" onClick={() => printDrawing(canvas.current)} aria-label={labels.print} data-tip={labels.print}>
               <Icon name="print" />
             </button>
           </div>

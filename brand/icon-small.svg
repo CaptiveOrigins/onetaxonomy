@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="ot-ts">
+  <title id="ot-ts">OneTaxonomy</title>
+  <!-- Small sizes (16–32 px: menu bar, lists, favicons): the same tile and glyph without the heart badge,
+       a larger tile, one fewer bracket and heavier lines so it stays legible. Use brand/icon.svg from 64 px up. -->
+  <defs>
+    <linearGradient id="ot-gs" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f8d6d7" />
+      <stop offset="1" stop-color="#eda9ac" />
+    </linearGradient>
+  </defs>
+  <rect x="16" y="16" width="992" height="992" rx="220" fill="url(#ot-gs)" />
+  <path d="M300 512H420M420 262V762M420 262H560M420 512H560M420 762H560" fill="none" stroke="#4c312c" stroke-width="72" stroke-linecap="round" stroke-linejoin="round" />
+  <g fill="#fbf8f2" stroke="#4c312c" stroke-width="20">
+    <rect x="122" y="432" width="178" height="160" rx="52" />
+    <rect x="560" y="182" width="320" height="160" rx="52" />
+    <rect x="560" y="432" width="320" height="160" rx="52" />
+    <rect x="560" y="682" width="320" height="160" rx="52" />
+  </g>
+</svg>

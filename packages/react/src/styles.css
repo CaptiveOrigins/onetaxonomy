@@ -138,3 +138,10 @@
 @media (prefers-reduced-motion: no-preference) {
   .ot-node:not([data-dragging]) { transition: transform 150ms ease; }
 }
+/* Visible tooltips for icon-only buttons, on hover and on keyboard focus (title= shows on hover only). */
+.ot-floating [data-tip] { position: relative; }
+.ot-floating [data-tip]:is(:hover, :focus-visible)::after {
+  content: attr(data-tip); position: absolute; top: calc(100% + 6px); right: 0; z-index: 2; white-space: nowrap; pointer-events: none;
+  padding: 4px 8px; border-radius: 6px; background: var(--ot-ink); color: var(--ot-surface); font-size: 12px; line-height: 1.3;
+}
+.ot-floating .ot-menu:has(.ot-menu-list) [data-tip]::after { display: none; }
