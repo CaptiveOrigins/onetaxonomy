@@ -42,6 +42,12 @@ importers:
         specifier: workspace:^
         version: link:../core
 
+  packages/layout:
+    dependencies:
+      '@captiveorigins/onetaxonomy-core':
+        specifier: workspace:^
+        version: link:../core
+
 packages:
 
   '@esbuild/aix-ppc64@0.27.7':

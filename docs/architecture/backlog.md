@@ -39,13 +39,13 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 ## M4 — Views, layout, React viewer (next)
 
-- [ ] `TaxonomicView` + `ViewAction` reducer (`applyViewAction`), undo/redo, `serializeView`, `validateView`, `projectView`
-- [ ] Filters (status incl. unknown, rank, geography, traits, period, source, custom) that disclose hidden counts
-- [ ] Highlights: `group` vs validated `clade` (I3)
-- [ ] `@captiveorigins/onetaxonomy-layout`: rectangular cladogram, radial, phylogram/time-scaled only when valid, classification sunburst (labelled as classification)
+- [x] `TaxonomicView` + `ViewAction` reducer (`applyViewAction`), undo/redo, `serializeView`, `validateView`, `projectView`
+- [x] Filters (status incl. unknown, rank, geography, traits, period, source, custom) that disclose hidden counts
+- [x] Highlights: `group` vs validated `clade` (I3)
+- [x] `@captiveorigins/onetaxonomy-layout`: rectangular cladogram, radial, phylogram/time-scaled only when valid, classification sunburst (labelled as classification)
 - [ ] `@captiveorigins/onetaxonomy-react`: provider, tree viewer (Canvas/SVG with level of detail), inspector, clade selector, view controls; keyboard and screen-reader navigation; reduced motion
 - [ ] `apps/playground`
-- [ ] Acceptance: drag/collapse/filter/rotate with undo/redo; snapshot checksum unchanged
+- [x] Acceptance (core): drag/collapse/filter/rotate with undo/redo; snapshot checksum unchanged (`view.test.ts`); the same through the React viewer remains
 
 ## M5 — Profiles, overlays, exports, education
 

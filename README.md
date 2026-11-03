@@ -18,9 +18,10 @@ The full rules are in [scientific invariants](docs/architecture/scientific-invar
 
 | Package | What it does | Status |
 | --- | --- | --- |
-| [`@captiveorigins/onetaxonomy-core`](packages/core) | Records, validation, bounded traversal, MRCA, tri-state monophyly, curated selections, coverage reports, snapshot checksums and diffs, JSON Schema. No dependencies; runs anywhere. | Working |
+| [`@captiveorigins/onetaxonomy-core`](packages/core) | Records, validation, bounded traversal, MRCA, tri-state monophyly, curated selections, coverage reports, snapshot checksums and diffs, views (actions, undo/redo, filters, highlights, projection), JSON Schema. No dependencies; runs anywhere. | Working |
 | [`@captiveorigins/onetaxonomy-import`](packages/import) | Source adapters (CSV/TSV, Darwin Core Archive, JSON, Newick), reconciliation, selective imports, community presets | Working |
-| `@captiveorigins/onetaxonomy-layout`, `-react`, `-education`, `@captiveorigins/payload-plugin-onetaxonomy` | Layouts, React viewer, lessons, Payload plugin | Planned |
+| [`@captiveorigins/onetaxonomy-layout`](packages/layout) | Rectangular, phylogram/time (only when valid), radial and sunburst layouts as plain coordinates | Working |
+| `@captiveorigins/onetaxonomy-react`, `-education`, `@captiveorigins/payload-plugin-onetaxonomy` | React viewer, lessons, Payload plugin | Planned |
 | `apps/studio` | Offline macOS studio (Tauri 2) | Planned |
 
 ## Try it
