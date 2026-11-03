@@ -9,4 +9,4 @@
 | [0005](0005-source-ownership.md) | Sources belong to the project owner; OneTaxonomy ships adapters, not data | Accepted |
 | [0006](0006-view-actions.md) | Views change only through serializable actions | Accepted (implemented in M4) |
 | [0007](0007-releases.md) | Lockstep versions; tag releases staged on npm, approved by a maintainer (instead of Changesets) | Accepted |
-| [0008](0008-package-scope.md) | npm scope `@onetaxonomy` | Proposed: needs the owner |
+| [0008](0008-package-scope.md) | npm names `@captiveorigins/onetaxonomy-*` | Accepted (owner) |

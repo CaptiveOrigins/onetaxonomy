@@ -1,6 +1,6 @@
 # Data schema (version 1)
 
-The TypeScript types in [`packages/core/src/model.ts`](../../packages/core/src/model.ts) are the definitive schema; this page explains them. All records are plain JSON: ISO date strings, no `Map`s or classes. `schemaVersion` changes only with a migration in `@onetaxonomy/import`.
+The TypeScript types in [`packages/core/src/model.ts`](../../packages/core/src/model.ts) are the definitive schema; this page explains them. All records are plain JSON: ISO date strings, no `Map`s or classes. `schemaVersion` changes only with a migration in `@captiveorigins/onetaxonomy-import`.
 
 ## Identity
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { findMRCA, indexPhylogeny, isMonophyletic, validateDataset, type DatasetSnapshot } from '@onetaxonomy/core'
+import { findMRCA, indexPhylogeny, isMonophyletic, validateDataset, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
 
 import { NewickError, parseNewick, toNewick } from '../src'
 

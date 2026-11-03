@@ -1,11 +1,11 @@
-# @onetaxonomy/import
+# @captiveorigins/onetaxonomy-import
 
 Readers, writers and (soon) source adapters and curated imports for OneTaxonomy. It ships no data: you bring your sources.
 
 ## Newick
 
 ```js
-import { parseNewick, toNewick } from '@onetaxonomy/import'
+import { parseNewick, toNewick } from '@captiveorigins/onetaxonomy-import'
 
 const tree = parseNewick("((A_b:0.1,'C d':0.2)95:0.05,F:1e-3);", {
   id: 'my-tree', title: 'My tree', version: '1', sources: ['my-source'],

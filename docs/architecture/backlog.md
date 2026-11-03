@@ -9,7 +9,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] ADRs 0001–0008
 - [x] Illustrative fixtures: classification forest + conflicting hypotheses (amniotes); polytomy, forest, unrooted, fossil/time-calibrated, split names (structures)
 - [x] Release workflow (tag → staged npm publish → owner approval), lockstep versions
-- [ ] **(owner)** Create the GitHub repository `mgilardi/onetaxonomy` and push; create the npm organization `onetaxonomy` (or decide another scope, ADR 0008)
+- [x] GitHub repository `mgilardi/onetaxonomy` (public); npm names `@captiveorigins/onetaxonomy-*` (ADR 0008)
 
 ## M2 — Core model, parser, validation, traversal ✅
 
@@ -19,7 +19,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] `validateDataset` diagnostics: duplicates, dangling refs, missing sources, cycles, multiple parents, self-edges, units, time calibration
 - [x] Snapshot sealing: canonical JSON, pure SHA-256 checksum, deep freeze, verification
 - [x] Name lookup with ambiguity (`findByName`)
-- [x] Newick reader/writer (`@onetaxonomy/import`): quoting, comments, support, rooting stated explicitly, explicit concept mapping
+- [x] Newick reader/writer (`@captiveorigins/onetaxonomy-import`): quoting, comments, support, rooting stated explicitly, explicit concept mapping
 - [x] Runnable example (`examples/`)
 - [ ] JSON Schema export of the record types (for non-TypeScript consumers) → M3
 
@@ -42,8 +42,8 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [ ] `TaxonomicView` + `ViewAction` reducer (`applyViewAction`), undo/redo, `serializeView`, `validateView`, `projectView`
 - [ ] Filters (status incl. unknown, rank, geography, traits, period, source, custom) that disclose hidden counts
 - [ ] Highlights: `group` vs validated `clade` (I3)
-- [ ] `@onetaxonomy/layout`: rectangular cladogram, radial, phylogram/time-scaled only when valid, classification sunburst (labelled as classification)
-- [ ] `@onetaxonomy/react`: provider, tree viewer (Canvas/SVG with level of detail), inspector, clade selector, view controls; keyboard and screen-reader navigation; reduced motion
+- [ ] `@captiveorigins/onetaxonomy-layout`: rectangular cladogram, radial, phylogram/time-scaled only when valid, classification sunburst (labelled as classification)
+- [ ] `@captiveorigins/onetaxonomy-react`: provider, tree viewer (Canvas/SVG with level of detail), inspector, clade selector, view controls; keyboard and screen-reader navigation; reduced motion
 - [ ] `apps/playground`
 - [ ] Acceptance: drag/collapse/filter/rotate with undo/redo; snapshot checksum unchanged
 
@@ -51,7 +51,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 - [ ] Profiles and evidence in the inspector; support, fossil, extinction and trait overlays; citations
 - [ ] Export SVG/PNG/PDF (labelled classification vs phylogeny, hidden branches disclosed), JSON view, embeds
-- [ ] `@onetaxonomy/education`: scenes, annotations, camera states, reveal animations, lesson decks, worksheets; Explore vs Studio modes
+- [ ] `@captiveorigins/onetaxonomy-education`: scenes, annotations, camera states, reveal animations, lesson decks, worksheets; Explore vs Studio modes
 
 ## M6 — Studio (macOS)
 
@@ -61,7 +61,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 ## M7 — Payload plugin
 
-- [ ] `@onetaxonomy/payload` with configurable slugs, locale, permissions, optional tenant scope, source adapters
+- [ ] `@captiveorigins/payload-plugin-onetaxonomy` with configurable slugs, locale, permissions, optional tenant scope, source adapters
 - [ ] Admin views: import progress, conflicts, curation preview, tree authoring, profiles, publishing, lessons
 - [ ] Bounded API: search, ancestors/descendants, MRCA, coverage, projected views, exports; access checks; cross-tenant denial tests
 - [ ] Resumable, idempotent import jobs
@@ -77,4 +77,4 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 ## Phase 2 (not started by design)
 
-- [ ] `@onetaxonomy/live` protocol and client; `services/live-server`; session codes; challenges evaluated by core
+- [ ] `@captiveorigins/onetaxonomy-live` protocol and client; `services/live-server`; session codes; challenges evaluated by core

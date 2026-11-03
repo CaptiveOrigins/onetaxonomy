@@ -23,10 +23,10 @@ importers:
 
   examples:
     dependencies:
-      '@onetaxonomy/core':
+      '@captiveorigins/onetaxonomy-core':
         specifier: workspace:^
         version: link:../packages/core
-      '@onetaxonomy/import':
+      '@captiveorigins/onetaxonomy-import':
         specifier: workspace:^
         version: link:../packages/import
 
@@ -34,7 +34,7 @@ importers:
 
   packages/import:
     dependencies:
-      '@onetaxonomy/core':
+      '@captiveorigins/onetaxonomy-core':
         specifier: workspace:^
         version: link:../core
 

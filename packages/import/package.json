@@ -1,5 +1,5 @@
 {
-  "name": "@onetaxonomy/import",
+  "name": "@captiveorigins/onetaxonomy-import",
   "version": "0.1.0-alpha.0",
   "description": "OneTaxonomy import: source-agnostic readers and writers (Newick so far; JSON, CSV, Darwin Core Archive and more planned), source adapters, reconciliation and curated selective imports with provenance.",
   "keywords": ["taxonomy", "phylogeny", "newick", "darwin-core", "import", "biodiversity"],
@@ -20,5 +20,5 @@
     "test": "vitest run",
     "prepack": "pnpm run build"
   },
-  "dependencies": { "@onetaxonomy/core": "workspace:^" }
+  "dependencies": { "@captiveorigins/onetaxonomy-core": "workspace:^" }
 }

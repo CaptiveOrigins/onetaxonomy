@@ -6,7 +6,7 @@ One description everywhere: each `package.json` (`description`, `keywords`) is t
 2. The Release workflow builds, tests and **stages** every package on npm (trusted publishing, no stored token). Prereleases go to the `alpha` dist-tag.
 3. The maintainer account approves each with 2FA: npmjs.com → avatar → **Staged Packages** → **Approve**, or `npm stage list` then `npm stage approve <id>`. Only then are they public.
 
-The first version of each package is published by hand (`npm publish --access public` in the package folder), because npm can only trust a workflow for a package that exists; then, once per package:
+The first version of each package is published by hand (`pnpm publish --access public` in each `packages/*` folder, `core` first; pnpm turns `workspace:^` into the real version), because npm can only trust a workflow for a package that exists; then, once per package:
 
 ```bash
 npm trust github <package-name> --repo mgilardi/onetaxonomy --file release.yml --allow-stage-publish --yes

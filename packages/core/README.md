@@ -1,9 +1,9 @@
-# @onetaxonomy/core
+# @captiveorigins/onetaxonomy-core
 
 The scientific core of OneTaxonomy: taxon concepts, names, classifications and phylogenetic hypotheses, with validation, bounded traversal, MRCA and **tri-state monophyly**. No dependencies; no DOM, Node, React, CMS or database. It runs in browsers, Node, workers and desktop webviews.
 
 ```js
-import { assessTaxon, findMRCA, indexDataset, isMonophyletic, sealSnapshot, validateDataset } from '@onetaxonomy/core'
+import { assessTaxon, findMRCA, indexDataset, isMonophyletic, sealSnapshot, validateDataset } from '@captiveorigins/onetaxonomy-core'
 
 const problems = validateDataset(snapshot)          // diagnostics; nothing is repaired silently
 const sealed = sealSnapshot(snapshot)               // checksummed and frozen

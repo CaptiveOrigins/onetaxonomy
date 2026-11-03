@@ -1,4 +1,4 @@
-import type { Id, LengthUnit, Phylogeny, PhyloEdge, PhyloNode } from '@onetaxonomy/core'
+import type { Id, LengthUnit, Phylogeny, PhyloEdge, PhyloNode } from '@captiveorigins/onetaxonomy-core'
 
 export type NewickOptions = {
   id: Id

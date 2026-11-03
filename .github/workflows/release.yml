@@ -1,4 +1,4 @@
-# Release: pushing a version tag (vX.Y.Z) builds, tests and *stages* every @onetaxonomy package on npm.
+# Release: pushing a version tag (vX.Y.Z) builds, tests and *stages* every OneTaxonomy package on npm.
 # Nothing goes public until the maintainer npm account approves each with 2FA
 # (npmjs.com → your avatar → Staged Packages → Approve, or `npm stage approve <id>`).
 # No token is stored: npm trusted publishing (OIDC) lets only this workflow stage.

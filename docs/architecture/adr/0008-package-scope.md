@@ -1,7 +1,7 @@
-# 0008 — npm scope `@onetaxonomy` (proposed)
+# 0008 — npm names `@captiveorigins/onetaxonomy-*`
 
-**Context.** The specification names packages `@onetaxonomy/*`. The owner's other frameworks publish under `@captiveorigins` (e.g. `@captiveorigins/onepedigree-core`), which ties them to one application by name, against OneTaxonomy's independence goal.
+**Context.** The specification names packages `@onetaxonomy/*`, which would need a separate npm organization. The owner's other framework, OnePedigree, publishes under the existing `@captiveorigins` scope (`@captiveorigins/onepedigree-core`, `-react`, `@captiveorigins/payload-plugin-onepedigree`).
 
-**Decision (proposed).** Use `@onetaxonomy/*` as specified. Publishing needs a free npm organization named `onetaxonomy` owned by the maintainer account. If the owner prefers `@captiveorigins/onetaxonomy-*` for consistency with OnePedigree, rename before the first publish (names only; no code changes).
+**Decision (owner, 2026-11-02).** Follow OnePedigree: `@captiveorigins/onetaxonomy-core`, `-import`, `-layout`, `-react`, `-education` (and `-live` in Phase 2), and the Payload plugin `@captiveorigins/payload-plugin-onetaxonomy`. The scope is only a publisher namespace: the code stays independent of Captive Origins (ADR 0002) and imports nothing from it.
 
-**Status.** Waiting for the owner. Nothing has been published.
+**Consequences.** One npm account and one trusted-publisher setup for all of the owner's packages. Moving to a dedicated scope later means publishing under new names and deprecating these.

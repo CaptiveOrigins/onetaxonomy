@@ -1,5 +1,5 @@
 {
-  "name": "@onetaxonomy/examples",
+  "name": "@captiveorigins/onetaxonomy-examples",
   "private": true,
   "type": "module",
   "scripts": {
@@ -7,7 +7,7 @@
     "test": "node reptilia-is-not-a-clade.mjs > /dev/null && node newick.mjs > /dev/null"
   },
   "dependencies": {
-    "@onetaxonomy/core": "workspace:^",
-    "@onetaxonomy/import": "workspace:^"
+    "@captiveorigins/onetaxonomy-core": "workspace:^",
+    "@captiveorigins/onetaxonomy-import": "workspace:^"
   }
 }

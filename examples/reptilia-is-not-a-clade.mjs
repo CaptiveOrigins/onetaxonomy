@@ -1,7 +1,7 @@
 // Is traditional class Reptilia a clade? Ask each hypothesis, not the classification.
-// Run: pnpm build && pnpm --filter @onetaxonomy/examples start
+// Run: pnpm build && pnpm --filter @captiveorigins/onetaxonomy-examples start
 import { readFileSync } from 'node:fs'
-import { assessTaxon, findMRCA, indexDataset, isMonophyletic, validateDataset } from '@onetaxonomy/core'
+import { assessTaxon, findMRCA, indexDataset, isMonophyletic, validateDataset } from '@captiveorigins/onetaxonomy-core'
 
 const snapshot = JSON.parse(readFileSync(new URL('../fixtures/amniotes.json', import.meta.url), 'utf8'))
 for (const d of validateDataset(snapshot)) console.log(`[${d.severity}] ${d.message}`)

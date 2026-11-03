@@ -2,7 +2,7 @@
 
 An open-source framework for importing, curating, browsing and publishing **scientifically faithful** taxonomic classifications and phylogenetic trees: for developers, and for teachers, museums, researchers and animal keepers who don't write code.
 
-> **Status: early (Phase 1, milestone 2 of 8).** The pure TypeScript core and the Newick reader/writer work and are tested. Curation, views, the React viewer, the Payload plugin and the macOS Studio are planned; see [the phase plan](docs/architecture/phase-plan.md). Nothing is published to npm yet.
+> **Status: early (Phase 1, milestone 2 of 8).** The pure TypeScript core and the Newick reader/writer work and are tested. Curation, views, the React viewer, the Payload plugin and the macOS Studio are planned; see [the phase plan](docs/architecture/phase-plan.md). Packages: `@captiveorigins/onetaxonomy-core` and `@captiveorigins/onetaxonomy-import` (not on npm yet).
 
 ## Principles
 
@@ -18,9 +18,9 @@ The full rules are in [scientific invariants](docs/architecture/scientific-invar
 
 | Package | What it does | Status |
 | --- | --- | --- |
-| [`@onetaxonomy/core`](packages/core) | Records, validation, bounded traversal, MRCA, tri-state monophyly, snapshot checksums. No dependencies; runs anywhere. | Working |
-| [`@onetaxonomy/import`](packages/import) | Format readers and writers (Newick so far), source adapters, curation | Newick working |
-| `@onetaxonomy/layout`, `react`, `education`, `payload` | Layouts, React viewer, lessons, Payload plugin | Planned |
+| [`@captiveorigins/onetaxonomy-core`](packages/core) | Records, validation, bounded traversal, MRCA, tri-state monophyly, snapshot checksums. No dependencies; runs anywhere. | Working |
+| [`@captiveorigins/onetaxonomy-import`](packages/import) | Format readers and writers (Newick so far), source adapters, curation | Newick working |
+| `@captiveorigins/onetaxonomy-layout`, `react`, `education`, `payload` | Layouts, React viewer, lessons, Payload plugin | Planned |
 | `apps/studio` | Offline macOS studio (Tauri 2) | Planned |
 
 ## Try it
@@ -29,11 +29,11 @@ The full rules are in [scientific invariants](docs/architecture/scientific-invar
 pnpm install
 pnpm build
 pnpm test
-pnpm --filter @onetaxonomy/examples start
+pnpm --filter @captiveorigins/onetaxonomy-examples start
 ```
 
 ```js
-import { assessTaxon, indexDataset } from '@onetaxonomy/core'
+import { assessTaxon, indexDataset } from '@captiveorigins/onetaxonomy-core'
 
 const data = indexDataset(snapshot)
 const result = assessTaxon(data.classification('traditional'), 'c:reptilia', data.phylogeny('archelosauria'))
