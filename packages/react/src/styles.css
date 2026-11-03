@@ -1,0 +1,70 @@
+/*
+ * OneTaxonomy default styles. Optional: skip this file and style the stable
+ * .ot-* classes and data-* attributes yourself, or override the custom properties.
+ */
+.ot-root,
+.ot-explorer {
+  --ot-font: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --ot-text: #1d2330;
+  --ot-muted: #5b6577;
+  --ot-edge: #8892a6;
+  --ot-edge-width: 1.5px;
+  --ot-node: #3d4a5f;
+  --ot-selected: #d97706;
+  --ot-surface: #ffffff;
+  --ot-border: #d5dbe5;
+  --ot-focus: #2563eb;
+  font-family: var(--ot-font);
+  color: var(--ot-text);
+}
+@media (prefers-color-scheme: dark) {
+  .ot-root,
+  .ot-explorer {
+    --ot-text: #eef1f6;
+    --ot-muted: #a7b0c0;
+    --ot-edge: #6f7a8e;
+    --ot-node: #c3cad6;
+    --ot-surface: #161a22;
+    --ot-border: #2d3442;
+    --ot-focus: #60a5fa;
+  }
+}
+.ot-root { width: 100%; height: 100%; overflow: visible; }
+.ot-edge { fill: none; stroke: var(--ot-edge); stroke-width: var(--ot-edge-width); }
+.ot-node-dot, .ot-node-collapsed { fill: var(--ot-node); }
+.ot-node-halo { opacity: 0.35; }
+.ot-label { fill: var(--ot-text); font-size: 12px; }
+.ot-label[data-italic] { font-style: italic; }
+.ot-node[data-status='extinct'] .ot-node-dot { fill: none; stroke: var(--ot-node); }
+.ot-node[data-selected] .ot-label { fill: var(--ot-selected); font-weight: 600; }
+.ot-node[role='button'] { cursor: pointer; }
+.ot-node:focus-visible { outline: 2px solid var(--ot-focus); }
+.ot-axis-line, .ot-axis-tick { stroke: var(--ot-muted); }
+.ot-axis-label, .ot-axis-unit { fill: var(--ot-muted); font-size: 11px; }
+
+.ot-toolbar { display: flex; flex-wrap: wrap; gap: 0.5rem; align-items: center; margin-bottom: 0.5rem; }
+.ot-toolbar button, .ot-inspector button { font: inherit; padding: 0.25rem 0.6rem; border: 1px solid var(--ot-border); border-radius: 0.375rem; background: var(--ot-surface); color: inherit; cursor: pointer; }
+.ot-toolbar button:disabled { opacity: 0.5; cursor: default; }
+.ot-panes { display: grid; grid-template-columns: minmax(0, 2fr) minmax(14rem, 1fr); gap: 1rem; }
+@media (max-width: 48rem) { .ot-panes { grid-template-columns: 1fr; } }
+.ot-canvas { overflow: auto; border: 1px solid var(--ot-border); border-radius: 0.5rem; background: var(--ot-surface); }
+.ot-side { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
+.ot-outline, .ot-outline ul { list-style: none; margin: 0; padding-inline-start: 1rem; }
+.ot-outline { padding: 0; max-height: 20rem; overflow: auto; }
+.ot-outline-item:focus { outline: none; }
+.ot-outline-item:focus-visible > .ot-outline-row { outline: 2px solid var(--ot-focus); border-radius: 0.25rem; }
+.ot-outline-item[aria-selected='true'] > .ot-outline-row { font-weight: 600; color: var(--ot-selected); }
+.ot-outline-row { display: inline-flex; gap: 0.25rem; align-items: baseline; cursor: pointer; }
+.ot-outline-label[data-unnamed] { color: var(--ot-muted); font-style: italic; }
+.ot-outline-twisty { display: inline-block; width: 1rem; text-align: center; }
+.ot-outline-hidden, .ot-assessment, .ot-notice { color: var(--ot-muted); font-size: 0.875em; }
+.ot-inspector dl { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; margin: 0.5rem 0; }
+.ot-inspector dt { color: var(--ot-muted); }
+.ot-inspector dd { margin: 0; }
+.ot-inspector-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+.ot-highlights { list-style: none; padding: 0; margin: 0.5rem 0; }
+.ot-swatch { display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 50%; margin-inline-end: 0.375rem; background: var(--ot-muted); }
+.ot-error { color: #b91c1c; }
+@media (prefers-reduced-motion: no-preference) {
+  .ot-edge, .ot-node { transition: transform 150ms ease, d 150ms ease; }
+}

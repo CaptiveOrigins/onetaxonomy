@@ -1,0 +1,16 @@
+{
+  "name": "@captiveorigins/onetaxonomy-playground",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "esbuild app.tsx --bundle --format=iife --minify --outfile=dist/app.js --jsx=automatic --define:process.env.NODE_ENV='\"production\"' && cp index.html dist/ && cp ../../packages/react/src/styles.css dist/"
+  },
+  "dependencies": {
+    "@captiveorigins/onetaxonomy-core": "workspace:^",
+    "@captiveorigins/onetaxonomy-layout": "workspace:^",
+    "@captiveorigins/onetaxonomy-react": "workspace:^",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": { "esbuild": "^0.25.0" }
+}

@@ -7,8 +7,8 @@ Work proceeds in **vertical slices**: each milestone ships runnable code, tests,
 | 1 | 1 | Monorepo, contracts, fixture sources, ADRs | Tests run; architecture and source-ownership constraints documented | **Done** (2026-11-02) |
 | 2 | 1 | Pure core model, hierarchy/phylogeny parser, validation, traversals | Conflicting trees, forest, polytomy, unrooted tree and fossil examples behave correctly | **Done** (2026-11-02): core + Newick; JSON schema export and Nexus/phyloXML move to M3/M8 |
 | 3 | 1 | Import adapters, curation, snapshot management | Select three nonadjacent taxa, import only those plus ancestor paths; show omitted-branch coverage | **Done** (2026-11-02): `examples/selective-import.mjs` |
-| 4 | 1 | Serializable views, React viewer, layouts, interactions | Drag/collapse/filter/rotate with undo/redo; underlying graph checksum unchanged | **In progress**: views, projection and layouts done (2026-11-02); React viewer and playground next |
-| 5 | 1 | Profiles, overlays, exports, lessons/presets | Accurate diagrams and a portable view; reopening reproduces the same scientific references | Planned |
+| 4 | 1 | Serializable views, React viewer, layouts, interactions | Drag/collapse/filter/rotate with undo/redo; underlying graph checksum unchanged | **Done** (2026-11-02): core views, layouts, React explorer, `apps/playground`. Canvas level-of-detail rendering for very large trees moves to M8 |
+| 5 | 1 | Profiles, overlays, exports, lessons/presets | Accurate diagrams and a portable view; reopening reproduces the same scientific references | Next |
 | 6 | 1 | Studio for macOS, end to end | Import → curate → explore → save → close → reopen → export, all offline | Planned |
 | 7 | 1 | Payload plugin and example app | Install via plugin, curate in admin, React viewer on a public page, tenant isolation verified | Planned |
 | 8 | 1 | Science and performance polish | Alternative hypotheses, dating where valid, trait method, accessibility, large-tree benchmarks | Planned |

@@ -37,17 +37,18 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] Acceptance demo: three nonadjacent taxa → only those + ancestors, omitted coverage shown
 - [ ] **(owner)** Supply the actual source files/schemas to integrate (taxonomy releases, phylogenies); adapters stay configurable until then
 
-## M4 — Views, layout, React viewer (next)
+## M4 — Views, layout, React viewer ✅
 
 - [x] `TaxonomicView` + `ViewAction` reducer (`applyViewAction`), undo/redo, `serializeView`, `validateView`, `projectView`
 - [x] Filters (status incl. unknown, rank, geography, traits, period, source, custom) that disclose hidden counts
 - [x] Highlights: `group` vs validated `clade` (I3)
 - [x] `@captiveorigins/onetaxonomy-layout`: rectangular cladogram, radial, phylogram/time-scaled only when valid, classification sunburst (labelled as classification)
-- [ ] `@captiveorigins/onetaxonomy-react`: provider, tree viewer (Canvas/SVG with level of detail), inspector, clade selector, view controls; keyboard and screen-reader navigation; reduced motion
-- [ ] `apps/playground`
-- [x] Acceptance (core): drag/collapse/filter/rotate with undo/redo; snapshot checksum unchanged (`view.test.ts`); the same through the React viewer remains
+- [x] `@captiveorigins/onetaxonomy-react`: SVG tree viewer, explorer state hook, inspector, view controls; keyboard and screen-reader navigation; reduced motion
+- [ ] Clade selector UI (pick members, see the assessment) → M5; Canvas rendering with level of detail for very large trees → M8
+- [x] `apps/playground`
+- [x] Acceptance (core): drag/collapse/filter/rotate with undo/redo; snapshot checksum unchanged (`view.test.ts`) and through the explorer (`react.test.tsx`)
 
-## M5 — Profiles, overlays, exports, education
+## M5 — Profiles, overlays, exports, education (next)
 
 - [ ] Profiles and evidence in the inspector; support, fossil, extinction and trait overlays; citations
 - [ ] Export SVG/PNG/PDF (labelled classification vs phylogeny, hidden branches disclosed), JSON view, embeds
@@ -72,6 +73,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [ ] Phylogeny comparison (`comparePhylogenies`), explicit rooting tools, support-threshold collapsing
 - [ ] Deep-time rendering where calibrated; trait overlays; documented discrete-character parsimony (labelled *inferred*)
 - [ ] Nexus and phyloXML adapters
+- [ ] Canvas renderer with level of detail (1–2k visible nodes smoothly)
 - [ ] Benchmarks: 10k+ taxa datasets, 1–2k visible nodes; documented devices/browsers
 - [ ] Accessibility audit
 

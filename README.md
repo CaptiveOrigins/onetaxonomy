@@ -2,7 +2,7 @@
 
 An open-source framework for importing, curating, browsing and publishing **scientifically faithful** taxonomic classifications and phylogenetic trees: for developers, and for teachers, museums, researchers and animal keepers who don't write code.
 
-> **Status: early (Phase 1, milestone 3 of 8).** The pure TypeScript core, the importers (Newick, CSV/TSV checklists, Darwin Core Archives, OneTaxonomy JSON) and curated selective imports with coverage reports work and are tested. Views, the React viewer, the Payload plugin and the macOS Studio are planned; see [the phase plan](docs/architecture/phase-plan.md). Packages: `@captiveorigins/onetaxonomy-core` and `@captiveorigins/onetaxonomy-import` (not on npm yet).
+> **Status: early (Phase 1, milestone 4 of 8).** The pure TypeScript core, the importers (Newick, CSV/TSV checklists, Darwin Core Archives, OneTaxonomy JSON) and curated selective imports with coverage reports, views with undo/redo, layouts and the React explorer work and are tested (see `apps/playground`). Profiles, exports, the React viewer, the Payload plugin and the macOS Studio are planned; see [the phase plan](docs/architecture/phase-plan.md). Packages: `@captiveorigins/onetaxonomy-core` and `@captiveorigins/onetaxonomy-import` (not on npm yet).
 
 ## Principles
 
@@ -21,7 +21,8 @@ The full rules are in [scientific invariants](docs/architecture/scientific-invar
 | [`@captiveorigins/onetaxonomy-core`](packages/core) | Records, validation, bounded traversal, MRCA, tri-state monophyly, curated selections, coverage reports, snapshot checksums and diffs, views (actions, undo/redo, filters, highlights, projection), JSON Schema. No dependencies; runs anywhere. | Working |
 | [`@captiveorigins/onetaxonomy-import`](packages/import) | Source adapters (CSV/TSV, Darwin Core Archive, JSON, Newick), reconciliation, selective imports, community presets | Working |
 | [`@captiveorigins/onetaxonomy-layout`](packages/layout) | Rectangular, phylogram/time (only when valid), radial and sunburst layouts as plain coordinates | Working |
-| `@captiveorigins/onetaxonomy-react`, `-education`, `@captiveorigins/payload-plugin-onetaxonomy` | React viewer, lessons, Payload plugin | Planned |
+| [`@captiveorigins/onetaxonomy-react`](packages/react) | Server-renderable SVG tree, accessible keyboard outline, explorer with undo/redo | Working |
+| `@captiveorigins/onetaxonomy-education`, `@captiveorigins/payload-plugin-onetaxonomy` | Lessons, Payload plugin | Planned |
 | `apps/studio` | Offline macOS studio (Tauri 2) | Planned |
 
 ## Try it

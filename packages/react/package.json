@@ -1,0 +1,66 @@
+{
+  "name": "@captiveorigins/onetaxonomy-react",
+  "version": "0.1.0-alpha.0",
+  "description": "OneTaxonomy for React: a server-renderable SVG tree, an accessible keyboard tree outline, and an explorer with undo/redo, filters, layouts and an inspector that keeps clades and groups apart.",
+  "keywords": [
+    "taxonomy",
+    "phylogeny",
+    "react",
+    "svg",
+    "tree",
+    "accessibility",
+    "education"
+  ],
+  "homepage": "https://github.com/mgilardi/onetaxonomy#readme",
+  "bugs": {
+    "url": "https://github.com/mgilardi/onetaxonomy/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mgilardi/onetaxonomy.git",
+    "directory": "packages/react"
+  },
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "./styles.css": "./dist/styles.css"
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean --target es2022 --external react && cp src/styles.css dist/styles.css",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@captiveorigins/onetaxonomy-core": "workspace:^",
+    "@captiveorigins/onetaxonomy-layout": "workspace:^"
+  },
+  "peerDependencies": {
+    "react": ">=18.2"
+  },
+  "devDependencies": {
+    "@testing-library/react": "^16.3.3",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "jsdom": "^30.1.3",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  }
+}
