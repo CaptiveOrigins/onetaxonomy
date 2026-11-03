@@ -31,10 +31,20 @@ jobs:
       - name: Tag matches every package
         run: for p in packages/*/; do test "${GITHUB_REF_NAME#v}" = "$(node -p "require('./${p}package.json').version")"; done
       - run: pnpm build && pnpm typecheck && pnpm test
-      # pnpm pack turns workspace:^ into real versions.
       - name: Stage on npm
         run: |
-          TAG=$(node -p "require('./packages/core/package.json').version.includes('-') ? 'alpha' : 'latest'")
-          for p in packages/*/; do (cd "$p" && pnpm pack --pack-destination ../../dist-packages); done
-          # "./" matters: without it npm reads "dist-packages/x.tgz" as a GitHub repository shorthand.
-          for f in dist-packages/*.tgz; do npm stage publish "./$f" --access public --provenance --tag "$TAG"; done
+          VERSION=$(node -p "require('./packages/core/package.json').version")
+          for p in $(ls packages); do
+            NAME=$(node -p "require('./packages/$p/package.json').name")
+            # A prerelease goes to "alpha" once the package has a stable version; until then it is
+            # also "latest", so a plain install gets the newest build (not an old alpha).
+            TAG=latest
+            case "$VERSION" in *-*)
+              if npm view "$NAME" versions --json 2>/dev/null | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>process.exit([].concat(s?JSON.parse(s):[]).some(v=>typeof v==="string"&&!v.includes("-"))?0:1))'; then TAG=alpha; fi ;;
+            esac
+            # pnpm pack turns workspace:^ into real versions.
+            (cd "packages/$p" && pnpm pack --pack-destination ../../dist-packages)
+            TGZ="dist-packages/$(echo "${NAME#@}" | tr / -)-$VERSION.tgz"
+            # "./" matters: without it npm reads "dist-packages/x.tgz" as a GitHub repository shorthand.
+            npm stage publish "./$TGZ" --access public --provenance --tag "$TAG"
+          done
