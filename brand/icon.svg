@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" role="img" aria-labelledby="ot-t">
+  <title id="ot-t">OneTaxonomy</title>
+  <!-- Brand family tile (brand/README.md): 896 square, radius 200, pastel top-to-bottom gradient in the tool's hue;
+       cream blocks, connectors in the hue's ink, one amber accent. -->
+  <defs>
+    <linearGradient id="ot-g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#c9def0" />
+      <stop offset="1" stop-color="#9cbedc" />
+    </linearGradient>
+  </defs>
+  <rect x="64" y="64" width="896" height="896" rx="200" fill="url(#ot-g)" />
+  <!-- Glyph centered on the tile (bounding box center = 512, 512). -->
+  <g transform="translate(16 50)">
+    <path d="M300 512H400M400 330V694M400 330H520M520 230V430M520 230H602M520 430H602M400 694H602" fill="none" stroke="#26465f" stroke-width="34" stroke-linecap="round" stroke-linejoin="round" />
+    <g fill="#fbf8f2">
+      <rect x="170" y="452" width="130" height="120" rx="40" />
+      <rect x="602" y="180" width="220" height="100" rx="36" />
+      <rect x="602" y="380" width="220" height="100" rx="36" />
+      <rect x="602" y="644" width="220" height="100" rx="36" />
+    </g>
+    <circle cx="712" cy="430" r="26" fill="#e8913c" />
+  </g>
+</svg>
