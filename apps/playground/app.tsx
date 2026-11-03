@@ -1,5 +1,6 @@
 import { createView, indexDataset, makeHighlight, type DatasetSnapshot, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
-import { Explorer } from '@captiveorigins/onetaxonomy-react'
+import { createLesson, sceneFromView, type LessonDeck } from '@captiveorigins/onetaxonomy-education'
+import { Explorer, LessonPlayer } from '@captiveorigins/onetaxonomy-react'
 import { useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
@@ -53,6 +54,24 @@ const archelosauria = (() => {
   } satisfies TaxonomicView
 })()
 
+// M5 lesson (illustrative data): reveal a branch step by step, with notes and a worksheet.
+const lesson: LessonDeck = (() => {
+  const d = createLesson(am, { id: 'reptiles', title: 'Are “reptiles” a clade? (illustrative)' })
+  const s = sceneFromView({ ...createView(am, { id: 'l1', title: 'Amniotes', target: { kind: 'phylogeny', id: 'archelosauria' } }), collapsed: ['archelosauria'] }, { id: 's1', title: 'Turtles with archosaurs' })
+  s.annotations = [
+    { id: 'n1', text: 'Mammals branch off first.', target: { kind: 'node', node: 't-mammalia' } },
+    { id: 'n2', text: 'Birds sit inside the archosaurs, next to crocodilians.', target: { kind: 'node', node: 't-aves' }, from: 'st2', tone: 'question' },
+  ]
+  s.steps = [
+    { id: 'st1', caption: 'Open the branch with turtles and archosaurs.', actions: [{ type: 'expand', node: 'archelosauria' }] },
+    { id: 'st2', caption: 'Where do birds sit?', actions: [{ type: 'select', nodes: ['t-aves'] }], camera: { focus: 'archosauria', zoom: 1.6 } },
+  ]
+  s.notes = 'Ask: if birds are inside, can "reptiles" without birds be a whole branch?'
+  d.scenes.push(s)
+  d.worksheets.push({ id: 'w1', title: 'Clades', scene: 's1', questions: [{ id: 'q1', kind: 'is-clade', members: ['t-squamata', 't-rhyncho', 't-testudines', 't-crocodylia'] }, { id: 'q2', kind: 'missing', members: ['t-squamata', 't-rhyncho', 't-testudines', 't-crocodylia'] }] })
+  return d
+})()
+
 const examples = [
   { key: 'arch', title: 'Phylogeny: turtles with archosaurs', dataset: am, view: archelosauria },
   { key: 'anap', title: 'Phylogeny: turtles outside Sauria', dataset: am, view: createView(am, { id: 'anap', title: 'Turtles outside Sauria', target: { kind: 'phylogeny', id: 'anapsid-turtles' } }) },
@@ -71,15 +90,23 @@ function App() {
         <p className="intro">Illustrative data only (invented or simplified). Every change is a view action: the data never changes.</p>
       </header>
       <nav aria-label="Examples">
+        <button type="button" aria-pressed={key === 'lesson'} onClick={() => setKey('lesson')}>
+          Lesson: are reptiles a clade?
+        </button>
         {examples.map((e) => (
-          <button key={e.key} type="button" aria-pressed={e.key === ex.key} onClick={() => setKey(e.key)}>
+          <button key={e.key} type="button" aria-pressed={key !== 'lesson' && e.key === ex.key} onClick={() => setKey(e.key)}>
             {e.title}
           </button>
         ))}
       </nav>
-      <Explorer key={ex.key} dataset={ex.dataset} initialView={ex.view} title={ex.title} />
+      {key === 'lesson' ? <LessonView /> : <Explorer key={ex.key} dataset={ex.dataset} initialView={ex.view} title={ex.title} />}
     </>
   )
+}
+
+function LessonView() {
+  const [deck, setDeck] = useState(lesson)
+  return <LessonPlayer dataset={am} deck={deck} onChange={setDeck} showNotes />
 }
 
 createRoot(document.getElementById('app')!).render(<App />)

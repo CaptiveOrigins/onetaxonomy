@@ -26,6 +26,9 @@ importers:
       '@captiveorigins/onetaxonomy-core':
         specifier: workspace:^
         version: link:../../packages/core
+      '@captiveorigins/onetaxonomy-education':
+        specifier: workspace:^
+        version: link:../../packages/education
       '@captiveorigins/onetaxonomy-layout':
         specifier: workspace:^
         version: link:../../packages/layout
@@ -58,6 +61,12 @@ importers:
         specifier: ^8.20.0
         version: 8.20.0
 
+  packages/education:
+    dependencies:
+      '@captiveorigins/onetaxonomy-core':
+        specifier: workspace:^
+        version: link:../core
+
   packages/import:
     dependencies:
       '@captiveorigins/onetaxonomy-core':
@@ -75,6 +84,9 @@ importers:
       '@captiveorigins/onetaxonomy-core':
         specifier: workspace:^
         version: link:../core
+      '@captiveorigins/onetaxonomy-education':
+        specifier: workspace:^
+        version: link:../education
       '@captiveorigins/onetaxonomy-layout':
         specifier: workspace:^
         version: link:../layout

@@ -4,7 +4,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createView, describeView, indexDataset, makeHighlight, nodeOverlays, projectView, snapshotChecksum, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
 import { rectangular } from '@captiveorigins/onetaxonomy-layout'
-import { dropOrder, drawnSubtree, Explorer, standaloneSvg, TreeOutline, TreeView } from '../src'
+import { createLesson, sceneFromView, type LessonDeck } from '@captiveorigins/onetaxonomy-education'
+import { dropOrder, drawnSubtree, Explorer, LessonPlayer, standaloneSvg, TreeOutline, TreeView } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 import amniotesJson from '../../../fixtures/amniotes.json'
 
@@ -203,5 +204,41 @@ describe('clade selector', () => {
     expect(screen.getByRole('button', { name: /Highlight \(Group\)/ })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /Remove/ }))
     expect(container.querySelector('.ot-legend .ot-highlights')).toBeNull()
+  })
+})
+
+describe('lesson player (M5)', () => {
+  const deck = () => {
+    const d = createLesson(am, { id: 'l', title: 'Reptiles?' })
+    const s = sceneFromView(createView(am, { id: 'v', title: 'A', target: { kind: 'phylogeny', id: 'archelosauria' } }), { id: 's1', title: 'Amniotes' })
+    s.view = { ...s.view, collapsed: ['archelosauria'] }
+    s.steps = [{ id: 'st1', caption: 'Open it', actions: [{ type: 'expand', node: 'archelosauria' }], camera: { focus: 'archelosauria', zoom: 2 } }]
+    s.annotations = [{ id: 'a1', text: 'Birds are archosaurs.', target: { kind: 'node', node: 't-aves' }, from: 'st1' }]
+    d.scenes.push(s)
+    return d
+  }
+
+  it('presents step by step: reveals, camera, numbered annotations', () => {
+    const { container } = render(<LessonPlayer dataset={am} deck={deck()} />)
+    expect(container.querySelector('.ot-node[data-id="t-aves"]')).toBeNull() // folded at the start
+    fireEvent.click(screen.getByRole('button', { name: /Next/ }))
+    expect(screen.getByText('Open it')).toBeTruthy()
+    expect(container.querySelector('.ot-node[data-id="t-aves"] .ot-badge')!.textContent).toBe('1')
+    expect(screen.getByText('Birds are archosaurs.')).toBeTruthy()
+    const vb = container.querySelector('svg.ot-root')!.getAttribute('viewBox')!.split(' ').map(Number)
+    fireEvent.click(screen.getByRole('button', { name: /Previous/ }))
+    const full = container.querySelector('svg.ot-root')!.getAttribute('viewBox')!.split(' ').map(Number)
+    expect(vb[2]!).toBeLessThan(full[2]!) // the camera zooms in on the node
+  })
+
+  it('switches to explore and lets an author add a scene and a note in studio', () => {
+    let edited: LessonDeck | null = null
+    render(<LessonPlayer dataset={am} deck={deck()} onChange={(d) => (edited = d)} />)
+    fireEvent.click(screen.getByRole('radio', { name: 'Explore' }))
+    expect(screen.getByRole('button', { name: 'Expand all' })).toBeTruthy()
+    fireEvent.click(screen.getByRole('radio', { name: 'Studio' }))
+    fireEvent.change(screen.getByLabelText('Scene title'), { target: { value: 'Second' } })
+    fireEvent.click(screen.getByRole('button', { name: /Add scene from this view/ }))
+    expect(edited!.scenes.map((s) => s.title)).toEqual(['Amniotes', 'Second'])
   })
 })

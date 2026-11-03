@@ -19,6 +19,8 @@ export type TreeViewProps = {
   drag?: { ids: ReadonlySet<Id>; dx: number; dy: number } | null
   /** Overlay marks per node (`nodeOverlays` from core): support, fossil ages, observed trait states. */
   overlays?: ReadonlyMap<Id, NodeOverlay>
+  /** Small numbered markers on nodes (e.g. lesson annotations), by node id. */
+  badges?: ReadonlyMap<Id, string>
   /** Nodes are focusable and clickable. */
   interactive?: boolean
   onNodeClick?: (id: Id, event: MouseEvent<SVGGElement>) => void
@@ -142,6 +144,14 @@ export function TreeView(props: TreeViewProps) {
             >
               {hl && <circle className="ot-node-halo" r={7} style={{ fill: hl }} />}
               {mark?.trait && <circle className="ot-trait" r={5.5} style={'color' in mark.trait && mark.trait.color ? { fill: mark.trait.color } : undefined} />}
+              {props.badges?.has(ln.id) && (
+                <g className="ot-badge" transform="translate(-12 -12)" aria-hidden="true">
+                  <circle r={7} />
+                  <text y={3.5} textAnchor="middle">
+                    {props.badges.get(ln.id)}
+                  </text>
+                </g>
+              )}
               {mark?.support && (
                 <text className="ot-support" x={-5} y={-5} textAnchor="end" data-weak={mark.support.weak ? '' : undefined}>
                   {mark.support.value}

@@ -50,7 +50,8 @@
   },
   "dependencies": {
     "@captiveorigins/onetaxonomy-core": "workspace:^",
-    "@captiveorigins/onetaxonomy-layout": "workspace:^"
+    "@captiveorigins/onetaxonomy-layout": "workspace:^",
+    "@captiveorigins/onetaxonomy-education": "workspace:^"
   },
   "peerDependencies": {
     "react": ">=18.2"

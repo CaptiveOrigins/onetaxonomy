@@ -1,0 +1,51 @@
+{
+  "name": "@captiveorigins/onetaxonomy-education",
+  "version": "0.1.0-alpha.0",
+  "description": "OneTaxonomy education: portable lesson decks of scenes over a pinned snapshot (views, camera, annotations, step-by-step reveals) and worksheets whose answers are checked by the core science functions.",
+  "keywords": [
+    "taxonomy",
+    "phylogeny",
+    "education",
+    "lessons",
+    "cladistics",
+    "worksheets",
+    "teaching"
+  ],
+  "homepage": "https://github.com/mgilardi/onetaxonomy#readme",
+  "bugs": {
+    "url": "https://github.com/mgilardi/onetaxonomy/issues"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/mgilardi/onetaxonomy.git",
+    "directory": "packages/education"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean --target es2022",
+    "typecheck": "tsc --noEmit && tsc --noEmit -p tsconfig.test.json",
+    "test": "vitest run",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@captiveorigins/onetaxonomy-core": "workspace:^"
+  }
+}

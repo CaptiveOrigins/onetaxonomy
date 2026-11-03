@@ -10,7 +10,10 @@
     "@captiveorigins/onetaxonomy-layout": "workspace:^",
     "@captiveorigins/onetaxonomy-react": "workspace:^",
     "react": "^19.3.1",
-    "react-dom": "^19.3.1"
+    "react-dom": "^19.3.1",
+    "@captiveorigins/onetaxonomy-education": "workspace:^"
   },
-  "devDependencies": { "esbuild": "^0.25.0" }
+  "devDependencies": {
+    "esbuild": "^0.25.0"
+  }
 }
