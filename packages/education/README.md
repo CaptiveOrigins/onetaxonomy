@@ -23,4 +23,4 @@ worksheetMarkdown(deck, 'w1', data, { answers: true }) // printable, with the co
 - **Pinned data**: a deck records the snapshot id, version and checksum; opening it over another snapshot warns, and answers are recomputed from what is loaded.
 - **Players**: `LessonPlayer` in `@captiveorigins/onetaxonomy-react` presents (locked drawing), explores (full explorer from the current step) and authors (studio: scenes from the current view, annotations).
 
-MIT licensed.
+PolyForm Noncommercial 1.0.0.

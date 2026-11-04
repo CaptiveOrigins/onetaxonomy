@@ -1,6 +1,6 @@
 # OneTaxonomy
 
-An open-source framework for importing, curating, browsing and publishing **scientifically faithful** taxonomic classifications and phylogenetic trees: for developers, and for teachers, museums, researchers and animal keepers who don't write code.
+A source-available framework for importing, curating, browsing and publishing **scientifically faithful** taxonomic classifications and phylogenetic trees: for developers, and for teachers, museums, researchers and animal keepers who don't write code.
 
 > **Status: early (Phase 1, milestone 4 of 8).** The pure TypeScript core, the importers (Newick, CSV/TSV checklists, Darwin Core Archives, OneTaxonomy JSON) and curated selective imports with coverage reports, views with undo/redo, layouts and the React explorer work and are tested (see `apps/playground`). Profiles, exports, the React viewer, the Payload plugin and the macOS Studio are planned; see [the phase plan](docs/architecture/phase-plan.md). Packages: `@captiveorigins/onetaxonomy-core` and `@captiveorigins/onetaxonomy-import` (not on npm yet).
 
@@ -65,4 +65,4 @@ const { snapshot, coverage } = selectiveImport(full, {
 
 ## License
 
-MIT for the software. Data you import keeps its own license; OneTaxonomy records it with every snapshot.
+[PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) for the software: free for noncommercial use, with attribution; commercial use needs a separate license from Captive Origins. Versions published before this change remain under MIT. Data you import keeps its own license; OneTaxonomy records it with every snapshot.

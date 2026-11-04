@@ -1,7 +1,7 @@
 {
   "name": "onetaxonomy",
   "private": true,
-  "description": "OneTaxonomy: an open-source framework for importing, curating, browsing and publishing scientifically faithful taxonomic classifications and phylogenetic trees, with a TypeScript core, React components, a Payload plugin and a desktop studio.",
+  "description": "OneTaxonomy: a source-available framework for importing, curating, browsing and publishing scientifically faithful taxonomic classifications and phylogenetic trees, with a TypeScript core, React components, a Payload plugin and a desktop studio.",
   "keywords": [
     "taxonomy",
     "phylogeny",
@@ -17,7 +17,7 @@
   "bugs": {
     "url": "https://github.com/mgilardi/onetaxonomy/issues"
   },
-  "license": "MIT",
+  "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",
   "packageManager": "pnpm@11.2.2",
   "engines": {
