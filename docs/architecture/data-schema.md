@@ -18,7 +18,7 @@ The TypeScript types in [`packages/core/src/model.ts`](../../packages/core/src/m
 | `TaxonConcept` | A taxon according to a source | `acceptedName`, `usages[]`, `rank` (free text), `externalIds`, `commonNames[{ name, locale }]`, `provenance` |
 | `Classification` | A taxonomic hierarchy (tree or forest) | `title`, `version`, `sources`, `placements[{ concept, parent \| null }]` |
 | `Phylogeny` | A phylogenetic **hypothesis** | `title`, `version`, `sources`, `citation`, `rooted`, `rooting`, `lengthUnit`, `timeCalibrated`, `sampling` (`complete`/`partial`/`unknown`), `nodes`, `edges` |
-| `PhyloNode` | Node of a hypothesis | `label` (display only), `concepts[]` (explicit mapping; absent = unmapped), `support`, `status` (`extant`/`extinct`/`unknown`), `age { value, min, max }` |
+| `PhyloNode` | Node of a hypothesis | `label` (display only), `concepts[]` (explicit mapping; absent = unmapped), `support`, `additionalSupport` (values from other methods), `status` (`extant`/`extinct`/`unknown`), `age { value, min, max }` |
 | `PhyloEdge` | Directed parent → child | `length` (in the phylogeny's `lengthUnit`), `support` |
 | `TaxonProfile` | Optional facts about a concept | `summary`, `status`, `geography`, `morphology`, `ecology`, `media[]` (with license/credit), `citations`, `extensions` (consumer-namespaced) |
 | `TraitSet` | Observed character states from one cited source | `title`, `source`, `states[] { id, label, color? }`, `values[] { concept, state, note? }` (one value per concept; never inferred: unstated concepts stay uncolored) |

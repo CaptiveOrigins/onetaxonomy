@@ -101,6 +101,8 @@ export type PhyloNode = {
    */
   concepts?: Id[]
   support?: Support
+  /** Further support values for this node from other methods, such as paired SH-aLRT and UFBoot. `support` stays the primary one. */
+  additionalSupport?: Support[]
   status?: LifeStatus
   /** Age of the node in the phylogeny's time unit, where the hypothesis is time-calibrated. */
   age?: { value: number; min?: number; max?: number }

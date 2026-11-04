@@ -57,3 +57,23 @@ describe('parseNewick', () => {
     expect(() => toNewick(parseNewick(text, { ...base, rooted: true }))).not.toThrow()
   })
 })
+
+describe('paired support labels', () => {
+  const text = '((a:1,b:1)95.1/96:1,c:1)80/70;'
+  const base = { id: 't', title: 't', version: '1', sources: [], rooted: true }
+  it('reads each named method', () => {
+    const p = parseNewick(text, { ...base, supportMethods: ['SH-aLRT', 'UFBoot'] })
+    const node = p.nodes.find((n) => n.support?.value === 95.1)!
+    expect(node.support).toEqual({ value: 95.1, method: 'SH-aLRT' })
+    expect(node.additionalSupport).toEqual([{ value: 96, method: 'UFBoot' }])
+  })
+  it('keeps them as plain labels unless methods are named', () => {
+    const p = parseNewick(text, base)
+    expect(p.nodes.some((n) => n.label === '95.1/96')).toBe(true)
+    expect(p.nodes.some((n) => n.additionalSupport)).toBe(false)
+  })
+  it('keeps a label whose parts do not match the methods', () => {
+    const p = parseNewick('((a,b)95/96/97,c);', { ...base, supportMethods: ['SH-aLRT', 'UFBoot'] })
+    expect(p.nodes.some((n) => n.label === '95/96/97')).toBe(true)
+  })
+})
