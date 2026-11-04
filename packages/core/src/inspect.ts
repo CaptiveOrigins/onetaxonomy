@@ -31,6 +31,7 @@ export type NodeDetails = {
   /** Phylogeny only: as stated by the hypothesis. */
   label?: string
   support?: Support
+  additionalSupport?: Support[]
   age?: { value: number; min?: number; max?: number; unit?: LengthUnit }
   branchLength?: { value: number; unit?: LengthUnit }
   /** The placement's own provenance (classification). */
@@ -106,6 +107,7 @@ export function inspectNode(dataset: DatasetIndex, view: Pick<TaxonomicView, 'ta
     unmapped: Boolean(phy) && conceptIds.length === 0,
     ...(n?.label ? { label: n.label } : {}),
     ...(n?.support ? { support: n.support } : {}),
+    ...(n?.additionalSupport?.length ? { additionalSupport: n.additionalSupport } : {}),
     ...(n?.age ? { age: { ...n.age, ...(unit ? { unit } : {}) } } : {}),
     ...(edge?.length !== undefined ? { branchLength: { value: edge.length, ...(unit ? { unit } : {}) } } : {}),
     ...(placement ? { placement } : {}),

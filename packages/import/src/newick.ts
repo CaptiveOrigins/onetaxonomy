@@ -18,6 +18,11 @@ export type NewickOptions = {
   internalLabels?: 'auto' | 'support' | 'label'
   supportMethod?: string
   /**
+   * Names the methods of paired support labels such as `95.1/95`, in order (e.g. ['SH-aLRT', 'UFBoot']).
+   * The first becomes `support`, the rest `additionalSupport`. Without this, such labels stay plain labels.
+   */
+  supportMethods?: string[]
+  /**
    * Explicit label → taxon concept mapping. Labels without a mapping stay unmapped:
    * names are never matched to concepts by guesswork.
    */
@@ -148,7 +153,12 @@ export function parseNewick(text: string, o: NewickOptions): Phylogeny {
     if (raw.label !== undefined) {
       const mode = o.internalLabels ?? 'auto'
       const numeric = !raw.quoted && raw.label.trim() !== '' && Number.isFinite(Number(raw.label))
-      if (!isTip && (mode === 'support' || (mode === 'auto' && numeric))) node.support = { value: Number(raw.label), ...(o.supportMethod ? { method: o.supportMethod } : {}) }
+      const paired = !isTip && !raw.quoted && mode !== 'label' && o.supportMethods?.length ? raw.label.trim().split('/') : undefined
+      if (paired && paired.length === o.supportMethods!.length && paired.every((v) => v !== '' && Number.isFinite(Number(v)))) {
+        const [first, ...rest] = paired.map((v, i) => ({ value: Number(v), method: o.supportMethods![i]! }))
+        node.support = first!
+        if (rest.length) node.additionalSupport = rest
+      } else if (!isTip && (mode === 'support' || (mode === 'auto' && numeric))) node.support = { value: Number(raw.label), ...(o.supportMethod ? { method: o.supportMethod } : {}) }
       else node.label = raw.label
     }
     const mapped = node.label !== undefined ? o.mapLabel?.(node.label, isTip) : undefined

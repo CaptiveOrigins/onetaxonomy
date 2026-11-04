@@ -146,6 +146,7 @@
               "label": { "type": "string" },
               "concepts": { "type": "array", "items": { "$ref": "#/$defs/id" } },
               "support": { "$ref": "#/$defs/support" },
+              "additionalSupport": { "type": "array", "items": { "$ref": "#/$defs/support" } },
               "status": { "$ref": "#/$defs/lifeStatus" },
               "age": { "type": "object", "required": ["value"], "additionalProperties": false, "properties": { "value": { "type": "number" }, "min": { "type": "number" }, "max": { "type": "number" } } },
               "annotations": { "type": "object" }
