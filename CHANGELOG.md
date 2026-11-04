@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.1
+
+- License: PolyForm Noncommercial 1.0.0. Earlier versions remain under MIT.
+- Core and Import: optional paired support values (`additionalSupport`, `supportMethods`).
+
 - Core: records, validation, traversal, MRCA, tri-state monophyly, snapshot checksums.
 - Import: Newick reader and writer.
 - Core: curated selections (`applySelection`: explicit, all descendants, depth, rank, representative and named-predicate policies; exclusions; ancestor closure; omitted branches), `getCoverageReport` (dataset / hypothesis / caller-stated known-to-science), `extractSubset` with `derivedFrom` provenance, `diffSnapshots` and `referenceImpact`, JSON Schema for snapshots.

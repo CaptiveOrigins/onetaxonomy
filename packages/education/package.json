@@ -1,6 +1,6 @@
 {
   "name": "@captiveorigins/onetaxonomy-education",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "OneTaxonomy education: portable lesson decks of scenes over a pinned snapshot (views, camera, annotations, step-by-step reveals) and worksheets whose answers are checked by the core science functions.",
   "keywords": [
     "taxonomy",

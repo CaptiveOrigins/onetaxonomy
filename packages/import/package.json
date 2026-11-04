@@ -1,6 +1,6 @@
 {
   "name": "@captiveorigins/onetaxonomy-import",
-  "version": "0.1.0-alpha.0",
+  "version": "0.1.0-alpha.1",
   "description": "OneTaxonomy import: source adapters for CSV/TSV checklists, Darwin Core Archives, OneTaxonomy JSON and Newick, plus reconciliation, curated selective imports with provenance, and community presets.",
   "keywords": [
     "taxonomy",
