@@ -2,6 +2,8 @@
 
 A source-available framework for importing, curating, browsing and publishing **scientifically faithful** taxonomic classifications and phylogenetic trees: for developers, and for teachers, museums, researchers and animal keepers who don't write code.
 
+Part of the [OneOrigin suite](https://github.com/mgilardi/onephylogeny/blob/main/docs/oneorigin/README.md): independent tools, with no subscriptions, that work alone or together.
+
 > **Status: early (Phase 1, milestone 4 of 8).** The pure TypeScript core, the importers (Newick, CSV/TSV checklists, Darwin Core Archives, OneTaxonomy JSON) and curated selective imports with coverage reports, views with undo/redo, layouts and the React explorer work and are tested (see `apps/playground`). Profiles, exports, the React viewer, the Payload plugin and the macOS Studio are planned; see [the phase plan](docs/architecture/phase-plan.md). Packages: `@captiveorigins/onetaxonomy-core` and `@captiveorigins/onetaxonomy-import` (not on npm yet).
 
 ## Principles
