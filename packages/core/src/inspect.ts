@@ -191,6 +191,11 @@ export function describeView(dataset: DatasetIndex, view: TaxonomicView, project
     const sampling = p.sampling === 'complete' ? 'complete sampling' : p.sampling === 'partial' ? 'partial sampling: absent taxa may still belong to its clades' : 'sampling not stated'
     lines.push(`Phylogenetic hypothesis: ${p.title}, version ${p.version}; ${p.rooted ? 'rooted' : 'unrooted (no ancestry implied)'}; ${sampling}.`)
   }
+  if (view.proposal) {
+    const p = view.proposal
+    lines.unshift(`PROPOSED by ${p.author}: “${p.title}” (${p.created.slice(0, 10)}), ${p.moves.length} ${p.moves.length === 1 ? 'move' : 'moves'} from the arrangement named below. Not an accepted arrangement.`)
+    if (p.moves.length && tree.kind === 'phylogeny') lines.push('Moved branches have no lengths, and groups whose members changed have no support values or ages: the hypothesis never tested this arrangement.')
+  }
   if (notice) lines.push(notice)
   const c = projection.counts
   const notShown = c.hidden + c.filtered + c.collapsed + c.outsideFocus
@@ -205,7 +210,7 @@ export function describeView(dataset: DatasetIndex, view: TaxonomicView, project
   const citations = viewCitations(dataset, view, projection)
   const illustrative = citations.some((x) => x.illustrative)
   if (illustrative) lines.push('Contains illustrative (fixture) data: not for scientific use.')
-  return { title: view.title, lines, citations, illustrative }
+  return { title: view.proposal ? `Proposed by ${view.proposal.author}: ${view.title}` : view.title, lines, citations, illustrative }
 }
 
 /**

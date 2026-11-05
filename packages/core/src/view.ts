@@ -1,8 +1,9 @@
 import type { DatasetIndex } from './dataset'
 import type { Id, LifeStatus } from './model'
 import { assessTaxon, isMonophyletic, type HypothesisRef, type MonophylyResult } from './monophyly'
+import { applyToClassification, applyToPhylogeny, ProposalError, type Proposal } from './proposal'
 import { canonicalJson } from './snapshot'
-import type { TreeIndex } from './tree'
+import { indexClassification, indexPhylogeny, type TreeIndex } from './tree'
 
 /**
  * Views (M4): how a hierarchy is *shown*. A view is plain JSON over a pinned
@@ -70,6 +71,8 @@ export type TaxonomicView = {
   layout: { kind: LayoutKind }
   selected: Id[]
   overlays?: ViewOverlays
+  /** Proposed mode: the view shows the hierarchy with these moves, always disclosed as proposed. */
+  proposal?: Proposal
 }
 
 export type ViewAction =
@@ -90,6 +93,10 @@ export type ViewAction =
   | { type: 'setLayout'; layout: LayoutKind }
   | { type: 'select'; nodes: Id[] }
   | { type: 'setOverlays'; overlays: ViewOverlays }
+  | { type: 'startProposal'; proposal: Pick<Proposal, 'id' | 'title' | 'author' | 'created' | 'notes'> }
+  | { type: 'proposeMove'; node: Id; to: Id | null; note?: string }
+  | { type: 'revertMove'; node: Id }
+  | { type: 'endProposal' }
 
 export class ViewActionError extends Error {
   constructor(
@@ -101,9 +108,28 @@ export class ViewActionError extends Error {
   }
 }
 
-/** The hierarchy a view shows. */
-export function viewTree(dataset: DatasetIndex, view: Pick<TaxonomicView, 'target'>): TreeIndex {
+/** The accepted hierarchy a view is based on. */
+export function acceptedTree(dataset: DatasetIndex, view: Pick<TaxonomicView, 'target'>): TreeIndex {
   return view.target.kind === 'classification' ? dataset.classification(view.target.id) : dataset.phylogeny(view.target.id)
+}
+
+const proposedTrees = new WeakMap<Proposal, TreeIndex>()
+
+/** A proposal over its base as a tree index, under the base's id so citations and placements still resolve. */
+function proposedTree(dataset: DatasetIndex, view: Pick<TaxonomicView, 'target'>, proposal: Proposal): TreeIndex {
+  const cached = proposedTrees.get(proposal)
+  if (cached) return cached
+  const tree =
+    view.target.kind === 'classification'
+      ? indexClassification({ ...applyToClassification(dataset.classification(view.target.id).classification, proposal), id: view.target.id })
+      : indexPhylogeny({ ...applyToPhylogeny(dataset.phylogeny(view.target.id).phylogeny, proposal), id: view.target.id })
+  proposedTrees.set(proposal, tree)
+  return tree
+}
+
+/** The hierarchy a view shows: the accepted one, or the proposal drawn over it. */
+export function viewTree(dataset: DatasetIndex, view: Pick<TaxonomicView, 'target' | 'proposal'>): TreeIndex {
+  return view.proposal?.moves.length ? proposedTree(dataset, view, view.proposal) : acceptedTree(dataset, view)
 }
 
 export function createView(dataset: DatasetIndex, o: { id: Id; title: string; target: ViewTarget; layout?: LayoutKind }): TaxonomicView {
@@ -191,7 +217,7 @@ export function applyViewAction(view: TaxonomicView, action: ViewAction, dataset
     case 'removeHighlight':
       return { ...view, highlights: view.highlights.filter((h) => h.id !== action.id) }
     case 'setLayout': {
-      const problem = layoutProblem(dataset, view.target, action.layout)
+      const problem = view.proposal?.moves.length && action.layout === 'time' ? 'A proposed arrangement has no dates: a time scale would invent them' : layoutProblem(dataset, view.target, action.layout)
       if (problem) throw new ViewActionError(problem, action)
       return { ...view, layout: { kind: action.layout } }
     }
@@ -210,7 +236,46 @@ export function applyViewAction(view: TaxonomicView, action: ViewAction, dataset
       const { overlays: _, ...rest } = view
       return Object.keys(next).length ? { ...rest, overlays: next } : rest
     }
+    case 'startProposal': {
+      if (view.proposal) throw new ViewActionError('This view already has a proposal', action)
+      const accepted = acceptedTree(dataset, view)
+      if (accepted.kind === 'phylogeny' && !dataset.phylogeny(accepted.id).rooted) throw new ViewActionError('An unrooted hypothesis has no ancestry to rearrange: root it first', action)
+      return { ...view, proposal: { ...action.proposal, base: { ...view.target, version: accepted.version }, moves: [] } }
+    }
+    case 'proposeMove': {
+      if (!view.proposal) throw new ViewActionError('Start a proposal first', action)
+      known(action.node)
+      if (action.to !== null) known(action.to)
+      const accepted = acceptedTree(dataset, view)
+      const from = accepted.parent.get(action.node) ?? null
+      const others = view.proposal.moves.filter((m) => m.node !== action.node)
+      // Back to the accepted parent means there's no move any more.
+      const moves = action.to === from ? others : [...others, { node: action.node, from, to: action.to, ...(action.note ? { note: action.note } : {}) }]
+      return withProposal(view, { ...view.proposal, moves }, dataset, action, [tree.parent.get(action.node) ?? null, action.to])
+    }
+    case 'revertMove': {
+      if (!view.proposal) throw new ViewActionError('There is no proposal', action)
+      const moves = view.proposal.moves.filter((m) => m.node !== action.node)
+      return withProposal(view, { ...view.proposal, moves }, dataset, action, [tree.parent.get(action.node) ?? null, acceptedTree(dataset, view).parent.get(action.node) ?? null])
+    }
+    case 'endProposal': {
+      const { proposal: _, ...rest } = view
+      return { ...rest, order: {} }
+    }
   }
+}
+
+/** A changed proposal on the view: checked first; orders of the parents involved are dropped, and a time scale no longer applies. */
+function withProposal(view: TaxonomicView, proposal: Proposal, dataset: DatasetIndex, action: ViewAction, parents: (Id | null)[]): TaxonomicView {
+  try {
+    proposedTree(dataset, view, proposal)
+  } catch (error) {
+    if (error instanceof ProposalError) throw new ViewActionError(error.message, action)
+    throw error
+  }
+  const order = { ...view.order }
+  for (const p of parents) if (p !== null) delete order[p]
+  return { ...view, proposal, order, ...(view.layout.kind === 'time' && proposal.moves.length ? { layout: { kind: 'rectangular' as const } } : {}) }
 }
 
 const structuredCloneFilter = (f: ViewFilter): ViewFilter => ({
@@ -254,7 +319,7 @@ export function makeHighlight(dataset: DatasetIndex, view: TaxonomicView, o: { i
 
 export type ViewDiagnostic = {
   severity: 'error' | 'warning'
-  code: 'format' | 'snapshot-mismatch' | 'unknown-target' | 'unknown-node' | 'bad-order' | 'unsupported-clade' | 'stale-assessment' | 'layout' | 'unknown-trait'
+  code: 'proposal' | 'format' | 'snapshot-mismatch' | 'unknown-target' | 'unknown-node' | 'bad-order' | 'unsupported-clade' | 'stale-assessment' | 'layout' | 'unknown-trait'
   message: string
   ids?: Id[]
 }
@@ -269,7 +334,8 @@ export function validateView(view: TaxonomicView, dataset: DatasetIndex): ViewDi
   let tree: TreeIndex
   try {
     tree = viewTree(dataset, view)
-  } catch {
+  } catch (error) {
+    if (error instanceof ProposalError) return [...out, { severity: 'error', code: 'proposal', message: error.message }]
     return [...out, { severity: 'error', code: 'unknown-target', message: `Unknown ${view.target.kind} ${view.target.id}` }]
   }
   const ids = [...view.collapsed, ...view.hidden, ...view.selected, ...(view.focus ? [view.focus] : []), ...Object.keys(view.order), ...view.highlights.flatMap((h) => h.members)]

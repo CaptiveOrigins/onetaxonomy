@@ -18,3 +18,4 @@ Kept current with each milestone. Nothing listed here is claimed as done.
 - Index building is in memory. Large-tree benchmarks (10k+ taxa) are planned for M8; traversal is iterative and tested on a 20,000-deep chain.
 - Fixtures are illustrative. They mirror widely discussed relationships (turtles with archosaurs) but are not sources and must not be cited.
 - Packages are not published yet; names are `@captiveorigins/onetaxonomy-*` (ADR 0008).
+- Proposed mode on a phylogeny leaves a group with one remaining child in place rather than collapsing it. Moved branches lose their lengths, and groups whose members changed lose their support values and ages, so a proposal is not a tested hypothesis. Highlights keep the assessment of the hypothesis they name. Proposals are not stored or shared yet, except in the view file (the Payload plugin, M7).

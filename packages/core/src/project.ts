@@ -23,6 +23,8 @@ export type ProjectedNode = {
   hiddenDescendants: number
   highlights: Id[]
   selected: boolean
+  /** Moved by the view's proposal. */
+  moved?: boolean
   /** Length of the edge into this node, in the projection's `lengthUnit` (phylogenies only). */
   length?: number
   age?: number
@@ -41,6 +43,8 @@ export type Projection = {
   rooted?: boolean
   lengthUnit?: LengthUnit
   timeCalibrated?: boolean
+  /** The drawing shows a proposal, not the accepted arrangement. */
+  proposed?: { title: string; author: string; moved: Id[] }
 }
 
 /**
@@ -49,6 +53,7 @@ export type Projection = {
  */
 export function projectView(dataset: DatasetIndex, view: TaxonomicView, { limit = 10_000 }: { limit?: number } = {}): Projection {
   const tree = viewTree(dataset, view)
+  const movedIds = new Set(view.proposal?.moves.map((m) => m.node) ?? [])
   const phy = view.target.kind === 'phylogeny' ? (tree as PhylogenyIndex) : null
   const profileStatus = new Map((dataset.snapshot.profiles ?? []).filter((p) => p.status).map((p) => [p.concept, p.status!]))
 
@@ -145,6 +150,7 @@ export function projectView(dataset: DatasetIndex, view: TaxonomicView, { limit 
       hiddenDescendants: 0,
       highlights: highlightsOf.get(id) ?? [],
       selected: selected.has(id),
+      ...(movedIds.has(id) ? { moved: true } : {}),
       ...(edge?.length !== undefined ? { length: edge.length } : {}),
       ...(data?.age ? { age: data.age.value } : {}),
       ...(data?.support ? { support: data.support.value } : {}),
@@ -171,6 +177,7 @@ export function projectView(dataset: DatasetIndex, view: TaxonomicView, { limit 
     roots,
     counts,
     truncated,
+    ...(view.proposal ? { proposed: { title: view.proposal.title, author: view.proposal.author, moved: [...movedIds] } } : {}),
     ...(phy ? { rooted: phy.rooted, ...(phy.phylogeny.lengthUnit ? { lengthUnit: phy.phylogeny.lengthUnit } : {}), timeCalibrated: Boolean(phy.phylogeny.timeCalibrated) } : {}),
   }
 }

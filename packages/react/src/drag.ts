@@ -54,3 +54,25 @@ export function drawnSubtree(projection: Projection, id: Id): Set<Id> {
   }
   return out
 }
+
+/**
+ * Proposed mode: the node a dragged taxon is dropped onto (its new parent), or null when
+ * it wasn't dropped on one (a drop between siblings just reorders). A node can't land on itself or on what moves with it.
+ */
+export function dropTarget(layout: TreeLayout, id: Id, moving: ReadonlySet<Id>, delta: { dx: number; dy: number }, reach = 9): Id | null {
+  const self = layout.nodes.find((n) => n.id === id)
+  if (!self) return null
+  const x = self.x + delta.dx
+  const y = self.y + delta.dy
+  let best: Id | null = null
+  let nearest = reach
+  for (const n of layout.nodes) {
+    if (moving.has(n.id)) continue
+    const d = Math.hypot(n.x - x, n.y - y)
+    if (d < nearest) {
+      nearest = d
+      best = n.id
+    }
+  }
+  return best
+}

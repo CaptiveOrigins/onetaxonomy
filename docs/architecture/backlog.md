@@ -54,6 +54,12 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] Export SVG/PNG/PDF (labelled classification vs phylogeny, hidden branches disclosed), JSON view, embeds (PDF via print; embeds = server-rendered `TreeView`)
 - [x] `@captiveorigins/onetaxonomy-education`: scenes, annotations, camera states, reveals (step-by-step view actions; animated transitions are the renderer's), lesson decks, worksheets with computed answers; Present, Explore and Studio modes (`LessonPlayer`)
 
+## Proposed mode (owner 2026-11-03; done 2026-11-05)
+
+- [x] Core: proposals, derived hierarchies, checks, `compareHierarchies`, view actions, disclosure in every export
+- [x] Explorer: start a proposal, drag onto a new parent or pick from a list, revert and undo, accepted vs proposed for a taxon, side-by-side compare
+- [ ] Plugin (M7): proposals per user, shareable; a curator can accept one into a new staged version, never silently
+
 ## M6 — Studio (macOS)
 
 - [ ] Tauri 2 app, SQLite persistence, native dialogs, backups, migrations

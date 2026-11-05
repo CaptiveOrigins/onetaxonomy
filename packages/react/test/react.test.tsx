@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import { createView, describeView, indexDataset, makeHighlight, nodeOverlays, projectView, snapshotChecksum, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
 import { rectangular } from '@captiveorigins/onetaxonomy-layout'
 import { createLesson, sceneFromView, type LessonDeck } from '@captiveorigins/onetaxonomy-education'
-import { dropOrder, drawnSubtree, Explorer, LessonPlayer, standaloneSvg, TreeOutline, TreeView } from '../src'
+import { dropOrder, dropTarget, drawnSubtree, Explorer, LessonPlayer, standaloneSvg, TreeOutline, TreeView } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 import amniotesJson from '../../../fixtures/amniotes.json'
 
@@ -240,5 +240,48 @@ describe('lesson player (M5)', () => {
     fireEvent.change(screen.getByLabelText('Scene title'), { target: { value: 'Second' } })
     fireEvent.click(screen.getByRole('button', { name: /Add scene from this view/ }))
     expect(edited!.scenes.map((s) => s.title)).toEqual(['Amniotes', 'Second'])
+  })
+})
+
+describe('Proposed mode', () => {
+  const amView = () => createView(am, { id: 'v', title: 'Amniotes', target: { kind: 'classification', id: 'traditional' } })
+  const start = (selected: string[] = []) => {
+    render(<Explorer dataset={am} initialView={{ ...amView(), selected }} title="Amniotes" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Propose changes' }))
+    fireEvent.change(screen.getByLabelText('Your name'), { target: { value: 'A. Keeper' } })
+    fireEvent.change(screen.getByLabelText('Name of this proposal'), { target: { value: 'Birds are reptiles' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Start proposing' }))
+  }
+
+  it('needs a name, and says whose it is', () => {
+    start()
+    expect(screen.getByRole('note').textContent).toBe('Proposed by A. Keeper: Birds are reptiles')
+    expect(screen.getByText('No moves yet.')).toBeTruthy()
+  })
+
+  it('moves a taxon with the keyboard path, marks it, explains it, reverts it, and leaves the data alone', () => {
+    const before = snapshotChecksum(amniotesJson as DatasetSnapshot)
+    start(['c:aves'])
+    fireEvent.change(screen.getByLabelText('Move under'), { target: { value: 'c:reptilia' } })
+    expect(document.querySelector('.ot-node[data-id="c:aves"]')!.hasAttribute('data-moved')).toBe(true)
+    expect(screen.getByRole('button', { name: 'Revert' })).toBeTruthy()
+    expect(screen.getByText('Compare with the accepted arrangement')).toBeTruthy()
+    expect(document.querySelector('.ot-print-disclosure')!.textContent).toMatch(/PROPOSED by A\. Keeper/)
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(document.querySelector('.ot-node[data-id="c:aves"]')!.hasAttribute('data-moved')).toBe(false)
+    fireEvent.click(screen.getByRole('button', { name: 'Leave Proposed mode' }))
+    expect(screen.queryByRole('note')).toBeNull()
+    expect(snapshotChecksum(amniotesJson as DatasetSnapshot)).toBe(before)
+  })
+
+  it('a drop lands on a nearby node, not on what is moving and not between siblings', () => {
+    const proj = projectView(am, amView())
+    const l = rectangular(proj, { leafGap: 24 })
+    const at = (id: string) => l.nodes.find((n) => n.id === id)!
+    const moving = drawnSubtree(proj, 'c:aves')
+    const onto = { dx: at('c:reptilia').x - at('c:aves').x, dy: at('c:reptilia').y - at('c:aves').y }
+    expect(dropTarget(l, 'c:aves', moving, onto)).toBe('c:reptilia')
+    expect(dropTarget(l, 'c:aves', moving, { dx: 0, dy: 0 })).toBeNull()
+    expect(dropTarget(l, 'c:reptilia', drawnSubtree(proj, 'c:reptilia'), { dx: at('c:squamata').x - at('c:reptilia').x, dy: at('c:squamata').y - at('c:reptilia').y })).toBeNull()
   })
 })

@@ -1,6 +1,6 @@
 {
   "name": "@captiveorigins/onetaxonomy-layout",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "OneTaxonomy layout: deterministic tree layouts (rectangular cladogram, phylogram and time scale only when the data supports them, radial, classification sunburst) as plain coordinates for any renderer.",
   "keywords": [
     "taxonomy",

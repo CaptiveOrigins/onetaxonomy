@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.0-alpha.2
+
+- Proposed mode: drag a taxon onto a new parent (or choose one from a list) to model your own arrangement. Moves are reversible, carry the author's name, travel with the view file, and can be compared side by side with the accepted tree. The accepted data never changes.
+- Core: `Proposal`, `applyToClassification`, `applyToPhylogeny`, `compareHierarchies`, and the view actions `startProposal`, `proposeMove`, `revertMove`, `endProposal`.
+
 ## Unreleased
 
 ## 0.1.0-alpha.1
