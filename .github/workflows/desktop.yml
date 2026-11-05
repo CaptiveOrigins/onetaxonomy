@@ -1,0 +1,43 @@
+# OneTaxonomy for Mac: on a desktop-v* tag, build a universal app and publish a GitHub release.
+# To ship signed updates, add the TAURI_SIGNING_PRIVATE_KEY secret and set bundle.createUpdaterArtifacts in
+# tauri.conf.json. Apple notarization (APPLE_* secrets) can be added later; until then macOS asks people to
+# confirm the first launch (right-click > Open).
+name: Desktop app
+
+on:
+  push:
+    tags: ['desktop-v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  mac:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: pnpm
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm -r --filter '!onetaxonomy-studio' build
+      - uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          projectPath: apps/studio
+          tagName: ${{ github.ref_name }}
+          releaseName: 'OneTaxonomy for Mac ${{ github.ref_name }}'
+          releaseBody: 'Download the .dmg below. macOS asks you to confirm the first launch: right-click the app, then choose Open.'
+          releaseDraft: false
+          prerelease: false
+          args: --target universal-apple-darwin
+          includeUpdaterJson: true

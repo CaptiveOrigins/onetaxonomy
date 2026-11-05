@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Studio: first Mac app. Opens CSV/TSV checklists, Darwin Core Archives, Newick trees and OneTaxonomy snapshots, then browses them in the explorer and saves views and sealed snapshots. Rooting, support methods and column mappings are asked for, not guessed.
+
 ## 0.1.0-alpha.1
 
 - License: PolyForm Noncommercial 1.0.0. Earlier versions remain under MIT.
