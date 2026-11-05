@@ -9,7 +9,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] ADRs 0001–0008
 - [x] Illustrative fixtures: classification forest + conflicting hypotheses (amniotes); polytomy, forest, unrooted, fossil/time-calibrated, split names (structures)
 - [x] Release workflow (tag → staged npm publish → owner approval), lockstep versions
-- [x] GitHub repository `mgilardi/onetaxonomy` (public); npm names `@captiveorigins/onetaxonomy-*` (ADR 0008)
+- [x] GitHub repository `CaptiveOrigins/onetaxonomy` (public); npm names `@captiveorigins/onetaxonomy-*` (ADR 0008)
 
 ## M2 — Core model, parser, validation, traversal ✅
 
