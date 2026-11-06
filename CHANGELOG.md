@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+- Mac app: OneTaxonomy for Mac, not yet released.
+- Documentation: names the OneOrigin suite.
+- The repository moved to github.com/CaptiveOrigins, including the address the Mac app checks for updates.
+
 ## 0.1.0-alpha.2
 
 - Proposed mode: drag a taxon onto a new parent (or choose one from a list) to model your own arrangement. Moves are reversible, carry the author's name, travel with the view file, and can be compared side by side with the accepted tree. The accepted data never changes.
