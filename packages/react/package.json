@@ -1,6 +1,6 @@
 {
   "name": "@captiveorigins/onetaxonomy-react",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "OneTaxonomy for React: a server-renderable SVG tree, an accessible keyboard tree outline, and an explorer with undo/redo, filters, layouts and an inspector that keeps clades and groups apart.",
   "keywords": [
     "taxonomy",
@@ -11,14 +11,14 @@
     "accessibility",
     "education"
   ],
-  "homepage": "https://github.com/mgilardi/onetaxonomy#readme",
+  "homepage": "https://github.com/CaptiveOrigins/onetaxonomy#readme",
   "bugs": {
-    "url": "https://github.com/mgilardi/onetaxonomy/issues"
+    "url": "https://github.com/CaptiveOrigins/onetaxonomy/issues"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mgilardi/onetaxonomy.git",
+    "url": "git+https://github.com/CaptiveOrigins/onetaxonomy.git",
     "directory": "packages/react"
   },
   "type": "module",

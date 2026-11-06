@@ -164,3 +164,20 @@
 .ot-badge text { fill: #fff; font-size: 9px; font-weight: 700; }
 .ot-lesson-notes { margin-top: 8px; padding: 8px 12px; border-inline-start: 3px solid var(--ot-muted); font-size: 13px; color: var(--ot-muted); }
 .ot-studio-tools { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+
+/* Proposed mode: always visibly someone's proposal, never the accepted arrangement. */
+.ot-node[data-moved] .ot-label { font-style: italic; text-decoration: underline dashed; text-underline-offset: 3px; }
+.ot-node[data-moved] .ot-node-dot { stroke: var(--ot-selected); stroke-width: 2; stroke-dasharray: 2 2; }
+.ot-node[data-drop-target] .ot-node-dot { r: 8px; fill: var(--ot-selected); }
+.ot-node[data-drop-target] .ot-label { fill: var(--ot-selected); font-weight: 600; }
+.ot-proposed-badge { position: absolute; bottom: 8px; inset-inline-start: 8px; z-index: 2; max-width: 70%; padding: 4px 8px; border: 1px dashed var(--ot-selected); border-radius: 6px; background: var(--ot-bg, #fff); color: var(--ot-selected); font-size: 12px; font-weight: 600; }
+.ot-proposal { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px dashed var(--ot-selected); border-radius: 8px; margin-block-end: 8px; }
+.ot-proposal h3 { margin: 0; font-size: 14px; }
+.ot-proposal label { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
+.ot-proposal input, .ot-proposal textarea { padding: 4px 6px; font: inherit; border: 1px solid var(--ot-border, #ccc); border-radius: 4px; background: transparent; color: inherit; }
+.ot-proposal ul { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
+.ot-proposal li { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.ot-compare { margin-block-start: 8px; }
+.ot-compare-panes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-block-start: 8px; }
+.ot-compare-panes h4 { margin: 0 0 4px; font-size: 13px; }
+.ot-compare-panes svg { width: 100%; height: auto; max-height: 28rem; }

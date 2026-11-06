@@ -1,6 +1,6 @@
 {
   "name": "@captiveorigins/onetaxonomy-education",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "OneTaxonomy education: portable lesson decks of scenes over a pinned snapshot (views, camera, annotations, step-by-step reveals) and worksheets whose answers are checked by the core science functions.",
   "keywords": [
     "taxonomy",
@@ -11,14 +11,14 @@
     "worksheets",
     "teaching"
   ],
-  "homepage": "https://github.com/mgilardi/onetaxonomy#readme",
+  "homepage": "https://github.com/CaptiveOrigins/onetaxonomy#readme",
   "bugs": {
-    "url": "https://github.com/mgilardi/onetaxonomy/issues"
+    "url": "https://github.com/CaptiveOrigins/onetaxonomy/issues"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/mgilardi/onetaxonomy.git",
+    "url": "git+https://github.com/CaptiveOrigins/onetaxonomy.git",
     "directory": "packages/education"
   },
   "type": "module",

@@ -9,7 +9,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] ADRs 0001–0008
 - [x] Illustrative fixtures: classification forest + conflicting hypotheses (amniotes); polytomy, forest, unrooted, fossil/time-calibrated, split names (structures)
 - [x] Release workflow (tag → staged npm publish → owner approval), lockstep versions
-- [x] GitHub repository `mgilardi/onetaxonomy` (public); npm names `@captiveorigins/onetaxonomy-*` (ADR 0008)
+- [x] GitHub repository `CaptiveOrigins/onetaxonomy` (public); npm names `@captiveorigins/onetaxonomy-*` (ADR 0008)
 
 ## M2 — Core model, parser, validation, traversal ✅
 
@@ -53,6 +53,12 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] Profiles and evidence in the inspector; support, fossil, extinction and trait overlays (observed traits: `TraitSet`); citations
 - [x] Export SVG/PNG/PDF (labelled classification vs phylogeny, hidden branches disclosed), JSON view, embeds (PDF via print; embeds = server-rendered `TreeView`)
 - [x] `@captiveorigins/onetaxonomy-education`: scenes, annotations, camera states, reveals (step-by-step view actions; animated transitions are the renderer's), lesson decks, worksheets with computed answers; Present, Explore and Studio modes (`LessonPlayer`)
+
+## Proposed mode (owner 2026-11-03; done 2026-11-05)
+
+- [x] Core: proposals, derived hierarchies, checks, `compareHierarchies`, view actions, disclosure in every export
+- [x] Explorer: start a proposal, drag onto a new parent or pick from a list, revert and undo, accepted vs proposed for a taxon, side-by-side compare
+- [ ] Plugin (M7): proposals per user, shareable; a curator can accept one into a new staged version, never silently
 
 ## M6 — Studio (macOS)
 

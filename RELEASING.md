@@ -9,5 +9,5 @@ One description everywhere: each `package.json` (`description`, `keywords`) is t
 The first version of each package is published by hand (`pnpm publish --access public` in each `packages/*` folder, `core` first; pnpm turns `workspace:^` into the real version), because npm can only trust a workflow for a package that exists; then, once per package:
 
 ```bash
-npm trust github <package-name> --repo mgilardi/onetaxonomy --file release.yml --allow-stage-publish --yes
+npm trust github <package-name> --repo CaptiveOrigins/onetaxonomy --file release.yml --allow-stage-publish --yes
 ```

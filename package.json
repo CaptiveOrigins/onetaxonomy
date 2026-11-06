@@ -13,9 +13,9 @@
     "react",
     "payload-plugin"
   ],
-  "homepage": "https://github.com/mgilardi/onetaxonomy#readme",
+  "homepage": "https://github.com/CaptiveOrigins/onetaxonomy#readme",
   "bugs": {
-    "url": "https://github.com/mgilardi/onetaxonomy/issues"
+    "url": "https://github.com/CaptiveOrigins/onetaxonomy/issues"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "type": "module",

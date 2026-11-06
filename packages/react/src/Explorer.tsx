@@ -8,6 +8,9 @@ import {
   dispatch as dispatchAction,
   inspectNode,
   nodeOverlays,
+  acceptedTree,
+  compareHierarchies,
+  viewTree,
   serializeView,
   layoutProblem,
   projectView,
@@ -28,7 +31,7 @@ import {
 import { radial, rectangular, type TreeLayout } from '@captiveorigins/onetaxonomy-layout'
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type WheelEvent } from 'react'
 
-import { dropOrder, drawnSubtree } from './drag.js'
+import { dropOrder, drawnSubtree, dropTarget } from './drag.js'
 import { citationLine, disclosureLines, downloadBlob, standaloneSvg, svgToPng } from './export.js'
 import { Icon } from './icons.js'
 import { TreeOutline } from './TreeOutline.js'
@@ -95,6 +98,8 @@ export function layoutFor(projection: Projection, kind: LayoutKind): TreeLayout 
 export type ExplorerLabels = Record<
   | 'undo' | 'redo' | 'expandAll' | 'collapseAll' | 'rotate' | 'layout' | 'status' | 'allStatuses' | 'outline' | 'details' | 'nothingSelected' | 'clade' | 'group' | 'hidden' | 'rank' | 'lifeStatus' | 'focus' | 'unfocus'
   | 'zoomIn' | 'zoomOut' | 'fit' | 'download' | 'print' | 'canvas' | 'controls' | 'dragHint'
+  | 'propose' | 'proposalTitle' | 'proposalAuthor' | 'proposalStart' | 'proposalCancel' | 'proposalHint' | 'proposalBy' | 'proposalLeave' | 'proposalNoMoves' | 'proposalUnder' | 'proposalRoot'
+  | 'proposalRevert' | 'proposalAccepted' | 'proposalProposed' | 'proposalMoveUnder' | 'proposalGained' | 'proposalLost' | 'proposalCompare' | 'proposalDefaultTitle'
   | 'overlays' | 'support' | 'extinction' | 'trait' | 'noTrait' | 'noStatedValue' | 'mixed' | 'weakSupport'
   | 'selection' | 'checkClade' | 'addHighlight' | 'highlightName' | 'checkAgainst' | 'clearSelection' | 'remove' | 'multiHint'
   | 'downloadSvg' | 'downloadPng' | 'downloadView' | 'about' | 'sources' | 'references' | 'synonyms' | 'commonNames' | 'age' | 'branchLength' | 'unmapped' | 'traits',
@@ -127,6 +132,25 @@ const LABELS: ExplorerLabels = {
   print: 'Print',
   canvas: 'Tree drawing: drag to pan, Ctrl or ⌘ + scroll to zoom, drag a taxon to reorder it among its siblings, double-click to fold',
   controls: 'Drawing controls',
+  propose: 'Propose changes',
+  proposalTitle: 'Name of this proposal',
+  proposalAuthor: 'Your name',
+  proposalStart: 'Start proposing',
+  proposalCancel: 'Cancel',
+  proposalHint: 'Drag a taxon onto its new parent, or select it and choose below. The accepted data never changes.',
+  proposalBy: 'Proposed by',
+  proposalLeave: 'Leave Proposed mode',
+  proposalNoMoves: 'No moves yet.',
+  proposalUnder: 'under',
+  proposalRoot: 'the top level',
+  proposalRevert: 'Revert',
+  proposalAccepted: 'Accepted',
+  proposalProposed: 'Proposed',
+  proposalMoveUnder: 'Move under',
+  proposalGained: 'Gains',
+  proposalLost: 'Loses',
+  proposalCompare: 'Compare with the accepted arrangement',
+  proposalDefaultTitle: 'My proposal',
   dragHint: 'Drag a taxon up or down to reorder it among its siblings; double-click a branch to fold it.',
   overlays: 'Overlays',
   support: 'Support values',
@@ -205,6 +229,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   const disclosure = useMemo(() => describeView(dataset, view, projection), [dataset, view, projection])
   const details = useMemo(() => (selected && node ? inspectNode(dataset, view, selected) : null), [dataset, view, selected, node])
   const traits = dataset.snapshot.traits ?? []
+  const isUnrooted = view.target.kind === 'phylogeny' && !dataset.phylogeny(view.target.id).rooted
   const hasSupport = projection.nodes.some((n) => n.support !== undefined)
   const hasExtinct = projection.nodes.some((n) => n.status === 'extinct')
   const overlays = view.overlays ?? {}
@@ -220,6 +245,9 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   const canvas = useRef<HTMLDivElement>(null)
   const pointer = useRef<{ x: number; y: number; box: ViewBox; node: Id | null; moved: boolean; additive: boolean } | null>(null)
   const [drag, setDrag] = useState<{ id: Id; ids: Set<Id>; dx: number; dy: number } | null>(null)
+  const [proposing, setProposing] = useState(false)
+  const proposal = view.proposal
+  const landing = proposal && drag ? dropTarget(layout, drag.id, drag.ids, drag) : null
 
   const scale = () => {
     const r = canvas.current?.querySelector('svg.ot-root')?.getBoundingClientRect()
@@ -261,13 +289,18 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
     if (!p.moved && Math.hypot(e.clientX - p.x, e.clientY - p.y) < 4) return
     p.moved = true
     const n = p.node ? projection.nodes.find((x) => x.id === p.node) : undefined
-    if (n?.parent) setDrag({ id: n.id, ids: drag?.id === n.id ? drag.ids : drawnSubtree(projection, n.id), dx, dy })
+    if (n && (n.parent || proposal)) setDrag({ id: n.id, ids: drag?.id === n.id ? drag.ids : drawnSubtree(projection, n.id), dx, dy })
     else setBox({ ...p.box, x: p.box.x - dx, y: p.box.y - dy })
   }
   const onPointerUp = () => {
     const p = pointer.current
     pointer.current = null
     if (!p) return
+    if (drag && landing) {
+      setDrag(null)
+      if (projection.nodes.find((n) => n.id === drag.id)?.parent !== landing) dispatch({ type: 'proposeMove', node: drag.id, to: landing })
+      return
+    }
     if (drag) {
       const parent = projection.nodes.find((n) => n.id === drag.id)?.parent
       const order = parent ? dropOrder(projection, layout, drag.id, drag, allChildren(parent)) : null
@@ -323,6 +356,12 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
           <Icon name="redo" />
           {labels.redo}
         </button>
+        {!proposal && !isUnrooted && (
+          <button type="button" onClick={() => setProposing((v) => !v)} aria-expanded={proposing}>
+            <Icon name="grip" />
+            {labels.propose}
+          </button>
+        )}
         <span className="ot-toolbar-gap" aria-hidden="true" />
         <button type="button" onClick={() => dispatch({ type: 'expandAll' })}>
           <Icon name="expand" />
@@ -453,7 +492,12 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
               <Icon name="print" />
             </button>
           </div>
-          <TreeView projection={projection} layout={layout} highlights={view.highlights} title={title} interactive hiddenLabel={hidden} viewBox={shown} drag={drag} overlays={marks} />
+          <TreeView projection={projection} layout={layout} highlights={view.highlights} title={title} interactive hiddenLabel={hidden} viewBox={shown} drag={drag} dropTarget={landing ?? null} overlays={marks} />
+          {proposal && (
+            <p className="ot-proposed-badge" role="note">
+              {labels.proposalBy} {proposal.author}: {proposal.title}
+            </p>
+          )}
           <div className="ot-print-disclosure" aria-hidden="true">
             {disclosureLines(disclosure, labels.sources).map((l, i) => (
               <p key={i}>{l}</p>
@@ -461,6 +505,17 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
           </div>
         </div>
         <div className="ot-side">
+          {proposing && !proposal && (
+            <ProposalStart
+              labels={labels}
+              onCancel={() => setProposing(false)}
+              onStart={(title, author) => {
+                dispatch({ type: 'startProposal', proposal: { id: `p${Date.now().toString(36)}`, title, author, created: new Date().toISOString() } })
+                setProposing(false)
+              }}
+            />
+          )}
+          {proposal && <ProposalPanel dataset={dataset} view={view} dispatch={dispatch} labels={labels} />}
           <TreeOutline
             projection={projection}
             label={labels.outline}
@@ -475,6 +530,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
             ) : node ? (
               <>
                 <h3 className="ot-inspector-title">{node.label}</h3>
+                {proposal && <ProposalNode dataset={dataset} view={view} node={node.id} projection={projection} dispatch={dispatch} labels={labels} />}
                 <dl>
                   {node.rank && (
                     <>
@@ -539,6 +595,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
         </div>
       </div>
       <Legend layout={layout} highlights={view.highlights} labels={labels} trait={traits.find((tr) => tr.id === overlays.trait)} support={Boolean(overlays.support)} onRemoveHighlight={(id) => dispatch({ type: 'removeHighlight', id })} />
+      {proposal && proposal.moves.length > 0 && <ProposalCompare dataset={dataset} view={view} labels={labels} title={title} />}
       <details className="ot-about">
         <summary>
           <Icon name="book" />
@@ -753,5 +810,150 @@ export function Legend({
       )}
       {support && <p className="ot-notice">{labels.weakSupport}</p>}
     </div>
+  )
+}
+
+type ProposalProps = { dataset: DatasetIndex; view: TaxonomicView; labels: ExplorerLabels }
+
+const nodeName = (dataset: DatasetIndex, view: TaxonomicView, id: Id | null, labels: ExplorerLabels) => {
+  if (id === null) return labels.proposalRoot
+  if (view.target.kind === 'classification') return dataset.nameOf(id) ?? id
+  const n = dataset.phylogeny(view.target.id).node.get(id)
+  return n?.label ?? (n?.concepts?.[0] ? dataset.nameOf(n.concepts[0]) : undefined) ?? id
+}
+
+/** Names a new proposal: a proposal always says whose it is. */
+function ProposalStart({ labels, onStart, onCancel }: { labels: ExplorerLabels; onStart: (title: string, author: string) => void; onCancel: () => void }) {
+  const [title, setTitle] = useState('')
+  const [author, setAuthor] = useState('')
+  return (
+    <form
+      className="ot-proposal"
+      onSubmit={(e) => {
+        e.preventDefault()
+        if (author.trim()) onStart(title.trim() || labels.proposalDefaultTitle, author.trim())
+      }}
+    >
+      <h3>{labels.propose}</h3>
+      <p className="ot-hint">{labels.proposalHint}</p>
+      <label>
+        {labels.proposalAuthor}
+        <input value={author} onChange={(e) => setAuthor(e.target.value)} required />
+      </label>
+      <label>
+        {labels.proposalTitle}
+        <input value={title} onChange={(e) => setTitle(e.target.value)} />
+      </label>
+      <div className="ot-inspector-actions">
+        <button type="submit">{labels.proposalStart}</button>
+        <button type="button" onClick={onCancel}>
+          {labels.proposalCancel}
+        </button>
+      </div>
+    </form>
+  )
+}
+
+/** The moves so far, each reversible (undo and redo work too). */
+function ProposalPanel({ dataset, view, dispatch, labels }: ProposalProps & { dispatch: (a: ViewAction) => void }) {
+  const p = view.proposal!
+  return (
+    <section className="ot-proposal" aria-label={labels.propose}>
+      <h3>
+        {labels.proposalBy} {p.author}: {p.title}
+      </h3>
+      <p className="ot-hint">{labels.proposalHint}</p>
+      {p.moves.length ? (
+        <ul>
+          {p.moves.map((m) => (
+            <li key={m.node}>
+              <span>
+                <strong>{nodeName(dataset, view, m.node, labels)}</strong> {labels.proposalUnder} {nodeName(dataset, view, m.to, labels)}
+              </span>
+              <button type="button" onClick={() => dispatch({ type: 'revertMove', node: m.node })}>
+                {labels.proposalRevert}
+              </button>
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="ot-hint">{labels.proposalNoMoves}</p>
+      )}
+      <div className="ot-inspector-actions">
+        <button type="button" onClick={() => dispatch({ type: 'endProposal' })}>
+          {labels.proposalLeave}
+        </button>
+      </div>
+    </section>
+  )
+}
+
+/** For the selected taxon: its accepted and proposed places, what its parent groups gain or lose, and a keyboard way to move it. */
+function ProposalNode({ dataset, view, node, projection, dispatch, labels }: ProposalProps & { node: Id; projection: Projection; dispatch: (a: ViewAction) => void }) {
+  const accepted = acceptedTree(dataset, view)
+  const proposed = viewTree(dataset, view)
+  const from = accepted.parent.get(node) ?? null
+  const to = proposed.parent.get(node) ?? null
+  const comparison = useMemo(() => compareHierarchies(accepted, proposed), [accepted, proposed])
+  const change = comparison.changedGroups.find((g) => g.node === node)
+  const under = new Set(drawnSubtree(projection, node))
+  const name = (id: Id | null) => nodeName(dataset, view, id, labels)
+  return (
+    <div className="ot-proposal">
+      <p>
+        <strong>{labels.proposalAccepted}:</strong> {labels.proposalUnder} {name(from)}
+        <br />
+        <strong>{labels.proposalProposed}:</strong> {labels.proposalUnder} {name(to)}
+      </p>
+      {change && change.gained.length > 0 && (
+        <p>
+          <strong>{labels.proposalGained}:</strong> {change.gained.map(name).join(', ')}
+        </p>
+      )}
+      {change && change.lost.length > 0 && (
+        <p>
+          <strong>{labels.proposalLost}:</strong> {change.lost.map(name).join(', ')}
+        </p>
+      )}
+      <label>
+        {labels.proposalMoveUnder}
+        <select value={to ?? ''} onChange={(e) => dispatch({ type: 'proposeMove', node, to: e.target.value || null })}>
+          {view.target.kind === 'classification' && <option value="">{labels.proposalRoot}</option>}
+          {projection.nodes
+            .filter((n) => !under.has(n.id) || n.id === to)
+            .map((n) => (
+              <option key={n.id} value={n.id}>
+                {n.label}
+              </option>
+            ))}
+        </select>
+      </label>
+    </div>
+  )
+}
+
+/** The accepted and proposed trees side by side, same folds and filters. */
+function ProposalCompare({ dataset, view, labels, title }: ProposalProps & { title: string }) {
+  const accepted = useMemo(() => {
+    const { proposal: _p, ...rest } = view
+    return projectView(dataset, { ...rest, order: {} })
+  }, [dataset, view])
+  const proposed = useMemo(() => projectView(dataset, view), [dataset, view])
+  return (
+    <details className="ot-compare">
+      <summary>{labels.proposalCompare}</summary>
+      <div className="ot-compare-panes">
+        <div>
+          <h4>{labels.proposalAccepted}</h4>
+          <TreeView projection={accepted} layout={layoutFor(accepted, 'rectangular')} highlights={[]} title={`${title}: ${labels.proposalAccepted}`} />
+        </div>
+        <div>
+          <h4>
+            {labels.proposalBy} {view.proposal!.author}
+          </h4>
+          <TreeView projection={proposed} layout={layoutFor(proposed, 'rectangular')} highlights={[]} title={`${title}: ${labels.proposalProposed}`} />
+        </div>
+      </div>
+    </details>
   )
 }

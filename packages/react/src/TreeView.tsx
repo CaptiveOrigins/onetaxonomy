@@ -19,6 +19,8 @@ export type TreeViewProps = {
   drag?: { ids: ReadonlySet<Id>; dx: number; dy: number } | null
   /** Overlay marks per node (`nodeOverlays` from core): support, fossil ages, observed trait states. */
   overlays?: ReadonlyMap<Id, NodeOverlay>
+  /** The node a dragged taxon would land on (Proposed mode). */
+  dropTarget?: Id | null
   /** Small numbered markers on nodes (e.g. lesson annotations), by node id. */
   badges?: ReadonlyMap<Id, string>
   /** Nodes are focusable and clickable. */
@@ -129,6 +131,8 @@ export function TreeView(props: TreeViewProps) {
               data-leaf={ln.leaf ? '' : undefined}
               data-collapsed={n.collapsed ? '' : undefined}
               data-selected={n.selected ? '' : undefined}
+              data-moved={n.moved ? '' : undefined}
+              data-drop-target={props.dropTarget === ln.id ? '' : undefined}
               data-status={n.status}
               data-rank={n.rank}
               data-trait={mark?.trait?.state}
