@@ -62,7 +62,8 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 ## M6 — Studio (macOS)
 
-- [ ] Tauri 2 app, SQLite persistence, native dialogs, backups, migrations
+- [x] Tauri 2 app, native dialogs, atomic saves, Settings, updater, and opening every importer's format (`apps/studio`)
+- [ ] SQLite persistence, backups, migrations
 - [ ] `.onetaxonomy` bundle (ZIP container, manifest, checksums, pinned snapshot refs, media, optional embedded dataset); damaged-file diagnostics
 - [ ] Offline end-to-end journey; upgrade/relink flow when sources change
 

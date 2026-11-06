@@ -1,0 +1,45 @@
+/* OneTaxonomy for Mac: light and dark (Settings → Appearance: Auto follows the system). */
+:root {
+  color-scheme: light dark;
+  --bg: #ffffff;
+  --panel: #fdf7f7;
+  --text: #1d2330;
+  --muted: #5b6577;
+  --border: #eeddde;
+  --accent: #cf8137;
+  --field: #ffffff;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-appearance='light']) {
+    --bg: #12151b; --panel: #181c24; --text: #e8ecf2; --muted: #a3acbb; --border: #2c3340; --accent: #e7a066; --field: #1f2430;
+  }
+}
+:root[data-appearance='dark'] {
+  color-scheme: dark;
+  --bg: #12151b; --panel: #181c24; --text: #e8ecf2; --muted: #a3acbb; --border: #2c3340; --accent: #e7a066; --field: #1f2430;
+}
+:root[data-appearance='light'] { color-scheme: light; }
+html, body, #root { height: 100%; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+#root { display: flex; flex-direction: column; }
+button, select, input { font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; }
+button { cursor: pointer; }
+button:disabled { opacity: 0.5; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
+.app-header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--panel); }
+.app-title { font-weight: 600; margin-inline-end: 8px; }
+.app-spacer { flex: 1; }
+.app-status { padding: 4px 12px; min-height: 22px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--border); }
+.app-status summary { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
+.app-status ul { margin: 4px 0; padding-inline-start: 18px; max-height: 8rem; overflow-y: auto; }
+.app-main { flex: 1; min-height: 0; overflow: auto; }
+.app-panel { max-width: 34rem; margin: 2rem auto; padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.app-panel h2 { margin: 0 0 0.5rem; font-size: 16px; }
+.app-hint { font-size: 13px; color: var(--muted); }
+.app-field { display: grid; gap: 4px; margin-bottom: 10px; }
+.app-row { display: flex; gap: 8px; margin-top: 12px; }
+.ot-explorer { border-radius: 0; }
+@media print {
+  .app-header, .app-status { display: none !important; }
+  .app-main { overflow: visible; }
+}
