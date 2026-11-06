@@ -1,6 +1,6 @@
 # Brand
 
-OnePedigree, OneTaxonomy and OnePhylogeny are separate tools from one maker: the [OneOrigin suite](https://github.com/mgilardi/onephylogeny/blob/main/docs/oneorigin/README.md). Like a tool family, they share a backbone and keep their own character. This file is identical in both repositories; change it in both.
+OnePedigree, OneTaxonomy and OnePhylogeny are separate tools from one maker: the [OneOrigin suite](https://github.com/CaptiveOrigins/onephylogeny/blob/main/docs/oneorigin/README.md). Like a tool family, they share a backbone and keep their own character. This file is identical in both repositories; change it in both.
 
 ## App icon
 
