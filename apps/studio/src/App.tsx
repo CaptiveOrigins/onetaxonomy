@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { pickDataset, pickView, saveJson, type PickedFile } from './files'
 import { COLUMN_KEYS, delimiterOf, kindOf, newickQuestions, openDwca, openNewick, openSnapshot, openTable, sealedJson, suggestColumns, tableHeader, targetsOf, type ColumnKey, type Opened, type Target } from './open'
-import { checkForUpdates, loadSettings, saveSettings, type Settings } from './updates'
+import { checkForUpdates, IN_APP_UPDATES, loadSettings, saveSettings, type Settings } from './updates'
 
 const COLUMN_LABELS: Record<ColumnKey, string> = {
   taxonID: 'Taxon ID (required)',
@@ -41,7 +41,7 @@ export function App() {
   useEffect(() => {
     void loadSettings().then((s) => {
       setSettings(s)
-      if (s.autoUpdate) void checkForUpdates(false).then((m) => m && setStatus(m))
+      if (IN_APP_UPDATES && s.autoUpdate) void checkForUpdates(false).then((m) => m && setStatus(m))
     })
   }, [])
   useEffect(() => {
@@ -275,7 +275,7 @@ function TableForm({ pending, onOpen, onCancel }: { pending: Extract<Pending, { 
   )
 }
 
-function SettingsPanel({ settings, onChange, onCheck, onClose }: { settings: Settings; onChange: (patch: Partial<Settings>) => void; onCheck: () => void; onClose: () => void }) {
+export function SettingsPanel({ settings, onChange, onCheck, onClose }: { settings: Settings; onChange: (patch: Partial<Settings>) => void; onCheck: () => void; onClose: () => void }) {
   return (
     <section className="app-panel">
       <h2>Settings</h2>
@@ -287,12 +287,14 @@ function SettingsPanel({ settings, onChange, onCheck, onClose }: { settings: Set
           <option value="dark">Dark</option>
         </select>
       </label>
-      <label className="app-field" style={{ display: 'flex', gap: 8 }}>
-        <input type="checkbox" checked={settings.autoUpdate} onChange={(e) => onChange({ autoUpdate: e.target.checked })} />
-        Check for updates when the app opens
-      </label>
+      {IN_APP_UPDATES && (
+        <label className="app-field" style={{ display: 'flex', gap: 8 }}>
+          <input type="checkbox" checked={settings.autoUpdate} onChange={(e) => onChange({ autoUpdate: e.target.checked })} />
+          Check for updates when the app opens
+        </label>
+      )}
       <div className="app-row">
-        <button type="button" onClick={onCheck}>Check now</button>
+        {IN_APP_UPDATES && <button type="button" onClick={onCheck}>Check now</button>}
         <button type="button" onClick={onClose}>Done</button>
       </div>
     </section>

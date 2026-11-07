@@ -3,6 +3,9 @@ import { relaunch } from '@tauri-apps/plugin-process'
 import { load } from '@tauri-apps/plugin-store'
 import { check } from '@tauri-apps/plugin-updater'
 
+/** No signing key yet, so releases have no update file. Turn this on with the key. */
+export const IN_APP_UPDATES = false
+
 /** App settings (stored on this Mac). Appearance: follow the system, or always light/dark. */
 export type Appearance = 'auto' | 'light' | 'dark'
 export type Settings = { autoUpdate: boolean; appearance: Appearance }

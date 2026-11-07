@@ -1,5 +1,5 @@
 /// OneTaxonomy desktop: file dialogs and file access for the files the user picks,
-/// settings storage, printing, and updates from our GitHub releases (user can turn them off).
+/// settings storage, printing, and the updater plugin, which the app doesn't use until it has a signing key.
 
 /// The system print dialog for the window (the web view's own `window.print()` does nothing on macOS).
 #[tauri::command]
