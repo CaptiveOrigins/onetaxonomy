@@ -275,7 +275,7 @@ function TableForm({ pending, onOpen, onCancel }: { pending: Extract<Pending, { 
   )
 }
 
-function SettingsPanel({ settings, onChange, onCheck, onClose }: { settings: Settings; onChange: (patch: Partial<Settings>) => void; onCheck: () => void; onClose: () => void }) {
+export function SettingsPanel({ settings, onChange, onCheck, onClose }: { settings: Settings; onChange: (patch: Partial<Settings>) => void; onCheck: () => void; onClose: () => void }) {
   return (
     <section className="app-panel">
       <h2>Settings</h2>
