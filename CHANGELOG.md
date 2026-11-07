@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- The Mac app no longer offers update checks. Releases have no signing key yet, so there is nothing to check; download the new DMG instead. Signed updates can return in a later release.
 - Mac app: OneTaxonomy for Mac, not yet released.
 - Documentation: names the OneOrigin suite.
 - The repository moved to github.com/CaptiveOrigins, including the address the Mac app checks for updates.
