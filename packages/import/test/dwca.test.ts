@@ -74,6 +74,19 @@ describe('Darwin Core Archive adapter', () => {
 
   it('refuses archives it cannot read', async () => {
     await expect(readZip(new Uint8Array([1, 2, 3]))).rejects.toThrow(ZipError)
+  })
+
+  it('refuses an entry that is cut short or unpacks to the wrong size, rather than reading part of it', async () => {
+    // The central directory entry starts right after the one local entry: 30 bytes + name + data.
+    const centralOf = (zip: Uint8Array) => new DataView(zip.buffer).getUint32(zip.length - 6, true)
+    const stored = makeZip({ 'taxon.txt': taxon }, { deflate: false })
+    const cut = new DataView(stored.buffer)
+    cut.setUint32(centralOf(stored) + 20, 1_000_000, true)
+    cut.setUint32(centralOf(stored) + 24, 1_000_000, true)
+    await expect(readZip(stored)).rejects.toThrow(/cut short/)
+    const deflated = makeZip({ 'taxon.txt': taxon })
+    new DataView(deflated.buffer).setUint32(centralOf(deflated) + 24, taxon.length + 7, true)
+    await expect(readZip(deflated)).rejects.toThrow(/unpacked to/)
     await expect(readDwca({ files: { 'a.txt': 'x', 'b.txt': 'y' } }, { source })).rejects.toThrow(/can't tell/)
     await expect(readDwca({ files: { 'meta.xml': meta } }, { source })).rejects.toThrow(/missing/)
   })

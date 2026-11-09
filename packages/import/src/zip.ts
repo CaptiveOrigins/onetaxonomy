@@ -48,6 +48,7 @@ export async function readZip(bytes: Uint8Array, inflate: Inflate = platformInfl
     const flags = view.getUint16(p + 8, true)
     const method = view.getUint16(p + 10, true)
     const size = view.getUint32(p + 20, true)
+    const fullSize = view.getUint32(p + 24, true)
     const nameLen = view.getUint16(p + 28, true)
     const extraLen = view.getUint16(p + 30, true)
     const commentLen = view.getUint16(p + 32, true)
@@ -58,10 +59,15 @@ export async function readZip(bytes: Uint8Array, inflate: Inflate = platformInfl
     if (flags & 1) throw new ZipError(`${name} is encrypted`)
     if (view.getUint32(local, true) !== 0x04034b50) throw new ZipError(`Damaged local header for ${name}`)
     const start = local + 30 + view.getUint16(local + 26, true) + view.getUint16(local + 28, true)
+    // CRCs aren't checked, so at least refuse an entry that is cut short or doesn't unpack to its stated size.
+    if (start + size > bytes.length) throw new ZipError(`${name} is cut short: the archive ends before its data does`)
     const data = bytes.subarray(start, start + size)
-    if (method === 0) files.set(name, data)
-    else if (method === 8) files.set(name, await inflate(data))
+    let out: Uint8Array
+    if (method === 0) out = data
+    else if (method === 8) out = await inflate(data)
     else throw new ZipError(`${name} uses unsupported compression method ${method}`)
+    if (out.length !== fullSize) throw new ZipError(`${name} unpacked to ${out.length} bytes, not the ${fullSize} the archive states`)
+    files.set(name, out)
   }
   return files
 }
