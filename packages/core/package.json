@@ -1,6 +1,6 @@
 {
   "name": "@captiveorigins/onetaxonomy-core",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "OneTaxonomy core: taxon concepts, classifications and phylogenetic hypotheses, with validation, bounded traversal, MRCA, tri-state monophyly, curated selections, coverage reports and snapshot diffs. No React, CMS, database or platform dependency.",
   "keywords": [
     "taxonomy",

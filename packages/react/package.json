@@ -1,6 +1,6 @@
 {
   "name": "@captiveorigins/onetaxonomy-react",
-  "version": "0.1.0-alpha.2",
+  "version": "0.1.0-alpha.3",
   "description": "OneTaxonomy for React: a server-renderable SVG tree, an accessible keyboard tree outline, and an explorer with undo/redo, filters, layouts and an inspector that keeps clades and groups apart.",
   "keywords": [
     "taxonomy",

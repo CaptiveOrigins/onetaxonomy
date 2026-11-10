@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## 0.1.0-alpha.3
+
 - Import: a Darwin Core Archive entry that is cut short, or doesn't unpack to its stated size, is now refused with an error naming the file, instead of being read in part.
 - First test audit (`docs/test-audit.md`), with tests for the studio's atomic save.
 
