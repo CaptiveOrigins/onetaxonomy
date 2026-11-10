@@ -63,4 +63,19 @@ describe('snapshots (I1)', () => {
     changed.phylogenies[0]!.edges[0]!.length = 1
     expect(verifySnapshot(changed)).toBe(false)
   })
+  it('never verifies a snapshot without a checksum (fails closed)', () => {
+    const plain = clone(amniotes)
+    expect(verifySnapshot({ ...plain, checksum: undefined })).toBe(false)
+    expect(verifySnapshot({ ...plain, checksum: '' })).toBe(false)
+  })
+  it('seals a copy, leaving the caller’s object unfrozen and unchanged, and replaces a stale checksum', () => {
+    const plain = clone(amniotes)
+    const before = JSON.stringify(plain)
+    const sealed = sealSnapshot(plain)
+    expect(Object.isFrozen(plain)).toBe(false)
+    expect(JSON.stringify(plain)).toBe(before)
+    const stale = sealSnapshot({ ...clone(sealed), checksum: 'sha256:0000' })
+    expect(stale.checksum).toBe(sealed.checksum)
+    expect(verifySnapshot(stale)).toBe(true)
+  })
 })
