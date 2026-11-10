@@ -59,6 +59,15 @@ describe('opening files', () => {
     expect(openSnapshot(JSON.stringify(edited)).notices[0]).toMatch(/checksum/)
   })
 
+  it('saves a sealed copy without changing the snapshot that is open', () => {
+    const { snapshot } = openNewick('[&R] (a,b);', 'x.nwk', {}, NOW)
+    const before = JSON.stringify(snapshot)
+    const sealed = JSON.parse(sealedJson(snapshot)) as { checksum?: string }
+    expect(sealed.checksum).toMatch(/^sha256:[0-9a-f]{64}$/)
+    expect(JSON.stringify(snapshot)).toBe(before)
+    expect(Object.isFrozen(snapshot)).toBe(false)
+  })
+
   it('draws what it opened in the explorer', () => {
     const tree = openNewick('[&R] ((Alpha:1,Beta:1)95.1/95:1,Gamma:1);', 'x.nwk', { supportMethods: ['SH-aLRT', 'UFBoot'] }, NOW).snapshot
     const table = openTable('ID,Name,Parent\n1,Testudines,\n2,Chelonoidis,1\n', 'x.csv', { taxonID: 'ID', name: 'Name', parentID: 'Parent' }, ',', NOW).snapshot

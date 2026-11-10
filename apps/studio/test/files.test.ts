@@ -23,4 +23,16 @@ describe('saving', () => {
     await expect(saveJson('view.json', '{}')).rejects.toThrow(/disk full/)
     expect(calls).toEqual([])
   })
+  it('writes nothing when the person cancels the save dialog', async () => {
+    const dialog = await import('@tauri-apps/plugin-dialog')
+    vi.mocked(dialog.save).mockResolvedValueOnce(null)
+    expect(await saveJson('view.json', '{}')).toBeNull()
+    expect(calls).toEqual([])
+  })
+  it('reports a failed rename instead of claiming the save worked', async () => {
+    const fs = await import('@tauri-apps/plugin-fs')
+    vi.mocked(fs.rename).mockRejectedValueOnce(new Error('permission denied'))
+    await expect(saveJson('view.json', '{}')).rejects.toThrow(/permission denied/)
+    expect(calls).toEqual(['write /made-up/view.json.tmp'])
+  })
 })

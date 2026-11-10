@@ -65,6 +65,19 @@ describe('readSnapshotJson', () => {
     expect(readSnapshotJson(JSON.stringify(tampered)).checksum).toBe('mismatch')
     expect(() => readSnapshotJson(JSON.stringify({ ...tampered, schemaVersion: 2 }))).toThrow(/schema version 2/)
   })
+  it('reports an unsealed snapshot as unsealed, never as verified', () => {
+    const unsealed = JSON.parse(text) as DatasetSnapshot
+    delete unsealed.checksum
+    expect(readSnapshotJson(JSON.stringify(unsealed)).checksum).toBe('unsealed')
+    expect(readSnapshotJson(JSON.stringify({ ...unsealed, checksum: '' })).checksum).toBe('mismatch')
+  })
+  it('refuses files that are not snapshots instead of reading them in part', () => {
+    expect(() => readSnapshotJson('{"names":[]}')).toThrow(/no concepts array/)
+    expect(() => readSnapshotJson('null')).toThrow(/no concepts array/)
+    const noPhylogenies = JSON.parse(text) as Record<string, unknown>
+    delete noPhylogenies.phylogenies
+    expect(() => readSnapshotJson(JSON.stringify(noPhylogenies))).toThrow(/phylogenies/)
+  })
 })
 
 describe('community presets', () => {

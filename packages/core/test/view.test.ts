@@ -105,4 +105,16 @@ describe('serialization and validation', () => {
     expect(validateView({ ...v, snapshot: { id: 'other', version: '9' }, collapsed: ['ghost'] }, am).map((d) => d.code)).toEqual(['snapshot-mismatch', 'unknown-node'])
     expect(() => parseView('{"format":"onetaxonomy-view","formatVersion":2}')).toThrow(/not supported/)
   })
+
+  it('flags a view pinned to the same id and version but another checksum', () => {
+    const v = createView(am, { id: 'v', title: 't', target: { kind: 'phylogeny', id: 'archelosauria' } })
+    expect(v.snapshot.checksum).toBe(am.snapshot.checksum)
+    const edited = { ...v, snapshot: { ...v.snapshot, checksum: 'sha256:0000' } }
+    expect(validateView(edited, am).map((d) => d.code)).toEqual(['snapshot-mismatch'])
+  })
+
+  it('refuses text that is not a view', () => {
+    expect(() => parseView('{"format":"onetaxonomy-preset","formatVersion":1}')).toThrow(/Not a OneTaxonomy view/)
+    expect(() => parseView('null')).toThrow(/Not a OneTaxonomy view/)
+  })
 })
