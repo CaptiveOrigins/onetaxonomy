@@ -1,5 +1,7 @@
 # Backlog
 
+Since 2026-11-10 the open items below are tracked as tasks in the maintainers' task log (K235 to K241). This page stays as the record of what each milestone covers; the task log is where open work is ranked.
+
 Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done with tests, `[ ]` to do. Integration dependencies on the project owner are marked **(owner)**.
 
 ## M1 — Monorepo, contracts, ADRs ✅
