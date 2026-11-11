@@ -19,7 +19,7 @@ export type PhyloLabels = Record<
   | 'supportThreshold' | 'supportClear' | 'supportClearName' | 'supportUnavailable' | 'branch' | 'branches' | 'below' | 'collapsed' | 'hasNoSupport' | 'haveNoSupport'
   | 'compareWith' | 'compareAgainst' | 'compareMode' | 'compareAuto' | 'compareRooted' | 'compareUnrooted' | 'rfDistance' | 'rfNormalized' | 'rfUndefined' | 'comparedOn' | 'sharedTips'
   | 'tipsOnlyIn' | 'cladesOnlyIn' | 'splitsOnlyIn' | 'splitSide' | 'none' | 'selectInTree' | 'notes'
-  | 'midpointRoot' | 'rootOnTip' | 'rootOnClade' | 'rooting',
+  | 'midpointRoot' | 'rootOnTip' | 'rootOnClade',
   string
 >
 
@@ -55,7 +55,6 @@ export const PHYLO_LABELS: PhyloLabels = {
   midpointRoot: 'Midpoint root',
   rootOnTip: 'Root on this tip (outgroup)',
   rootOnClade: 'Root on this clade (outgroup)',
-  rooting: 'Rooting:',
 }
 
 /**

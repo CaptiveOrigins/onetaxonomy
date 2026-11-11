@@ -37,7 +37,7 @@ const midpoint = midpointRoot(unrootedTree, { id: 'my-tree-midpoint', version: '
 ```
 
 - `comparePhylogenies` gives the Robinson-Foulds distance on the tips the two hypotheses share, matched by explicit concept mappings only. Tips in only one are listed, not dropped silently. It compares rooted clades when both are explicitly rooted, unrooted splits otherwise, and it refuses unmapped or ambiguous tips and forests. Support values and branch lengths aren't used.
-- `rerootPhylogeny` and `midpointRoot` return a **new** record that says how it was rooted and from what. They never change the input. Support stays with the split it measures. Time-calibrated hypotheses, forests and outgroups that aren't a clade are refused.
+- `rerootPhylogeny` and `midpointRoot` return a **new** record that says how it was rooted and from what. They never change the input. Support stays with the split it measures. Time-calibrated hypotheses, forests and outgroups that aren't a clade are refused. `describeView` puts a rooted record's rooting, method first ("Rooting (outgroup): Rerooted on…"), right after the hypothesis line, so every export says the tree was rerooted.
 - Views can draw branches below a support threshold as polytomies (`{ type: 'collapseBelowSupport', threshold }`). The projection lists the collapsed branches and `describeView` discloses them. Branches with no support value are never collapsed.
 
 ## Curation, coverage and releases

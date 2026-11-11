@@ -2,6 +2,25 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: rooting in describeView, two controls named "Show"
+
+Scope: two gaps from the sections below. The rooting note moves from the explorer into core's `describeView`, and the two "Show" dropdowns get distinct names. Tests went from 263 to 267: core 101 to 105 (4 in `rooting.test.ts`); react (71) and the studio (39) have the same counts, with assertions changed and one added. Everything ran in Node or jsdom with Tauri mocked.
+
+### Covered
+
+- **Every `describeView` caller discloses rerooting.** For an outgroup rooting, the line after "Phylogenetic hypothesis:" is "Rooting (outgroup): " and the record's whole note, which names the outgroup and the record it came from. A midpoint rooting says "Rooting (midpoint): … it is not an outgroup rooting." A record without a note still gets the method, the outgroup by label and the source record ("Rooting (outgroup): on the outgroup A, from t version 1."), and one with only a method gets that. A tree with no rooting record, or marked unrooted, gets no line (`rooting.test.ts`).
+- **The explorer shows core's line once.** The note under the toolbar and the About list both read "Rooting (outgroup): Rerooted on the outgroup Mammalia…", and About has it once (`getByText` fails on two) (`phylo.test.tsx`). The Mac app shows the same line for a tree rooted in the window (`app.test.tsx`).
+- **Two "Show" dropdowns, two names.** The Mac app's header picker is "Show tree or classification" and the explorer's filter "Show living or extinct". Both start with the visible "Show" (2.5.3), and with a tree open both are in the window with those names (`app.test.tsx`, `a11y.test.tsx`).
+
+### Gaps left
+
+- **The explorer's filter name is a separate label** (`statusFilter`). A host that changes `status` should change it too; nothing checks that one contains the other.
+- **Not run for real:** VoiceOver reading the two names, and the rooting line in a real export or print.
+
+### Left out as overkill
+
+- Testing the rooting line in each export format: SVG, PNG and print all take `describeView`'s lines, which the existing export tests already cover.
+
 ## 2026-11-11: accessibility gaps closed
 
 Scope: the small and medium gaps from the accessibility audit below. The brand-orange focus ring is left as it is: that's the owner's decision (N154). Core and import are unchanged. Tests went from 248 to 263: react 58 to 71 (13 new in `a11y.test.tsx`), studio 37 to 39 (2 in `app.test.tsx`; `theme.test.ts` now checks the error color and the alert region). Everything ran in jsdom with Tauri mocked.
@@ -71,9 +90,9 @@ Scope: the explorer and Mac app controls for the features in the previous sectio
 ### Gaps left
 
 - **Comparison in the Mac app always refuses files it imports itself.** Newick, NEXUS and phyloXML tips are never mapped to taxa (by design: no matching by label), and comparison needs mappings. It works on snapshots that carry mappings. A way to map tips explicitly in the app (a mapping table the person confirms) is a feature, for the lead's list.
-- **Two controls are named "Show"** in the Mac app: the header's tree or classification picker and the explorer's living/extinct filter. They existed before; a clearer name for the header one ("Tree or classification") is a small wording change left to the owner.
+- **Two controls are named "Show"** in the Mac app: the header's tree or classification picker and the explorer's living/extinct filter. They existed before; a clearer name for the header one ("Tree or classification") is a small wording change left to the owner. (Closed in "rooting in describeView" above.)
 - **Differing clades aren't highlighted in the drawing.** "Select" puts one in the selection; drawing all of them at once would need a highlight that isn't saved in the view. Clades only in the other tree have no node here, so they're listed only.
-- **The rooting note is added by the explorer, not by `describeView`.** Exports from the explorer include it; another app calling `describeView` directly won't see it. Adding it in core would change core's output, which this branch was asked not to do.
+- **The rooting note is added by the explorer, not by `describeView`.** Exports from the explorer include it; another app calling `describeView` directly won't see it. Adding it in core would change core's output, which this branch was asked not to do. (Closed in "rooting in describeView" above.)
 - **Not run for real:** VoiceOver reading the status regions, the number field's spinner and Enter in WebKit, and the Tauri dialogs and file writes in the built app. NEXUS and phyloXML were tried only on made-up files.
 - **Saving over the opened file is refused by path, letter case aside.** A symlink or another path to the same file isn't caught.
 

@@ -275,7 +275,7 @@ describe('toolbars (WAI-ARIA toolbar pattern)', () => {
     // Selects are stops in the row too.
     within(bar).getByRole('combobox', { name: /Layout/ }).focus()
     key('ArrowRight')
-    expect(document.activeElement).toBe(within(bar).getByRole('combobox', { name: /Show/ }))
+    expect(document.activeElement).toBe(within(bar).getByRole('combobox', { name: 'Show living or extinct' }))
   })
 
   it('gives the Tab stop to the first enabled control when the remembered one becomes disabled', () => {

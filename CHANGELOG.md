@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Core: `describeView` now says how a rooted hypothesis was rooted, on the line after the hypothesis: "Rooting (outgroup): …" with the record's note, or the outgroup and source record when there's no note. Every caller and export gets it, not only the React explorer, which now shows core's line instead of adding its own; the explorer's `rooting` label is gone. Mac app and explorer: the two dropdowns shown as "Show" have their own names, "Show tree or classification" (the Mac app's header) and "Show living or extinct" (the explorer's filter, label `statusFilter`). No screen reader was used.
 - Accessibility gaps from the 2026-11-11 audit. React explorer:
   - Move up and Move down buttons in the inspector, and pan buttons in the drawing controls, so reordering and panning don't need dragging (WCAG 2.5.7).
   - Both toolbars follow the toolbar pattern: one Tab stop, Left and Right move, Home and End jump, and disabled controls are skipped.
