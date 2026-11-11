@@ -2,6 +2,32 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: Payload plugin over HTTP
+
+Scope: `packages/payload`, tests only. Parts 1 to 4 each left "HTTP routing" as a gap: their tests call the endpoint handlers and the Local API directly, with the user handed in. `test/http.test.ts` (12 new; payload 127 to 139, all tests 494 to 506) sends real `Request`s through Payload's own REST router, `handleEndpoints`, and signs in through `/api/users/login`, so the user comes from a token the way it does for a browser. Same real Payload 3.93 and in-memory MongoDB, two tenants, no web server and no network. No plugin code changed: every test passed against the code as it was, once the test's own expectations matched the documented behaviour.
+
+### Covered
+
+- **Who you are comes from the token:** a reader's list of snapshots is their tenant's published ones; a manager's adds the staged one; another tenant's reader and manager get an empty list; an anonymous request gets 403 and no data. A staged snapshot by its id is 404 to a reader. A token that isn't one, or is a real one with its signature changed, is anonymous.
+- **Standard routes refuse a reader's writes:** create, update and delete of a snapshot are 403, another tenant's manager and an anonymous request are refused too, and the stored snapshots are unchanged.
+- **Every read endpoint is routed:** search, ancestors, descendants, MRCA, coverage, a view's projection and a view's export each answer 200 with the right body to a reader in the tenant, and 404 with no data in the body to another tenant's reader and manager and to an anonymous request.
+- **Parameters come from the URL:** a missing `q` or `classification` is 400; `limit=1` is honoured; a limit that isn't a number falls back to the default; a staged snapshot and a draft view are 404 to a reader and 200 to a manager; an id that isn't one is 404.
+- **Export:** a published snapshot downloads exactly as sealed (it verifies), with a JSON content type and an attachment file name.
+- **A read route takes no write:** POST, PUT and DELETE on search, export and projection are refused, and nothing changed.
+- **Imports:** a reader and an anonymous request can't make a job (403), and a reader can't list jobs; a manager's POST makes one that ends `done` with a staged snapshot; `POST …/:id/run` is 404 to a reader, another tenant and an anonymous request, 200 to the manager without another attempt; a GET of the run path runs nothing.
+- **Proposals:** an anonymous POST is refused; a decision written into a new proposal is refused; a new proposal is its sender's, private, with the plugin's own id and name, whatever the body says, and one that asks to start shared or accepted is refused. While private it can't be listed, read or previewed by anyone else, managers included. Forged PATCHes (status accepted, who decided, another author) are refused. Shared, it can be previewed by a reader in the tenant and by nobody outside it. Accept and decline are 404 to its author, other readers, another tenant and anonymous requests; a manager's accept with a body that isn't JSON, no body, or the wrong checksum stores nothing; a GET of the accept path does nothing. A manager's accept makes a staged version that a reader can't list, read or export, with both names in it; readers see "accepted" without who decided; the accepted proposal takes no PATCH or DELETE, and a second accept is 409. Decline takes its note from the body (a note that isn't text is 400) and the author reads it.
+
+### Gaps left
+
+- **A real site:** no web server, no Next.js, no cookies or CSRF (the tests send the token in the `Authorization` header), no admin. `apps/payload-example` will cover these.
+- **GraphQL** over HTTP: part 3 runs GraphQL queries against the schema directly, not through the router.
+- **Uploads over HTTP:** the import here reads a URL through the host's `fetch`; a multipart upload wasn't sent through the router.
+- **Postgres and SQLite**, as before.
+
+### Left out as overkill
+
+- Repeating every case from the other files over HTTP: the router hands the same request to the same handlers, so one pass per route and per kind of refusal is enough.
+
 ## 2026-11-11: Payload plugin part 4
 
 Scope: proposals (M7 part 4, ADR 0012 point 15). In `packages/core`: `acceptIntoSnapshot` (`src/proposal.ts`), `derivedFrom.proposal` in the model and the JSON Schema. In `packages/payload`: the `taxonomy-proposals` collection and its three endpoints (`src/proposals.ts`), `access.propose`, and the hook that reopens a proposal when its staged version is deleted. Tests went from 457 to 494: core 106 to 111, payload 95 to 127 (`proposals.test.ts` 27 new, `proposals-plain.test.ts` 4 new, `tenants.test.ts` 9 to 10, and the plugin-shape test in `snapshots.test.ts` widened). Same setup as before: a real Payload 3.93 with an in-memory MongoDB, no network. `proposals.test.ts` runs with tenants on a replica set, so with transactions; `proposals-plain.test.ts` runs without tenants on a single MongoDB, so without them. Endpoints were called through their handlers with a local request.
