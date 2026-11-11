@@ -34,12 +34,12 @@ export async function roleOf(opts: ResolvedOptions, req: PayloadRequest): Promis
 /** A relationship value as a comparable string (populated documents by their ID). */
 export const idOf = (v: unknown): string | undefined => (v && typeof v === 'object' ? idOf((v as { id?: unknown }).id) : v === null || v === undefined || v === '' ? undefined : String(v))
 
-const all = (...wheres: (Where | null)[]): Where | true => {
+export const all = (...wheres: (Where | null)[]): Where | true => {
   const w = wheres.filter((x): x is Where => x !== null)
   return w.length === 0 ? true : w.length === 1 ? w[0]! : { and: w }
 }
 
-const tenantWhere = (opts: ResolvedOptions, tenant: TenantId | null): Where | null => (opts.tenant ? { [opts.tenant.field]: { equals: tenant } } : null)
+export const tenantWhere = (opts: ResolvedOptions, tenant: TenantId | null): Where | null => (opts.tenant ? { [opts.tenant.field]: { equals: tenant } } : null)
 
 /** Read: managers see every status in their tenant; readers only published records in their tenant. */
 export const readAccess = (opts: ResolvedOptions): Access => async ({ req }) => {

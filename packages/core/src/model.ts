@@ -180,6 +180,23 @@ export type DatasetSnapshot = {
   phylogenies: Phylogeny[]
   profiles?: TaxonProfile[]
   traits?: TraitSet[]
-  /** Set when this snapshot was extracted from another one (e.g. a curated selective import). */
-  derivedFrom?: { snapshot: Id; version: string; checksum?: string; selection?: { id: Id; version: string } }
+  /**
+   * Set when this snapshot was made from another one: extracted by a curated selection (`selection`), or made by a
+   * curator accepting a proposal (`proposal`).
+   */
+  derivedFrom?: { snapshot: Id; version: string; checksum?: string; selection?: { id: Id; version: string }; proposal?: AcceptedProposal }
+}
+
+/**
+ * The proposal a snapshot version was made from: whose it was, who accepted it, the classification version it was
+ * drawn over and the concepts it moved. Names are written as their owners want them read; they are sealed with the
+ * snapshot and can't be taken out later.
+ */
+export type AcceptedProposal = {
+  id: Id
+  title: string
+  author: string
+  acceptedBy: string
+  classification: { id: Id; version: string }
+  moved: Id[]
 }

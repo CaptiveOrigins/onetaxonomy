@@ -1,7 +1,7 @@
 import Ajv2020 from 'ajv/dist/2020'
 import { describe, expect, it } from 'vitest'
 import schema from '../schema/snapshot.schema.json'
-import { extractSubset, applySelection, indexDataset } from '../src'
+import { acceptIntoSnapshot, extractSubset, applySelection, indexDataset, sealSnapshot } from '../src'
 import { amniotes, checklist, checklistV2, clone, structures } from './helpers'
 
 const validate = new Ajv2020({ allErrors: true, strict: true }).compile(schema)
@@ -11,7 +11,8 @@ describe('JSON Schema export', () => {
     const r = applySelection(indexDataset(checklist), { id: 's', title: 's', version: '1', classification: 'fx:checklist', roots: [{ concept: 'fx:6', policy: { kind: 'explicit' } }] })
     const subset = extractSubset(checklist, { id: 'x', version: '1', createdAt: 'x', classification: 'fx:checklist', include: r })
     const traits = { ...clone(amniotes), traits: [{ id: 't', title: 'T', source: 'fixture', states: [{ id: 'a', label: 'A', color: '#fff' }], values: [{ concept: 'c:aves', state: 'a', note: 'n' }] }] }
-    for (const s of [amniotes, structures, checklist, checklistV2, subset, traits]) expect(validate(s), JSON.stringify(validate.errors)).toBe(true)
+    const accepted = acceptIntoSnapshot(sealSnapshot(clone(amniotes)), { id: 'p', title: 'P', author: 'A', created: '2026-11-11T00:00:00Z', base: { kind: 'classification', id: 'traditional', version: '1' }, moves: [{ node: 'c:aves', from: null, to: 'c:reptilia' }] }, { version: '2', createdAt: '2026-11-11T00:00:00Z', acceptedBy: 'C' })
+    for (const s of [amniotes, structures, checklist, checklistV2, subset, traits, accepted]) expect(validate(s), JSON.stringify(validate.errors)).toBe(true)
   })
 
   it('rejects structural mistakes', () => {

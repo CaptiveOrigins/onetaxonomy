@@ -2,6 +2,81 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: Payload plugin over HTTP
+
+Scope: `packages/payload`, tests only. Parts 1 to 4 each left "HTTP routing" as a gap: their tests call the endpoint handlers and the Local API directly, with the user handed in. `test/http.test.ts` (12 new; payload 127 to 139, all tests 494 to 506) sends real `Request`s through Payload's own REST router, `handleEndpoints`, and signs in through `/api/users/login`, so the user comes from a token the way it does for a browser. Same real Payload 3.93 and in-memory MongoDB, two tenants, no web server and no network. No plugin code changed: every test passed against the code as it was, once the test's own expectations matched the documented behaviour.
+
+### Covered
+
+- **Who you are comes from the token:** a reader's list of snapshots is their tenant's published ones; a manager's adds the staged one; another tenant's reader and manager get an empty list; an anonymous request gets 403 and no data. A staged snapshot by its id is 404 to a reader. A token that isn't one, or is a real one with its signature changed, is anonymous.
+- **Standard routes refuse a reader's writes:** create, update and delete of a snapshot are 403, another tenant's manager and an anonymous request are refused too, and the stored snapshots are unchanged.
+- **Every read endpoint is routed:** search, ancestors, descendants, MRCA, coverage, a view's projection and a view's export each answer 200 with the right body to a reader in the tenant, and 404 with no data in the body to another tenant's reader and manager and to an anonymous request.
+- **Parameters come from the URL:** a missing `q` or `classification` is 400; `limit=1` is honoured; a limit that isn't a number falls back to the default; a staged snapshot and a draft view are 404 to a reader and 200 to a manager; an id that isn't one is 404.
+- **Export:** a published snapshot downloads exactly as sealed (it verifies), with a JSON content type and an attachment file name.
+- **A read route takes no write:** POST, PUT and DELETE on search, export and projection are refused, and nothing changed.
+- **Imports:** a reader and an anonymous request can't make a job (403), and a reader can't list jobs; a manager's POST makes one that ends `done` with a staged snapshot; `POST …/:id/run` is 404 to a reader, another tenant and an anonymous request, 200 to the manager without another attempt; a GET of the run path runs nothing.
+- **Proposals:** an anonymous POST is refused; a decision written into a new proposal is refused; a new proposal is its sender's, private, with the plugin's own id and name, whatever the body says, and one that asks to start shared or accepted is refused. While private it can't be listed, read or previewed by anyone else, managers included. Forged PATCHes (status accepted, who decided, another author) are refused. Shared, it can be previewed by a reader in the tenant and by nobody outside it. Accept and decline are 404 to its author, other readers, another tenant and anonymous requests; a manager's accept with a body that isn't JSON, no body, or the wrong checksum stores nothing; a GET of the accept path does nothing. A manager's accept makes a staged version that a reader can't list, read or export, with both names in it; readers see "accepted" without who decided; the accepted proposal takes no PATCH or DELETE, and a second accept is 409. Decline takes its note from the body (a note that isn't text is 400) and the author reads it.
+
+### Gaps left
+
+- **A real site:** no web server, no Next.js, no cookies or CSRF (the tests send the token in the `Authorization` header), no admin. `apps/payload-example` will cover these.
+- **GraphQL** over HTTP: part 3 runs GraphQL queries against the schema directly, not through the router.
+- **Uploads over HTTP:** the import here reads a URL through the host's `fetch`; a multipart upload wasn't sent through the router.
+- **Postgres and SQLite**, as before.
+
+### Left out as overkill
+
+- Repeating every case from the other files over HTTP: the router hands the same request to the same handlers, so one pass per route and per kind of refusal is enough.
+
+## 2026-11-11: Payload plugin part 4
+
+Scope: proposals (M7 part 4, ADR 0012 point 15). In `packages/core`: `acceptIntoSnapshot` (`src/proposal.ts`), `derivedFrom.proposal` in the model and the JSON Schema. In `packages/payload`: the `taxonomy-proposals` collection and its three endpoints (`src/proposals.ts`), `access.propose`, and the hook that reopens a proposal when its staged version is deleted. Tests went from 457 to 494: core 106 to 111, payload 95 to 127 (`proposals.test.ts` 27 new, `proposals-plain.test.ts` 4 new, `tenants.test.ts` 9 to 10, and the plugin-shape test in `snapshots.test.ts` widened). Same setup as before: a real Payload 3.93 with an in-memory MongoDB, no network. `proposals.test.ts` runs with tenants on a replica set, so with transactions; `proposals-plain.test.ts` runs without tenants on a single MongoDB, so without them. Endpoints were called through their handlers with a local request.
+
+### Covered
+
+- **Core, accepting** (`core/test/proposal.test.ts`): the new version carries the moves, a source record naming who proposed and who accepted, each moved placement's provenance with where it was before, and `derivedFrom` pinning the base and the proposal; the base isn't changed; the same proposal, version and date give the same snapshot every time. Refused: a phylogeny (with the reason), an unsealed or changed base, the base's own version, a proposal that moves nothing, one already accepted into the dataset. A second proposal is accepted only over the new version. The accepted snapshot validates against the JSON Schema (`schema.test.ts`).
+- **Whose it is** (`proposals.test.ts`, "making a proposal"): a new proposal is its author's and private, and its id, author name, date and checksum are the plugin's, whatever the request sent. Anonymous visitors, people `access.propose` refuses and checks that throw make nothing. A proposal that doesn't fit its snapshot is refused with the reason. A snapshot that is missing, hidden or in another tenant gives one and the same answer. No name from the site, no proposal. `maxPerUser` holds.
+- **Who sees it** ("private and shared"): a private proposal is invisible to everyone but its author, managers included, in and out of its tenant. A shared one is seen by its tenant's readers and by nobody else: not anonymous visitors, not another tenant's reader or manager, not a user with no tenant.
+- **Sharing locks it:** sharing needs a move and a published snapshot; nobody edits or deletes a shared proposal; only its author unshares it; taken back, it can be revised (under the author's current name) and shared again.
+- **Nothing forged:** the author, the snapshot, the tenant, the decision, who decided and the version it went into can't be set through an update, by the author, a manager or server code.
+- **Preview:** what would change, the checksum to accept, and whether it can be accepted; its lists are bounded and say so.
+- **Accepting:** a request that doesn't name the version and the checksum last seen is refused and stores nothing; accepting makes a new staged version with both names in its record and leaves the published one as it was (same `updatedAt`, same checksum); readers see that it was accepted, not the staged version or who decided; a second accept, a decline and every later change or delete are refused, for server code too; a version already stored is refused and the proposal stays open; deleting the staged version opens the proposal again; a phylogeny is refused with the reason.
+- **Races:** a proposal changed between the manager's look and the claim accepts nothing (409, no snapshot left); two managers accepting at once store one version. Both also without transactions (`proposals-plain.test.ts`), where the plugin removes the snapshot it just wrote instead of rolling back.
+- **Declining:** with a note; hidden from other readers afterwards, still seen by managers and the author; the author can revise and share again; a proposal taken back a moment before is not declined.
+- **When someone leaves:** server code with no user takes a departed person's shared proposal back to private and deletes it, and a private one, even when the site can no longer give their name. The stored name isn't touched on the way.
+- **A withdrawn snapshot** can't be proposed on, shared on or accepted from.
+- **No tenants:** names default to "User <id>", any signed-in reader may propose, anonymous visitors see nothing, and the whole path from private to a staged version works (`proposals-plain.test.ts`).
+- **Plugin shape:** no proposals collection unless asked; a taken slug is refused only when proposals are on (`snapshots.test.ts`).
+
+### Gaps added
+
+- **A view's `source` across tenants** (`tenants.test.ts`): the gap part 3 left for "the next part". A reader in the view's tenant gets its `source`; another tenant's reader and manager, a user with no tenant and a throwing tenant lookup get "not found".
+- **When someone leaves** (above): written after the README promised it, before this was merged.
+
+### Checked by breaking it
+
+30 deliberate breaks were made in `src/proposals.ts` and `src/access.ts`, one at a time (an access rule loosened, a status check dropped, a tenant filter removed, the conditional write made unconditional, and so on), and the plugin's tests run against each. 28 failed a test. Two didn't, and each is held by a second layer that is tested:
+
+- Delete access without its status filter: the `beforeDelete` hook refuses an accepted or shared proposal anyway, and the tests for that pass through the hook.
+- The plugin's own check that refuses a phylogeny before calling core: core refuses it with the same reason (`core/test/proposal.test.ts`).
+
+A third, the check that a proposal's snapshot is in the proposal's tenant, survived at first. A test with server code in both directions was added, and the break now fails three tests.
+
+### Gaps left
+
+- **Postgres and SQLite:** the accept and decline claims are one conditional write on MongoDB. Not run on a SQL adapter.
+- **A crash between the two writes without transactions:** the snapshot is stored, then the proposal is claimed. A process killed in between leaves a staged version nobody accepted, to delete by hand. Not simulated; the README and ADR say so. With transactions both writes roll back together, and that is tested through the lost race.
+- **HTTP routing and the admin:** the endpoints were called through their handlers, not over HTTP, and a proposal in the admin is a JSON field nobody has looked at. `apps/payload-example` will cover both.
+- **A real site:** `nameOf`, `access.propose` and the tenant lookup were test doubles.
+- **More than one accepted proposal in one version:** each acceptance starts from the published snapshot alone. Core's test accepts a second proposal over the first's version; the plugin has no path that combines two, and none is tested.
+- **Large proposals:** `maxMoves` is tested at a small number, not at its default of 500 on a large classification, and accept time wasn't measured.
+
+### Left out as overkill
+
+- Every pair of statuses for every role: the transitions that are allowed are each tested, and the forged-field test covers setting a status directly.
+- Racing more than two accepts: one winner out of two shows the claim.
+- Payload's own behaviour: field validation of the relationship, pagination of `find`.
+
 ## 2026-11-11: Payload plugin part 3
 
 Scope: `packages/payload` only (M7 part 3, ADR 0012 points 12 and 14): the atomic claim in `runImport` (`src/imports.ts`), and the `source` field on views (`src/collections.ts`, `src/views-api.ts`). No other package changed. Tests went from 442 to 457: payload 80 to 95 (`imports.test.ts` 20 to 24, and the new `view-reads.test.ts` with 11). Same setup as parts 1 and 2: a real Payload 3.93 with an in-memory MongoDB replica set, no network. `@payloadcms/graphql` was added as a dev dependency so a real GraphQL query could be run against the plugin's schema.

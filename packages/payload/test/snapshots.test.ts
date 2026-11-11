@@ -26,7 +26,7 @@ const update = (id: string | number, data: Record<string, unknown>, user: TypedU
 const findAs = (user: TypedUser | null) => payload.find({ collection: SNAPSHOTS as never, user, overrideAccess: false, depth: 0 })
 
 describe('the plugin', () => {
-  it('adds only the snapshots and views collections (no imports unless asked), and the read endpoints', () => {
+  it('adds only the snapshots and views collections (no imports or proposals unless asked), and the read endpoints', () => {
     const slugs = payload.config.collections.map((c) => c.slug).filter((s) => !s.startsWith('payload-'))
     expect(slugs.sort()).toEqual(['taxonomy-snapshots', 'taxonomy-views', 'users'])
     const paths = (slug: string) => (payload.collections[slug as never]!.config.endpoints as { path: string }[]).map((e) => e.path)
@@ -39,6 +39,9 @@ describe('the plugin', () => {
     expect(() => oneTaxonomy({ tenant: { collection: 'tenants', resolve: () => 'a' } })({ collections: [usersCollection()] } as never)).toThrow(/isn't in this config/)
     expect(() => oneTaxonomy({ imports: { uploads: { collection: 'users' } } })({ collections: [usersCollection()] } as never)).toThrow(/isn't an upload collection/)
     expect(() => oneTaxonomy({ imports: { fetch: () => '' } })({ collections: [usersCollection(), { slug: 'taxonomy-imports', fields: [] }] } as never)).toThrow(/already exists/)
+    expect(() => oneTaxonomy({ proposals: true })({ collections: [usersCollection(), { slug: 'taxonomy-proposals', fields: [] }] } as never)).toThrow(/already exists/)
+    // A proposals slug that isn't used doesn't clash.
+    expect(() => oneTaxonomy()({ collections: [usersCollection(), { slug: 'taxonomy-proposals', fields: [] }] } as never)).not.toThrow()
   })
 })
 

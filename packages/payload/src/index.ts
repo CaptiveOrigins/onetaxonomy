@@ -23,7 +23,7 @@ export {
   type SnapshotRef,
   type TraversalBody,
 } from './api.js'
-export { optionsOf, resolveOptions, type AccessCallback, type ImportOptions, type OneTaxonomyPluginOptions, type ResolvedOptions, type TenantId } from './types.js'
+export { optionsOf, resolveOptions, type AccessCallback, type ImportOptions, type OneTaxonomyPluginOptions, type ProposalOptions, type ResolvedOptions, type TenantId } from './types.js'
 export { projectedView, exportView, type ProjectionBody, type ViewExport, type ViewRef, type ViewSource } from './views-api.js'
 export {
   checkImportSettings,
@@ -37,3 +37,15 @@ export {
   type ImportSettings,
   type ImportStatus,
 } from './imports.js'
+export {
+  acceptProposal,
+  declineProposal,
+  previewProposal,
+  proposalChecksum,
+  proposalsCollection,
+  type ProposalAcceptance,
+  type ProposalDecision,
+  type ProposalPreview,
+  type ProposalRef,
+  type ProposalStatus,
+} from './proposals.js'

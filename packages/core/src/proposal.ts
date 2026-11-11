@@ -1,4 +1,5 @@
-import type { Classification, Id, PhyloEdge, Phylogeny } from './model'
+import type { Classification, DatasetSnapshot, Id, PhyloEdge, Phylogeny, Source } from './model'
+import { verifySnapshot } from './snapshot'
 import { indexClassification, indexPhylogeny, type TreeIndex } from './tree'
 
 /**
@@ -131,6 +132,93 @@ export function applyToPhylogeny(base: Phylogeny, proposal: Proposal): ProposedP
     }),
     proposed: proposedFrom(proposal),
   }
+}
+
+/** What a curator supplies to accept a proposal into a new snapshot version. */
+export type AcceptOptions = {
+  /** The new snapshot's version. It must differ from the base snapshot's. */
+  version: string
+  /** ISO date-time of the acceptance, supplied by the caller (core stays pure). It becomes the new snapshot's `createdAt`. */
+  createdAt: string
+  /** Who accepted it, written as they want it read. It is sealed with the snapshot. */
+  acceptedBy: string
+  note?: string
+}
+
+/** The id of the source record an accepted proposal adds to its snapshot. */
+export const proposalSourceId = (proposal: Id): Id => `proposal:${proposal}`
+
+/**
+ * Accepts a proposal on a classification into a **new** snapshot version. The base snapshot is not changed: the
+ * result is an unsealed copy with a new version (seal it with `sealSnapshot`), in which
+ *
+ * - the classification keeps its id and title and gets a new version (`<its version>+<proposal id>`);
+ * - every moved placement names the proposal as its provenance, with where it was before and the mover's note;
+ * - a source record says whose proposal it was, who accepted it and when, so every list of sources shows it;
+ * - `derivedFrom` pins the base snapshot (id, version, checksum) and the proposal.
+ *
+ * Nothing is accepted silently, and nothing stays attributed to a source that didn't say it.
+ *
+ * Refused: a base that isn't sealed or fails its checksum, the base's own version, a proposal that moves nothing,
+ * anything `applyToClassification` refuses (stale moves, cycles, another version), and every proposal on a
+ * phylogeny. A phylogeny is a published hypothesis with a citation; a tree rearranged by hand is a result its
+ * study never found, so it can't take that hypothesis's place. A new analysis is imported as its own hypothesis.
+ */
+export function acceptIntoSnapshot(base: DatasetSnapshot, proposal: Proposal, o: AcceptOptions): DatasetSnapshot {
+  const text = (v: unknown) => (typeof v === 'string' ? v.trim() : '')
+  if (!base.checksum || !verifySnapshot(base)) throw new ProposalError('The base snapshot isn’t sealed, or no longer matches its checksum')
+  if (!text(o.version)) throw new ProposalError('The new version needs a name')
+  if (o.version === base.version) throw new ProposalError(`Version ${o.version} is the base snapshot’s own: an accepted proposal makes a new version`)
+  if (!text(o.createdAt) || Number.isNaN(Date.parse(o.createdAt))) throw new ProposalError('The acceptance needs its date')
+  if (!text(o.acceptedBy)) throw new ProposalError('The acceptance needs the name of who accepted it')
+  if (!text(proposal.author)) throw new ProposalError('A proposal names its author')
+  if (proposal.base.kind !== 'classification')
+    throw new ProposalError('Only a proposal on a classification can be accepted into a dataset. A phylogeny is a published hypothesis: a tree rearranged by hand is a result its study never found. Import the new analysis as its own hypothesis instead')
+  if (!proposal.moves.length) throw new ProposalError('This proposal moves nothing, so there is nothing to accept')
+  const cls = base.classifications.find((c) => c.id === proposal.base.id)
+  if (!cls) throw new ProposalError(`This snapshot has no classification ${proposal.base.id}`)
+  const source = proposalSourceId(proposal.id)
+  if (base.sources.some((s) => s.id === source)) throw new ProposalError(`A proposal with the id ${proposal.id} was already accepted into this dataset`)
+
+  const { proposed: _proposed, ...applied } = applyToClassification(cls, proposal)
+  const moves = new Map(proposal.moves.map((m) => [m.node, m]))
+  const accepted: Classification = {
+    ...applied,
+    id: cls.id,
+    title: cls.title,
+    sources: [...cls.sources, source],
+    placements: applied.placements.map((p) => {
+      const m = moves.get(p.concept)
+      return m ? { concept: p.concept, parent: p.parent, provenance: { source, retrievedAt: o.createdAt, note: `Moved from ${m.from ?? 'the root'}${text(m.note) ? `: ${text(m.note)}` : ''}` } } : p
+    }),
+  }
+  const record: Source = {
+    id: source,
+    title: `Accepted proposal: ${proposal.title}`,
+    retrievedAt: o.createdAt,
+    provenance:
+      `Proposed by ${text(proposal.author)} (${proposal.created}). Accepted by ${text(o.acceptedBy)} (${o.createdAt}) into ${base.id} ${o.version}, made from version ${base.version}. ` +
+      `${proposal.moves.length} placement${proposal.moves.length === 1 ? '' : 's'} moved in classification ${cls.id}.` +
+      (text(proposal.notes) ? ` Proposer’s notes: ${text(proposal.notes)}` : '') +
+      (text(o.note) ? ` Curator’s note: ${text(o.note)}` : ''),
+  }
+  const { checksum: _checksum, derivedFrom: _derivedFrom, ...content } = base
+  // Copied, so the result shares nothing with a frozen base.
+  return JSON.parse(
+    JSON.stringify({
+      ...content,
+      version: o.version,
+      createdAt: o.createdAt,
+      sources: [...base.sources, record],
+      classifications: base.classifications.map((c) => (c.id === cls.id ? accepted : c)),
+      derivedFrom: {
+        snapshot: base.id,
+        version: base.version,
+        checksum: base.checksum,
+        proposal: { id: proposal.id, title: proposal.title, author: text(proposal.author), acceptedBy: text(o.acceptedBy), classification: { id: cls.id, version: cls.version }, moved: proposal.moves.map((m) => m.node) },
+      },
+    }),
+  ) as DatasetSnapshot
 }
 
 const tipsBelow = (t: TreeIndex) => {
