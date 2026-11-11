@@ -1,6 +1,6 @@
 # 0010 — The outline is the keyboard path into the tree; drawing nodes stay out of the Tab order
 
-**Status.** Proposed, 2026-11-11 (K489). Open to the owner; revisit after a VoiceOver test.
+**Status.** Accepted by Science (the area lead), 2026-11-11: a technical accessibility choice, not a product decision. Follow-up logged: pan the drawing to whatever is selected in the outline.
 
 **Context.** The explorer's drawing is an SVG with `role="img"`, a title and a description. Its nodes have `tabindex="-1"`, so they take focus when clicked but not with Tab. Every action on a node has a keyboard path through the outline beside it, a `role="tree"` with one Tab stop and the tree view keys (Up and Down, Right and Left to open, close and move, Home and End, type-ahead, Space and Enter, Alt+Up and Alt+Down to reorder), and through the inspector. The audit of 2026-11-11 asked whether the drawing's nodes could be reached with Tab too, in a roving-tabindex pattern.
 
