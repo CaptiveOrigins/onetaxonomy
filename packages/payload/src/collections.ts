@@ -13,6 +13,7 @@ import { APIError, type CollectionBeforeChangeHook, type CollectionBeforeDeleteH
 
 import { createAccess, idOf, manageAccess, readAccess, tenantOf } from './access.js'
 import type { ResolvedOptions } from './types.js'
+import { forgetViewSource, viewSourceOf } from './views-api.js'
 
 const fail = (message: string): never => {
   throw new APIError(message, 400, undefined, true)
@@ -189,9 +190,51 @@ export function snapshotsCollection(opts: ResolvedOptions): CollectionConfig {
       ...publicationFields,
       ...tenantField(opts),
     ],
-    hooks: { beforeValidate: [fillTenant(opts)], beforeChange: [snapshotBeforeChange(opts)], beforeDelete: [onlyUnpublishedDeleted(slug, 'staged', 'snapshot')] },
+    hooks: {
+      beforeValidate: [fillTenant(opts)],
+      beforeChange: [snapshotBeforeChange(opts)],
+      beforeDelete: [onlyUnpublishedDeleted(slug, 'staged', 'snapshot')],
+      // A view read later in the same request must see the snapshot's new status, not the one remembered before.
+      afterChange: [({ doc, req }) => (forgetViewSource(req, String(doc.id)), doc)],
+      afterDelete: [({ id, req }) => forgetViewSource(req, String(id))],
+    },
   }
 }
+
+/**
+ * `source` on a view: its snapshot's id, version, checksum and status now, the same object the view endpoints answer
+ * with. It isn't stored. It is worked out each time the view is read, so Payload's own REST, GraphQL and Local API
+ * reads say when a published view's snapshot has been withdrawn (`source.withdrawn`), as the endpoints do. Null when
+ * the snapshot is gone. The snapshot itself stays hidden from anyone who can't read it.
+ */
+const viewSourceField = (opts: ResolvedOptions): Field => ({
+  name: 'source',
+  type: 'json',
+  virtual: true,
+  access: { create: () => false, update: () => false },
+  admin: { readOnly: true, description: 'The snapshot this view is shown over and its status now. Worked out when the view is read, not stored. "withdrawn" is true when the snapshot was withdrawn after the view was made.' },
+  hooks: {
+    afterRead: [
+      async ({ data, req }) => {
+        let snapshotDoc = idOf(data?.snapshot)
+        // A read that selected `source` without `snapshot`: look the reference up on the view, which was already read as the requester.
+        if (!snapshotDoc && data?.id !== undefined && data?.id !== null) {
+          const own = (await req.payload.findByID({ collection: opts.slugs.views as never, id: data.id as string, depth: 0, req, overrideAccess: true, disableErrors: true, select: { snapshot: true } as never })) as { snapshot?: unknown } | null
+          snapshotDoc = idOf(own?.snapshot)
+        }
+        return snapshotDoc ? await viewSourceOf(req, opts, snapshotDoc) : null
+      },
+    ],
+  },
+  typescriptSchema: [
+    () => ({
+      type: ['object', 'null'],
+      additionalProperties: false,
+      required: ['doc', 'id', 'version', 'checksum', 'status', 'withdrawn'],
+      properties: { doc: { type: 'string' }, id: { type: 'string' }, version: { type: 'string' }, checksum: { type: 'string' }, status: { type: 'string', enum: ['staged', 'published', 'withdrawn'] }, withdrawn: { type: 'boolean' } },
+    }),
+  ],
+})
 
 export function viewsCollection(opts: ResolvedOptions): CollectionConfig {
   const slug = opts.slugs.views
@@ -206,6 +249,7 @@ export function viewsCollection(opts: ResolvedOptions): CollectionConfig {
       { name: 'snapshot', type: 'relationship', relationTo: opts.slugs.snapshots as never, required: true, index: true },
       { name: 'view', type: 'json', required: true, admin: { description: 'The OneTaxonomy view. It must pin its snapshot\'s id, version and checksum.' } },
       { name: 'viewId', type: 'text', index: true, admin: { readOnly: true } },
+      viewSourceField(opts),
       { name: 'status', type: 'select', required: true, defaultValue: 'draft', index: true, options: ['draft', 'published', 'withdrawn'], admin: { position: 'sidebar' } },
       ...publicationFields,
       ...tenantField(opts),

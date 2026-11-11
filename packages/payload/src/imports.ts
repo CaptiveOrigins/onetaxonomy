@@ -211,6 +211,13 @@ const summaryOf = (doc: JobDoc): ImportJobSummary => ({
  * the same file with the same settings, in a new job, finds the snapshot already stored and says so. A job left
  * running by a process that stopped can be run again after `imports.staleAfterMinutes`.
  *
+ * A run starts by claiming the job: one conditional update that only succeeds if nobody has claimed it since this run
+ * read it (the `attempts` counter is unchanged). When several runs start together, one claims it and the others get a
+ * 409 and change nothing. On MongoDB the claim is a single `findOneAndUpdate`, so it is atomic; it hasn't been
+ * checked on Payload's SQL adapters. The claim guards the start only: a run that is still working after
+ * `imports.staleAfterMinutes` can be taken over, and it will still write its own progress when it wakes. The unique
+ * index on a snapshot's id and version means the two can't both store one.
+ *
  * `overrideAccess` is for trusted server code: it skips the access checks on the job and on the uploaded file.
  */
 export async function runImport(req: PayloadRequest, id: string, { overrideAccess = false }: { overrideAccess?: boolean } = {}): Promise<ApiResult<ImportJobSummary>> {
@@ -230,11 +237,33 @@ export async function runImport(req: PayloadRequest, id: string, { overrideAcces
   if (job.status === 'running' && job.startedAt && now - Date.parse(job.startedAt) < io.staleAfterMs)
     return { ok: false, status: 409, error: `This job has been running since ${job.startedAt}. Run it again after ${Math.round(io.staleAfterMs / 60_000)} minutes if it seems stuck.` }
 
-  const token = {}
-  activeRuns.add(token)
   const progress = [...(job.progress ?? [])].slice(-(MAX_KEPT - 10))
   const resumedFrom = job.status === 'running' ? job.phase : null
   const priorChecksum = job.checksum ?? null
+
+  // Claim the job. Every run that starts adds one to `attempts`, so "attempts is still what I read" means nobody
+  // else has started it since. The check and the write are one database operation.
+  const prior = job.attempts ?? 0
+  const attempt = prior + 1
+  const startedAt = new Date(now).toISOString()
+  progress.push({ at: startedAt, message: resumedFrom ? `Attempt ${attempt}: the last run stopped while ${resumedFrom}; starting again from the file.` : `Attempt ${attempt}: reading the file.` })
+  const claim = { status: 'running' as const, phase: 'reading' as const, startedAt, finishedAt: null, attempts: attempt, message: '', diagnostics: [], runBy: req.user ? String(req.user.id) : null, progress }
+  const unclaimed: Where = prior === 0 ? { or: [{ attempts: { equals: 0 } }, { attempts: { exists: false } }] } : { attempts: { equals: prior } }
+  const taken = { ok: false, status: 409, error: 'Another run started this job a moment ago, so this one didn\'t start. Look at the job to see how it went.' } as const
+  try {
+    const claimed = await req.payload.db.updateOne({ collection: slug as never, where: { and: [{ id: { equals: job.id } }, unclaimed] }, data: claim as never, req, returning: true, select: { attempts: true } as never })
+    if (!claimed) return taken
+  } catch (error) {
+    // Inside a transaction, MongoDB refuses the second writer with a write conflict instead of matching nothing.
+    const e = error as { code?: unknown; codeName?: unknown }
+    if (e.code === 112 || e.codeName === 'WriteConflict') return taken
+    req.payload.logger.error(`OneTaxonomy import ${String(job.id)}: couldn't claim the job: ${(error as Error).stack ?? String(error)}`)
+    return { ok: false, status: 500, error: 'The job couldn\'t be started, so nothing was run. The site\'s log has the reason.' }
+  }
+  job = { ...job, ...claim }
+
+  const token = {}
+  activeRuns.add(token)
   const write = async (data: Record<string, unknown>, message?: string) => {
     if (message) progress.push({ at: new Date().toISOString(), message })
     job = (await req.payload.update({ collection: slug as never, id: job!.id, data: { ...data, progress } as never, depth: 0, req, overrideAccess: true, context: { [RUNNER]: token } })) as unknown as JobDoc
@@ -243,11 +272,6 @@ export async function runImport(req: PayloadRequest, id: string, { overrideAcces
     write({ status, phase: status === 'failed' ? job!.phase : 'finished', finishedAt: new Date().toISOString(), message, ...extra }, message)
 
   try {
-    const attempt = (job.attempts ?? 0) + 1
-    await write(
-      { status: 'running', phase: 'reading', startedAt: new Date().toISOString(), finishedAt: null, attempts: attempt, message: '', diagnostics: [], runBy: req.user ? String(req.user.id) : null },
-      resumedFrom ? `Attempt ${attempt}: the last run stopped while ${resumedFrom}; starting again from the file.` : `Attempt ${attempt}: reading the file.`,
-    )
     const settings = settingsOf(job.settings)
     const problems = checkImportSettings(job.format, settings)
     if (problems.length) throw new ImportFailure(problems.map((message) => ({ severity: 'error', code: 'settings', message })))

@@ -75,7 +75,7 @@ const makeJob = (data: Record<string, unknown>, user: TypedUser | null = manager
   payload.create({ collection: IMPORTS as never, data: data as never, user, overrideAccess: false, context }) as Promise<Job>
 const snapshotCount = async () => (await payload.count({ collection: SNAPSHOTS as never })).totalDocs
 const storedSnapshot = async (id: unknown) => (await payload.findByID({ collection: SNAPSHOTS as never, id: id as string, depth: 0 })) as Record<string, any>
-const raw = () => (payload.db as unknown as { collections: Record<string, { updateOne: (q: unknown, u: unknown) => Promise<unknown> }> }).collections[IMPORTS]!
+const raw = () => (payload.db as unknown as { collections: Record<string, { updateOne: (q: unknown, u: unknown) => Promise<unknown>; findOne: (q: unknown) => { lean: () => Promise<Record<string, unknown> | null> } }> }).collections[IMPORTS]!
 
 describe('importing each format into a staged, sealed snapshot', () => {
   it('a CSV checklist (upload) gives exactly the committed fixture, checksum and all, staged', async () => {
@@ -262,6 +262,64 @@ describe('resuming after an interruption', () => {
     const req = await createLocalReq({}, payload)
     expect(await runImport(req, String(job.id))).toMatchObject({ ok: false, status: 404 })
     expect(await runImport(req, String(job.id), { overrideAccess: true })).toMatchObject({ ok: true, body: { status: 'done' } })
+  })
+})
+
+describe('claiming a job', () => {
+  const localReq = async () => (await import('payload')).createLocalReq({}, payload)
+  const attemptLines = (job: Job) => job.progress.filter((p: { message: string }) => /^Attempt \d+/.test(p.message))
+
+  it('three runs started together on a queued job: one runs it, the others are refused, and one snapshot is stored', async () => {
+    const before = await snapshotCount()
+    const job = await makeJob({ format: 'newick', url: 'https://data.example.org/trees.nwk', settings: treeSettings('claimed-once') }, manager, { onetaxonomyNoRun: true })
+    const results = await Promise.all([1, 2, 3].map(async () => runImport(await localReq(), String(job.id), { overrideAccess: true })))
+    expect(results.filter((r) => r.ok)).toEqual([expect.objectContaining({ body: expect.objectContaining({ status: 'done' }) })])
+    const refused = results.filter((r) => !r.ok)
+    expect(refused).toHaveLength(2)
+    for (const r of refused) expect(r).toMatchObject({ status: 409, error: expect.stringMatching(/Another run started this job/) })
+    const after = (await payload.findByID({ collection: IMPORTS as never, id: job.id, depth: 0 })) as Job
+    expect(after).toMatchObject({ status: 'done', attempts: 1 })
+    expect(attemptLines(after)).toHaveLength(1)
+    expect(await snapshotCount()).toBe(before + 1)
+    // The claim writes straight to the database: the start time must still be stored as a date, not as text.
+    expect((await raw().findOne({ _id: job.id }).lean())!.startedAt).toBeInstanceOf(Date)
+  })
+
+  it('a stale job taken over by two runs at once is claimed by one of them', async () => {
+    const before = await snapshotCount()
+    const job = await makeJob({ format: 'newick', url: 'https://data.example.org/trees.nwk', settings: treeSettings('claimed-stale') }, manager, { onetaxonomyNoRun: true })
+    await raw().updateOne({ _id: job.id }, { $set: { status: 'running', phase: 'parsing', startedAt: new Date(Date.now() - 6 * 60_000), attempts: 1 } })
+    const results = await Promise.all([1, 2].map(async () => runImport(await localReq(), String(job.id), { overrideAccess: true })))
+    expect(results.map((r) => (r.ok ? r.body.status : r.status)).sort()).toEqual([409, 'done'])
+    const after = (await payload.findByID({ collection: IMPORTS as never, id: job.id, depth: 0 })) as Job
+    expect(after).toMatchObject({ status: 'done', attempts: 2 })
+    expect(attemptLines(after)).toHaveLength(1)
+    expect(await snapshotCount()).toBe(before + 1)
+  })
+
+  it('a job stored before the attempts counter existed can still be claimed, once', async () => {
+    const job = await makeJob({ format: 'newick', url: 'https://data.example.org/trees.nwk', settings: treeSettings('claimed-legacy') }, manager, { onetaxonomyNoRun: true })
+    await raw().updateOne({ _id: job.id }, { $unset: { attempts: '' } })
+    const results = await Promise.all([1, 2].map(async () => runImport(await localReq(), String(job.id), { overrideAccess: true })))
+    expect(results.map((r) => (r.ok ? r.body.status : r.status)).sort()).toEqual([409, 'done'])
+    expect(((await payload.findByID({ collection: IMPORTS as never, id: job.id, depth: 0 })) as Job).attempts).toBe(1)
+  })
+
+  it('inside transactions, a run that loses the claim to another transaction is refused and changes nothing', async () => {
+    const before = await snapshotCount()
+    const job = await makeJob({ format: 'newick', url: 'https://data.example.org/trees.nwk', settings: treeSettings('claimed-in-transaction') }, manager, { onetaxonomyNoRun: true })
+    const [a, b] = [await localReq(), await localReq()]
+    a.transactionID = (await payload.db.beginTransaction()) as string
+    b.transactionID = (await payload.db.beginTransaction()) as string
+    // b reads the job before a's work is committed, so it still looks queued to b.
+    expect(((await payload.findByID({ collection: IMPORTS as never, id: job.id, depth: 0, req: b })) as Job).status).toBe('queued')
+    expect(await runImport(a, String(job.id), { overrideAccess: true })).toMatchObject({ ok: true, body: { status: 'done' } })
+    expect(await runImport(b, String(job.id), { overrideAccess: true })).toMatchObject({ ok: false, status: 409, error: expect.stringMatching(/Another run started this job/) })
+    await payload.db.commitTransaction(a.transactionID)
+    await payload.db.rollbackTransaction(b.transactionID)
+    const after = (await payload.findByID({ collection: IMPORTS as never, id: job.id, depth: 0 })) as Job
+    expect(after).toMatchObject({ status: 'done', attempts: 1 })
+    expect(await snapshotCount()).toBe(before + 1)
   })
 })
 

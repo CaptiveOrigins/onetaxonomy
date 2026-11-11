@@ -2,6 +2,37 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: Payload plugin part 3
+
+Scope: `packages/payload` only (M7 part 3, ADR 0012 points 12 and 14): the atomic claim in `runImport` (`src/imports.ts`), and the `source` field on views (`src/collections.ts`, `src/views-api.ts`). No other package changed. Tests went from 442 to 457: payload 80 to 95 (`imports.test.ts` 20 to 24, and the new `view-reads.test.ts` with 11). Same setup as parts 1 and 2: a real Payload 3.93 with an in-memory MongoDB replica set, no network. `@payloadcms/graphql` was added as a dev dependency so a real GraphQL query could be run against the plugin's schema.
+
+### Covered
+
+- **One run at a time** (`imports.test.ts`, "claiming a job"): three runs of a queued job started together give one `done` and two 409s, one attempt on the job and one snapshot; a stale job taken over by two runs at once counts one more attempt, not two; a job whose `attempts` was never set can still be claimed, once; inside two transactions the loser's write conflict is answered with the same 409. Each of the four failed on the old read-then-write code before the change, and all passed five runs in a row afterwards.
+- **A view's `source` equals the endpoints'** (`view-reads.test.ts`): for a current and a withdrawn snapshot, a reader's `findByID` of the view carries exactly the `source` the projection endpoint answers with.
+- **Lists:** every view in a page is flagged, and a page of four views over two snapshots reads the snapshots twice, not four times.
+- **The withdrawn snapshot stays hidden:** at depth 2 the view's `snapshot` is still a bare id for a reader, and reading the snapshot directly is "not found", while `source.withdrawn` is true.
+- **Selection:** `select: { source: true }` answers the source without the snapshot reference; a selection without it leaves it out.
+- **No source without the view:** a reader gets "not found" for a draft view and an anonymous request is refused; a manager sees a staged snapshot's status.
+- **Never stored, never taken from input:** a forged `source` on create (as a manager and as server code) and on update is ignored, the true one is answered, and the stored document has no `source`.
+- **Fresh in one request:** a withdrawal earlier in the same request is seen by the next read of the view in that request.
+- **Gone snapshot:** `source` is null, not a guess.
+- **GraphQL:** a list and a single view answer `source`, with and without `select: true`; an anonymous query is refused.
+- **Generated types:** the JSON schema describes `source` as the object or null, with its six required keys and the three statuses.
+
+### Gaps left
+
+- **Postgres and SQLite:** the claim is one statement only on MongoDB as far as these tests show. On SQL adapters the unique index on id and version is the backstop, as before.
+- **A run overtaken after `staleAfterMinutes`** still writes its own progress when it wakes; the claim guards the start only. Not simulated, since it needs a run held for 15 minutes or a fake clock inside a run.
+- **HTTP routing:** REST wasn't called over HTTP; the Local API runs the same operations. `apps/payload-example` will cover it.
+- **The admin:** how `source` renders in the edit view wasn't looked at.
+- **Tenants:** `source` wasn't read in a tenant setup. It is only worked out for a view the requester could already read, and views and their snapshots share a tenant (part 1's tests), so no new path crosses tenants; a direct test is small and goes with the next part.
+
+### Left out as overkill
+
+- Racing more than three runs: one winner out of three shows the claim; more adds time, not coverage.
+- Every GraphQL argument: the field resolves through the same `afterRead` hook as the Local API.
+
 ## 2026-11-11: Payload plugin part 2
 
 Scope: `packages/payload` only (M7 part 2, ADR 0012 points 12 to 14): import jobs (`src/imports.ts`), coverage and snapshot export (`src/api.ts`), view projection and export (`src/views-api.ts`). No other package changed; the plugin now depends on `@captiveorigins/onetaxonomy-import`. Tests went from 395 to 429: payload 46 to 80 (`imports.test.ts` 20 new, `api.test.ts` 15 to 27, `tenants.test.ts` 7 to 9, and the plugin-shape test in `snapshots.test.ts` widened). All on a real Payload 3.93 with an in-memory MongoDB replica set, no network: the host `fetch` in the tests answers from memory and the upload collection writes to a temporary folder that is deleted afterwards. Endpoints were called through their handlers with a local request, as in part 1.
@@ -25,9 +56,9 @@ Scope: `packages/payload` only (M7 part 2, ADR 0012 points 12 to 14): import job
 
 - **Not run in a real site:** no HTTP routing, Admin UI, GraphQL or cloud upload storage; the default upload reader is tested only on local storage. `apps/payload-example` will cover this.
 - **Interruption inside a store** isn't simulated: that a run leaves no partial snapshot rests on the snapshot being one document written last, not on a test that kills a process mid-write.
-- **Two runs of one job at once** weren't raced; claiming a job isn't atomic (ADR 0012).
+- **Two runs of one job at once** weren't raced; claiming a job isn't atomic (ADR 0012). Closed in part 3, above.
 - **Large inputs:** nothing near `maxBytes` was parsed for real, and an import's time on a large file wasn't measured.
-- **Payload's own reads of a view** don't carry the withdrawn flag; only the plugin's endpoints do. That waits for the lead's decision on point 14.
+- **Payload's own reads of a view** don't carry the withdrawn flag; only the plugin's endpoints do. That waits for the lead's decision on point 14. Accepted and closed in part 3, above.
 
 ### Left out as overkill
 
