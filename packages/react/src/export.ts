@@ -42,12 +42,16 @@ export function standaloneSvg(svg: SVGSVGElement, disclosure: ViewDisclosure, { 
   copy.setAttribute('viewBox', `${x} ${y} ${w} ${total}`)
   copy.setAttribute('width', String(Math.round(w)))
   copy.setAttribute('height', String(Math.round(total)))
-  copy.setAttribute('xmlns', NS)
+  // A namespace declaration, not a plain attribute: a plain `xmlns` attribute can be serialized next to the
+  // serializer's own, and a file with the attribute twice isn't valid XML (seen in jsdom).
+  copy.setAttributeNS('http://www.w3.org/2000/xmlns/', 'xmlns', NS)
   copy.removeAttribute('style')
+  // The title and description stay first, where readers of the file look for its name (WCAG 1.1.1).
+  for (const el of copy.querySelectorAll(':scope > title, :scope > desc')) el.removeAttribute('style')
   // A white page behind the drawing, so PNGs and dark-mode exports stay legible.
   const bg = document.createElementNS(NS, 'rect')
   for (const [k, v] of Object.entries({ x, y, width: w, height: total, fill: '#ffffff' })) bg.setAttribute(k, String(v))
-  copy.insertBefore(bg, copy.firstChild)
+  copy.insertBefore(bg, copy.querySelector(':scope > desc')?.nextSibling ?? copy.querySelector(':scope > title')?.nextSibling ?? copy.firstChild)
   return new XMLSerializer().serializeToString(copy)
 }
 
