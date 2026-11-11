@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Mac app: opening a snapshot with no checksum now says it isn't sealed, so a sealed file whose checksum line was deleted no longer opens silently. Saving can now rename its temporary file over the chosen one (the app wasn't allowed to before, so saves failed), and a failed save removes the temporary file, or says it couldn't.
+
 ## 0.1.0-alpha.3
 
 - Import: a Darwin Core Archive entry that is cut short, or doesn't unpack to its stated size, is now refused with an error naming the file, instead of being read in part.

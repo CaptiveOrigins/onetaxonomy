@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { pickDataset, pickView, saveJson, type PickedFile } from './files'
 import { COLUMN_KEYS, delimiterOf, kindOf, newickQuestions, openDwca, openNewick, openSnapshot, openTable, sealedJson, suggestColumns, tableHeader, targetsOf, type ColumnKey, type Opened, type Target } from './open'
+import { StatusBar } from './StatusBar'
 import { checkForUpdates, IN_APP_UPDATES, loadSettings, saveSettings, type Settings } from './updates'
 
 const COLUMN_LABELS: Record<ColumnKey, string> = {
@@ -29,6 +30,7 @@ export function App() {
   const [snapshot, setSnapshot] = useState<DatasetSnapshot | null>(null)
   const [fileName, setFileName] = useState('')
   const [notices, setNotices] = useState<string[]>([])
+  const [seal, setSeal] = useState('')
   const [status, setStatus] = useState('')
   const [targetKey, setTargetKey] = useState('')
   const [pending, setPending] = useState<Pending | null>(null)
@@ -72,6 +74,7 @@ export function App() {
     setSnapshot(opened.snapshot)
     setFileName(baseName(path))
     setNotices(opened.notices)
+    setSeal(opened.seal ?? '')
     setTargetKey('')
     setLoadedView(null)
     setPending(null)
@@ -168,15 +171,7 @@ export function App() {
         <button type="button" disabled={!view} onClick={() => void invoke('print_window').catch((e) => fail('print', e, 'Try again.'))}>Print</button>
         <button type="button" aria-expanded={showSettings} onClick={() => setShowSettings((s) => !s)}>Settings</button>
       </header>
-      <div className="app-status" role="status">
-        {status}
-        {notices.length > 0 && (
-          <details>
-            <summary>{notices.length} notes about this data</summary>
-            <ul>{notices.slice(0, 200).map((n, i) => <li key={i}>{n}</li>)}</ul>
-          </details>
-        )}
-      </div>
+      <StatusBar status={status} seal={seal} notices={notices} />
       <main className="app-main">
         {showSettings ? (
           <SettingsPanel settings={settings} onChange={changeSettings} onCheck={() => void checkForUpdates(true).then((m) => m && setStatus(m))} onClose={() => setShowSettings(false)} />

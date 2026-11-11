@@ -32,6 +32,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .app-status { padding: 4px 12px; min-height: 22px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--border); }
 .app-status summary { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .app-status ul { margin: 4px 0; padding-inline-start: 18px; max-height: 8rem; overflow-y: auto; }
+.app-seal { margin: 4px 0; padding: 2px 8px; border-inline-start: 3px solid var(--accent); color: var(--text); }
 .app-main { flex: 1; min-height: 0; overflow: auto; }
 .app-panel { max-width: 34rem; margin: 2rem auto; padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
 .app-panel h2 { margin: 0 0 0.5rem; font-size: 16px; }

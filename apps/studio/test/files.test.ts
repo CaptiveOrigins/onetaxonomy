@@ -1,18 +1,22 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
+// Mocked Tauri file system: this checks the order of file calls, not the real disk.
 const calls: string[] = []
+const onDisk = new Set<string>()
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn(), save: vi.fn(async () => '/made-up/view.json') }))
 vi.mock('@tauri-apps/plugin-fs', () => ({
   readFile: vi.fn(),
   readTextFile: vi.fn(),
-  writeTextFile: vi.fn(async (path: string) => { calls.push(`write ${path}`) }),
-  rename: vi.fn(async (from: string, to: string) => { calls.push(`rename ${from} -> ${to}`) }),
+  exists: vi.fn(async (path: string) => onDisk.has(path)),
+  writeTextFile: vi.fn(async (path: string) => { calls.push(`write ${path}`); onDisk.add(path) }),
+  rename: vi.fn(async (from: string, to: string) => { calls.push(`rename ${from} -> ${to}`); onDisk.delete(from); onDisk.add(to) }),
+  remove: vi.fn(async (path: string) => { calls.push(`remove ${path}`); onDisk.delete(path) }),
 }))
 
 const { saveJson } = await import('../src/files')
 
 describe('saving', () => {
-  beforeEach(() => { calls.length = 0 })
+  beforeEach(() => { calls.length = 0; onDisk.clear() })
   it('writes a temporary file and renames it over the chosen one, so a crash never leaves half a file', async () => {
     expect(await saveJson('view.json', '{}')).toBe('/made-up/view.json')
     expect(calls).toEqual(['write /made-up/view.json.tmp', 'rename /made-up/view.json.tmp -> /made-up/view.json'])
@@ -29,10 +33,20 @@ describe('saving', () => {
     expect(await saveJson('view.json', '{}')).toBeNull()
     expect(calls).toEqual([])
   })
-  it('reports a failed rename instead of claiming the save worked', async () => {
+  it('reports a failed rename instead of claiming the save worked, and removes the temporary file', async () => {
     const fs = await import('@tauri-apps/plugin-fs')
     vi.mocked(fs.rename).mockRejectedValueOnce(new Error('permission denied'))
-    await expect(saveJson('view.json', '{}')).rejects.toThrow(/permission denied/)
-    expect(calls).toEqual(['write /made-up/view.json.tmp'])
+    await expect(saveJson('view.json', '{}')).rejects.toThrow(/^permission denied$/)
+    expect(calls).toEqual(['write /made-up/view.json.tmp', 'remove /made-up/view.json.tmp'])
+    expect(onDisk.has('/made-up/view.json.tmp')).toBe(false)
+  })
+  it("still reports the original error when the temporary file can't be removed, and says it was left", async () => {
+    const fs = await import('@tauri-apps/plugin-fs')
+    // Tauri reports errors as plain strings.
+    vi.mocked(fs.rename).mockRejectedValueOnce('permission denied')
+    vi.mocked(fs.remove).mockRejectedValueOnce(new Error('read-only volume'))
+    const error = await saveJson('view.json', '{}').then(() => null, (e: unknown) => e as Error)
+    expect(error?.message).toBe("permission denied. The temporary file /made-up/view.json.tmp couldn't be removed either (read-only volume); you can delete it.")
+    expect(error?.cause).toBe('permission denied')
   })
 })
