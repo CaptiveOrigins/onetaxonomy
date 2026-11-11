@@ -26,7 +26,7 @@ The full rules are in [scientific invariants](docs/architecture/scientific-invar
 | [`@captiveorigins/onetaxonomy-react`](packages/react) | Server-renderable SVG tree, accessible keyboard outline, explorer (undo/redo, drag, overlays, inspector, clade selector, SVG/PNG/JSON exports), lesson player | Working |
 | [`@captiveorigins/onetaxonomy-education`](packages/education) | Lesson decks (scenes, cameras, annotations, reveals) and worksheets with answers computed from the data | Working |
 | `@captiveorigins/payload-plugin-onetaxonomy` | Payload plugin | Planned |
-| [`apps/studio`](apps/studio) | OneTaxonomy for Mac (Tauri 2): open checklists, Darwin Core Archives, Newick trees and snapshots; browse them; save views and sealed snapshots | 0.1.0 on GitHub Releases. Not notarized, and it can't update itself yet |
+| [`apps/studio`](apps/studio) | OneTaxonomy for Mac (Tauri 2): open checklists, Darwin Core Archives, Newick, NEXUS and phyloXML trees and snapshots; browse them; collapse weak branches, compare two trees, and reroot or midpoint-root as a new tree; save views and sealed snapshots (never over the file that was opened) | 0.1.0 on GitHub Releases. Not notarized, and it can't update itself yet |
 
 ## Try it
 

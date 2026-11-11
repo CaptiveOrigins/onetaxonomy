@@ -13,7 +13,7 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
   remove: vi.fn(async (path: string) => { calls.push(`remove ${path}`); onDisk.delete(path) }),
 }))
 
-const { saveJson } = await import('../src/files')
+const { OPENED_FILE_REFUSAL, saveJson } = await import('../src/files')
 
 describe('saving', () => {
   beforeEach(() => { calls.length = 0; onDisk.clear() })
@@ -48,5 +48,13 @@ describe('saving', () => {
     const error = await saveJson('view.json', '{}').then(() => null, (e: unknown) => e as Error)
     expect(error?.message).toBe("permission denied. The temporary file /made-up/view.json.tmp couldn't be removed either (read-only volume); you can delete it.")
     expect(error?.cause).toBe('permission denied')
+  })
+  it('refuses to write over the file that was opened, before writing anything, whatever the case of its name', async () => {
+    const dialog = await import('@tauri-apps/plugin-dialog')
+    vi.mocked(dialog.save).mockResolvedValueOnce('/made-up/Trees.json').mockResolvedValueOnce('/made-up/trees-rooted.json')
+    await expect(saveJson('trees-rooted.json', '{}', { never: '/made-up/trees.json' })).rejects.toThrow(OPENED_FILE_REFUSAL)
+    expect(calls).toEqual([])
+    expect(await saveJson('trees-rooted.json', '{}', { never: '/made-up/trees.json' })).toBe('/made-up/trees-rooted.json')
+    expect(calls).toEqual(['write /made-up/trees-rooted.json.tmp', 'rename /made-up/trees-rooted.json.tmp -> /made-up/trees-rooted.json'])
   })
 })

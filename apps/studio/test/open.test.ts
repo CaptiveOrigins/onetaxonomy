@@ -1,17 +1,18 @@
-import { indexDataset, createView, projectView, validateDataset } from '@captiveorigins/onetaxonomy-core'
+import { indexDataset, createView, midpointRoot, projectView, sealSnapshot, validateDataset, verifySnapshot } from '@captiveorigins/onetaxonomy-core'
 import { Explorer } from '@captiveorigins/onetaxonomy-react'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import { MISMATCH_NOTICE, UNSEALED_NOTICE, delimiterOf, kindOf, newickQuestions, openNewick, openSnapshot, openTable, sealedJson, suggestColumns, tableHeader, targetsOf } from '../src/open'
+import { MISMATCH_NOTICE, OPEN_EXTENSIONS, UNSEALED_NOTICE, delimiterOf, kindOf, newickQuestions, nexusQuestions, openNewick, openNexus, openPhyloXml, openSnapshot, openTable, openTree, phyloXmlQuestions, sealedJson, suggestColumns, tableHeader, targetsOf, withPhylogeny } from '../src/open'
 import { StatusBar } from '../src/StatusBar'
+import { NEXUS } from './fixtures'
 
 const NOW = '2026-11-04T00:00:00.000Z'
 
 describe('opening files', () => {
   it('recognizes each kind by extension', () => {
-    expect(['a.json', 'a.nwk', 'a.treefile', 'a.CSV', 'a.zip', 'a.pdf'].map(kindOf)).toEqual(['snapshot', 'newick', 'newick', 'table', 'dwca', null])
+    expect(['a.json', 'a.nwk', 'a.treefile', 'a.CSV', 'a.zip', 'a.pdf'].map((n) => kindOf(n))).toEqual(['snapshot', 'newick', 'newick', 'table', 'dwca', null])
   })
 
   it('asks about rooting unless the file says, and notices paired support', () => {
@@ -102,5 +103,65 @@ describe('opening files', () => {
       const html = renderToString(createElement(Explorer, { dataset, initialView: createView(dataset, { id: 'v', title: t.title, target: { kind: t.kind, id: t.id } }), title: t.title }))
       expect(html).toContain(label)
     }
+  })
+})
+
+
+describe('opening NEXUS and phyloXML', () => {
+  it('maps every extension in the open dialog to a kind, and tells NEXUS from Newick in a shared extension', () => {
+    expect(OPEN_EXTENSIONS.filter((e) => kindOf(`a.${e}`) === null)).toEqual([])
+    expect(['a.nex', 'a.NEXUS', 'a.nxs', 'a.xml', 'a.phyloxml'].map((n) => kindOf(n))).toEqual(['nexus', 'nexus', 'nexus', 'phyloxml', 'phyloxml'])
+    expect(kindOf('a.tre', NEXUS)).toBe('nexus')
+    expect(kindOf('a.tre', '[saved by a tool]\n#nexus\n')).toBe('nexus')
+    expect(kindOf('a.tre', '((a,b),c);')).toBe('newick')
+    expect(kindOf('a.tre')).toBe('newick')
+  })
+
+  it('asks about rooting only for a NEXUS TREE that does not say', () => {
+    expect(nexusQuestions(NEXUS)).toEqual({ rooted: false, supportMethods: 0 })
+    expect(nexusQuestions('#NEXUS\nbegin trees; tree a = ((x,y),z); end;').rooted).toBe(true)
+    expect(nexusQuestions('#NEXUS\nbegin trees; utree a = ((x,y),z); end;').rooted).toBe(false)
+    // BEAST puts a comment with "=" in it before the tree's own "=".
+    expect(nexusQuestions('#NEXUS\nbegin trees; tree STATE_0 [&lnP=-12.5] = [&R] ((x,y),z); end;').rooted).toBe(false)
+    expect(nexusQuestions('#NEXUS\nbegin trees; tree a = [&U] ((x,y)95/90,z); end;')).toEqual({ rooted: false, supportMethods: 2 })
+  })
+
+  it('asks about rooting only for a phyloXML phylogeny without the rooted attribute', () => {
+    expect(phyloXmlQuestions('<phyloxml><phylogeny rooted="true"><clade/></phylogeny></phyloxml>').rooted).toBe(false)
+    expect(phyloXmlQuestions('<phyloxml><phylogeny><clade/></phylogeny></phyloxml>').rooted).toBe(true)
+  })
+
+  it('opens every tree in a NEXUS file with names from TRANSLATE, and lists what it skipped as notes with their line', () => {
+    const { snapshot, notices, seal } = openNexus(NEXUS, '/x/Two trees.nex', {}, NOW)
+    expect(seal).toBeUndefined()
+    expect(targetsOf(snapshot).map((t) => t.id)).toEqual(['two-trees:1', 'two-trees:2'])
+    expect(snapshot.phylogenies[0]!.nodes.filter((n) => n.label).map((n) => n.label).sort()).toEqual(['Alpha', 'Beta', 'Delta', 'Gamma'])
+    expect(snapshot.concepts).toEqual([]) // nothing mapped by guesswork
+    expect(notices).toEqual(['Line 2: TAXA block is not read'])
+    expect(validateDataset(snapshot).filter((d) => d.severity === 'error')).toEqual([])
+  })
+
+  it('opens phyloXML with the answer to the rooting question, and notes unread elements', () => {
+    const xml = '<phyloxml><phylogeny><clade><clade><name>A</name><branch_length>1</branch_length></clade><clade><name>B</name><color><red>1</red><green>1</green><blue>1</blue></color></clade></clade></phylogeny></phyloxml>'
+    expect(() => openPhyloXml(xml, 'x.xml', {}, NOW)).toThrow(/root/i)
+    const { snapshot, notices } = openTree('phyloxml', xml, 'x.xml', { rooted: false }, NOW)
+    expect(snapshot.phylogenies[0]!.rooted).toBe(false)
+    expect(notices).toEqual([expect.stringMatching(/^Line 1: <color> is not read/)])
+  })
+
+  it('adds a rooted copy as a new, unsealed snapshot that says what it came from, leaving the open one sealed and unchanged', () => {
+    const open = sealSnapshot(openNexus(NEXUS, 'two.nex', {}, NOW).snapshot)
+    const before = JSON.stringify(open)
+    const rooted = midpointRoot(open.phylogenies[0]!, { id: 'two:1-midpoint', version: '2026-11-11' })
+    const next = withPhylogeny(open, rooted, '2026-11-11T00:00:00.000Z')
+    expect(JSON.stringify(open)).toBe(before)
+    expect(verifySnapshot(open)).toBe(true)
+    expect(next.checksum).toBeUndefined()
+    expect(next.derivedFrom).toEqual({ snapshot: open.id, version: open.version, checksum: open.checksum })
+    expect(next.version).toBe(`${open.version}+two:1-midpoint`)
+    expect(next.phylogenies.map((p) => p.id)).toEqual(['two:1', 'two:2', 'two:1-midpoint'])
+    expect(validateDataset(next).filter((d) => d.severity === 'error')).toEqual([])
+    expect(verifySnapshot(JSON.parse(sealedJson(next)))).toBe(true)
+    expect(() => withPhylogeny(next, rooted, NOW)).toThrow(/already has a tree with the id two:1-midpoint/)
   })
 })

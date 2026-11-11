@@ -141,6 +141,22 @@
 .ot-clade-check[data-status='not-monophyletic'] .ot-assessment-box { border-color: var(--ot-warning); }
 .ot-select:has(input) { border-color: var(--ot-field-border); }
 .ot-select input { font: inherit; border: 0; background: transparent; color: inherit; min-width: 6rem; }
+.ot-support-form { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0; }
+.ot-support-form input[type='number'] { min-width: 0; width: 4.5rem; }
+.ot-select:has(input:disabled) { opacity: 0.6; }
+.ot-support-status, .ot-rooting { margin: 0 0 8px; }
+.ot-support-status:empty { display: none; }
+.ot-compare-trees { margin-top: 8px; font-size: 14px; border: 1px solid var(--ot-border); border-radius: 10px; background: var(--ot-panel); padding: 8px 12px; }
+.ot-compare-trees summary { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; color: var(--ot-text); }
+.ot-compare-trees[open] summary { margin-bottom: 8px; }
+.ot-compare-summary { margin: 8px 0; color: var(--ot-text); }
+.ot-compare-summary:empty { display: none; }
+.ot-compare-result dl { display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem; margin: 0.5rem 0; }
+.ot-compare-result dt { color: var(--ot-muted); }
+.ot-compare-result dd { margin: 0; overflow-wrap: anywhere; }
+.ot-compare-result h4 { margin: 10px 0 4px; font-size: 13px; }
+.ot-compare-result ul { margin: 4px 0; padding-inline-start: 1.25rem; }
+.ot-compare-result li { margin: 2px 0; }
 .ot-explorer .ot-remove { height: 24px; width: 24px; padding: 0; justify-content: center; margin-inline-start: 6px; vertical-align: middle; }
 @media print {
   html[data-ot-printing] body * { visibility: hidden; }
