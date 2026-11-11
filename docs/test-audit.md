@@ -2,6 +2,15 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: OneOrigin brand source
+
+Owner decision N105 (2026-11-11): "A: send it, accept guidelines (Recommended)". Tests went from 299 to 300: studio (Mac app) 40 to 41 (`apps/studio/test/theme.test.ts`). The rest are unchanged.
+
+- **Promises:** `brand/oneorigin/` matches `brand/oneorigin.lock` byte for byte, and CI fails on a hand edit; `apps/studio/src/oneorigin.css` is what `build` writes from the copy's tokens; the app's shell colors are the suite's tokens; nothing that was drawn changes color.
+- **Covered:** `node scripts/oneorigin.mjs check` in CI (11 files and the built CSS). `theme.test.ts` (1 new): `--bg`, `--panel`, `--text`, `--muted`, `--border`, `--accent`, `--focus` and `--error` in `app.css` equal the built `--ot-` tokens in light, system dark and a chosen Dark. The script itself is tested in OnePhylogeny, where it comes from (`scripts/oneorigin.test.mjs`, 19 tests: build output, lock and check passing, a hand edit failing, the warning paths); this repo carries the same file.
+- **Gaps left:** the built CSS hasn't been looked at in the running app. The check downloads the locked files from OnePhylogeny's main branch to see whether the source differs; that only warns, and until OnePhylogeny's PR lands it warns that the files aren't there yet.
+- **Left out as overkill:** repeating the script's tests here; they'd test the same file.
+
 ## 2026-11-11: canvas renderer and benchmarks
 
 Scope: M8's canvas renderer and benchmarks. React gains `CanvasTreeView`, chosen by `TreeView` above 1,000 drawn nodes, with its level of detail in a pure module (`canvasPlan.ts`: `prepareTree`, `planCanvas`, `hitTest`, `drawPlan`, `describeLod`), and `scripts/bench-canvas.mjs` writes `docs/benchmarks.md`. `shapes.tsx` now builds its SVG paths from `shapePolygon`, which the canvas uses too. Core, import, layout, education and the Mac app are unchanged. Tests went from 281 to 297: react 85 to 101 (14 in the new `canvas.test.tsx`, 2 in the new `svg-unchanged.test.tsx`). Everything ran in Node or jsdom, where a canvas can't paint: the drawing was checked by recording the calls made on a stand-in 2D context. No browser, screen reader or built app.
