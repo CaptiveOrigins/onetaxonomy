@@ -1,7 +1,7 @@
 import Ajv2020 from 'ajv/dist/2020'
 import { describe, expect, it } from 'vitest'
 import schema from '../schema/snapshot.schema.json'
-import { comparePhylogenies, findMRCA, indexPhylogeny, midpointRoot, rerootPhylogeny, RootingError, sealSnapshot, snapshotChecksum, validateDataset, type DatasetSnapshot, type Phylogeny } from '../src'
+import { comparePhylogenies, createView, describeView, findMRCA, indexDataset, projectView, indexPhylogeny, midpointRoot, rerootPhylogeny, RootingError, sealSnapshot, snapshotChecksum, validateDataset, type DatasetSnapshot, type Phylogeny } from '../src'
 import { show, tiny } from './tiny-tree'
 
 const out = { id: 'r', version: '1' }
@@ -118,5 +118,39 @@ describe('midpointRoot', () => {
 
   it('refuses when a branch has no length', () => {
     expect(code(() => midpointRoot(tiny('(A:1,B,(C:1,D:1):1);', { rooted: false }), { id: 'm', version: '1' }))).toBe('missing-lengths')
+  })
+})
+
+describe('describeView discloses rooting', () => {
+  const unrooted = '(A:1,B:2,(C:3,D:4)90:5);'
+  const said = (snap: DatasetSnapshot, id: string) => {
+    const d = indexDataset(snap)
+    const v = createView(d, { id: 'v', title: 'V', target: { kind: 'phylogeny', id } })
+    return describeView(d, v, projectView(d, v)).lines
+  }
+
+  it('puts a rerooted record’s method and note right after the hypothesis line, for every caller', () => {
+    const r = rerootPhylogeny(tiny(unrooted, { rooted: false }), 'A', out)
+    const lines = said(snapshotOf(r), 'r')
+    const at = lines.findIndex((l) => l.startsWith('Phylogenetic hypothesis:'))
+    expect(lines[at + 1]).toBe(`Rooting (outgroup): ${r.rooting!.note}`)
+    expect(lines[at + 1]).toMatch(/Rerooted on the outgroup A \(A\) from t version 1 \(unrooted\)/)
+  })
+
+  it('says a midpoint rooting is one', () => {
+    const m = midpointRoot(tiny(unrooted, { rooted: false }), { id: 'm', version: '1' })
+    expect(said(snapshotOf(m), 'm').find((l) => l.startsWith('Rooting'))).toMatch(/^Rooting \(midpoint\): Midpoint-rooted from t version 1 .*not an outgroup rooting\./)
+  })
+
+  it('spells out the outgroup by label and the source record when there is no note', () => {
+    const r = rerootPhylogeny(tiny(unrooted, { rooted: false }), 'A', out)
+    const { note: _n, ...bare } = r.rooting!
+    expect(said(snapshotOf({ ...r, rooting: bare }), 'r')).toContain('Rooting (outgroup): on the outgroup A, from t version 1.')
+    expect(said(snapshotOf({ ...r, rooting: { method: 'stated by the authors' } }), 'r')).toContain('Rooting (stated by the authors).')
+  })
+
+  it('adds nothing for a tree with no rooting record, or one marked unrooted', () => {
+    expect(said(snapshotOf(tiny(unrooted, { rooted: true })), 't').some((l) => l.startsWith('Rooting'))).toBe(false)
+    expect(said(snapshotOf({ ...tiny(unrooted, { rooted: false }), rooting: { method: 'outgroup' } }), 't').some((l) => l.startsWith('Rooting'))).toBe(false)
   })
 })

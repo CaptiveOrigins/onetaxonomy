@@ -185,9 +185,9 @@ describe('rooting', () => {
     const data = indexDataset({ ...supported, phylogenies: [...supported.phylogenies, rerooted] })
     const { container } = render(<Explorer dataset={data} initialView={createView(data, { id: 'v', title: 'r', target: { kind: 'phylogeny', id: 'rerooted' } })} title="r" />)
     const note = container.querySelector('.ot-rooting[role="note"]')!
-    expect(note.textContent).toMatch(/^Rooting: Rerooted on the outgroup Mammalia \(t-mammalia\) from archelosauria version 1/)
+    expect(note.textContent).toMatch(/^Rooting \(outgroup\): Rerooted on the outgroup Mammalia \(t-mammalia\) from archelosauria version 1/)
     const about = container.querySelector('.ot-about')!
-    expect(within(about as HTMLElement).getByText(/^Rooting: Rerooted on the outgroup Mammalia/)).toBeTruthy()
+    expect(within(about as HTMLElement).getByText(/^Rooting \(outgroup\): Rerooted on the outgroup Mammalia/)).toBeTruthy()
   })
 
   it('rootedRecord leaves the input alone and refuses an outgroup that is the whole tree', () => {

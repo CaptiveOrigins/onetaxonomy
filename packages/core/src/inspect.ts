@@ -179,6 +179,22 @@ export function viewCitations(dataset: DatasetIndex, view: TaxonomicView, projec
  */
 export type ViewDisclosure = { title: string; lines: string[]; citations: Citation[]; illustrative: boolean }
 
+/**
+ * How a rooted hypothesis got its root, in one line: the method, then the record's
+ * own note. When there is no note, the outgroup and the record it came from are
+ * spelled out instead, so a rerooted tree is never shown as if it were the source's.
+ */
+function rootingLine(t: PhylogenyIndex): string {
+  const r = t.phylogeny.rooting!
+  if (r.note) return `Rooting (${r.method}): ${r.note}`
+  const name = (id: Id) => t.node.get(id)?.label ?? id
+  const parts = [
+    r.outgroup?.length ? `on the outgroup ${r.outgroup.map(name).join(', ')}` : '',
+    r.from ? `from ${r.from.id} version ${r.from.version}` : '',
+  ].filter(Boolean)
+  return `Rooting (${r.method})${parts.length ? `: ${parts.join(', ')}` : ''}.`
+}
+
 export function describeView(dataset: DatasetIndex, view: TaxonomicView, projection: Projection, { notice }: { notice?: string } = {}): ViewDisclosure {
   const tree = viewTree(dataset, view)
   const s = dataset.snapshot
@@ -190,6 +206,7 @@ export function describeView(dataset: DatasetIndex, view: TaxonomicView, project
     const p = (tree as PhylogenyIndex).phylogeny
     const sampling = p.sampling === 'complete' ? 'complete sampling' : p.sampling === 'partial' ? 'partial sampling: absent taxa may still belong to its clades' : 'sampling not stated'
     lines.push(`Phylogenetic hypothesis: ${p.title}, version ${p.version}; ${p.rooted ? 'rooted' : 'unrooted (no ancestry implied)'}; ${sampling}.`)
+    if (p.rooted && p.rooting) lines.push(rootingLine(tree as PhylogenyIndex))
   }
   if (view.proposal) {
     const p = view.proposal

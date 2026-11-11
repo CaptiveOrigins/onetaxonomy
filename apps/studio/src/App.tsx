@@ -241,6 +241,7 @@ export function App() {
           <label>
             Show{' '}
             <select
+              aria-label="Show tree or classification"
               value={target ? key(target) : ''}
               onChange={(e) => {
                 setTargetKey(e.target.value)

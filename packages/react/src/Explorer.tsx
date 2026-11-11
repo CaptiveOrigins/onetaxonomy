@@ -100,7 +100,7 @@ export function layoutFor(projection: Projection, kind: LayoutKind): TreeLayout 
 }
 
 export type ExplorerLabels = PhyloLabels & Record<
-  | 'undo' | 'redo' | 'expandAll' | 'collapseAll' | 'rotate' | 'layout' | 'status' | 'allStatuses' | 'outline' | 'details' | 'nothingSelected' | 'clade' | 'group' | 'hidden' | 'rank' | 'lifeStatus' | 'focus' | 'unfocus'
+  | 'undo' | 'redo' | 'expandAll' | 'collapseAll' | 'rotate' | 'layout' | 'status' | 'statusFilter' | 'allStatuses' | 'outline' | 'details' | 'nothingSelected' | 'clade' | 'group' | 'hidden' | 'rank' | 'lifeStatus' | 'focus' | 'unfocus'
   | 'zoomIn' | 'zoomOut' | 'fit' | 'download' | 'print' | 'canvas' | 'controls' | 'dragHint'
   | 'propose' | 'proposalTitle' | 'proposalAuthor' | 'proposalStart' | 'proposalCancel' | 'proposalHint' | 'proposalBy' | 'proposalLeave' | 'proposalNoMoves' | 'proposalUnder' | 'proposalRoot'
   | 'proposalRevert' | 'proposalAccepted' | 'proposalProposed' | 'proposalMoveUnder' | 'proposalGained' | 'proposalLost' | 'proposalCompare' | 'proposalDefaultTitle'
@@ -121,6 +121,8 @@ const LABELS: ExplorerLabels = {
   rotate: 'Flip children',
   layout: 'Layout',
   status: 'Show',
+  // The filter's accessible name: it starts with the visible `status` text (WCAG 2.5.3) and tells it apart from other "Show" controls.
+  statusFilter: 'Show living or extinct',
   allStatuses: 'Living, extinct and unknown',
   outline: 'Tree outline',
   details: 'Details',
@@ -257,17 +259,9 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   const hidden = (n: number) => `${n} ${labels.hidden}`
   const marks = useMemo(() => nodeOverlays(dataset, view, projection, { mixedLabel: labels.mixed }), [dataset, view, projection, labels.mixed])
   const phylogeny = view.target.kind === 'phylogeny' ? dataset.phylogeny(view.target.id).phylogeny : null
-  const rooting = phylogeny?.rooting
-  const rootingLine = rooting ? `${labels.rooting} ${rooting.note ?? rooting.method}` : null
-  // The rooting note goes into the About list, exports and prints, next to the hypothesis it describes.
-  const disclosure = useMemo(() => {
-    const d = describeView(dataset, view, projection)
-    if (!rootingLine) return d
-    const at = d.lines.findIndex((l) => l.startsWith('Phylogenetic hypothesis:'))
-    const lines = [...d.lines]
-    lines.splice(at + 1, 0, rootingLine)
-    return { ...d, lines }
-  }, [dataset, view, projection, rootingLine])
+  // Core's disclosure carries the rooting line, so About, exports and prints say how the tree was rooted.
+  const disclosure = useMemo(() => describeView(dataset, view, projection), [dataset, view, projection])
+  const rootingLine = disclosure.lines.find((l) => l.startsWith('Rooting ('))
   const others = useMemo(
     () => (phylogeny ? [...dataset.snapshot.phylogenies, ...compareWith.filter((p) => !dataset.snapshot.phylogenies.some((q) => q.id === p.id))].filter((p) => p.id !== phylogeny.id) : []),
     [dataset, compareWith, phylogeny],
@@ -497,6 +491,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
           <Icon name="filter" />
           <span>{labels.status}</span>
           <select
+            aria-label={labels.statusFilter}
             value={statusValue}
             onChange={(e) => {
               const f = STATUS_FILTERS.find((x) => x.value === e.target.value)!

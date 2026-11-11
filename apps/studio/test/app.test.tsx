@@ -60,8 +60,11 @@ describe('the Mac app with the new tree formats and controls', () => {
     await openFile('/made-up/two.nex', NEXUS)
     await waitFor(() => expect(status().textContent).toMatch(/^Opened two\.nex\./))
     expect(within(status()).getByText('Line 2: TAXA block is not read')).toBeTruthy()
-    const show = within(document.querySelector('.app-header') as HTMLElement).getByRole('combobox', { name: 'Show' }) as HTMLSelectElement
+    const show = within(document.querySelector('.app-header') as HTMLElement).getByRole('combobox', { name: 'Show tree or classification' }) as HTMLSelectElement
     expect([...show.options].map((o) => o.textContent)).toEqual(['Tree: two: one', 'Tree: two: two'])
+    // The header's picker and the explorer's living/extinct filter both show "Show": their names tell them apart and start with it (WCAG 2.5.3).
+    const shows = screen.getAllByRole('combobox').filter((c) => c.closest('label')?.textContent?.startsWith('Show'))
+    expect(shows.map((c) => c.getAttribute('aria-label'))).toEqual(['Show tree or classification', 'Show living or extinct'])
     expect(vi.mocked(dialog.open).mock.calls[0]![0]!.filters![0]!.extensions).toEqual(expect.arrayContaining(['nex', 'nexus', 'tre', 'xml', 'phyloxml']))
   })
 
@@ -81,10 +84,10 @@ describe('the Mac app with the new tree formats and controls', () => {
     fireEvent.click(within(screen.getByRole('tree')).getByText('Alpha'))
     fireEvent.click(screen.getByRole('button', { name: 'Root on this tip (outgroup)' }))
     expect(status().textContent).toMatch(/^Made a new tree, “two: one \(rerooted on Alpha\)”, and showed it\. two\.nex is unchanged/)
-    const show = within(document.querySelector('.app-header') as HTMLElement).getByRole('combobox', { name: 'Show' }) as HTMLSelectElement
+    const show = within(document.querySelector('.app-header') as HTMLElement).getByRole('combobox', { name: 'Show tree or classification' }) as HTMLSelectElement
     expect(show.value).toBe('phylogeny:two:1-outgroup')
     expect(show.options).toHaveLength(3)
-    expect(document.querySelector('.ot-rooting')!.textContent).toMatch(/^Rooting: Rerooted on the outgroup Alpha \(.+\) from two:1 version/)
+    expect(document.querySelector('.ot-rooting')!.textContent).toMatch(/^Rooting \(outgroup\): Rerooted on the outgroup Alpha \(.+\) from two:1 version/)
 
     // The open file is refused as a save target, before anything is written.
     vi.mocked(dialog.save).mockResolvedValueOnce('/made-up/two.nex')
@@ -160,7 +163,7 @@ describe('linking tree tips to taxa in the Mac app', () => {
     await linkAll(4)
     expect(status().textContent).toMatch(/^Made a new tree, “alpha \(tips linked\)”, with 4 tip links changed, and showed it\. checklist\.json is unchanged/)
     expect(document.activeElement).toBe(linkButton())
-    const show = within(header()).getByRole('combobox', { name: 'Show' }) as HTMLSelectElement
+    const show = within(header()).getByRole('combobox', { name: 'Show tree or classification' }) as HTMLSelectElement
     expect(show.value).toBe('phylogeny:alpha-linked')
 
     await addTree('/made-up/beta.nwk', BETA)
