@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## Mac app 0.1.1
+
+Fixes saving in the Mac app. 0.1.0 wasn't given permission to rename its temporary file over the chosen one, so a save very likely failed and left a `.tmp` file beside it. That was missed because the app's tests run without Tauri's permission checks. Nobody has saved with a built 0.1.0 or 0.1.1 yet: please try a save after installing.
+
 - Mac app: opening a snapshot with no checksum now says it isn't sealed, so a sealed file whose checksum line was deleted no longer opens silently. Saving can now rename its temporary file over the chosen one (the app wasn't allowed to before, so saves failed), and a failed save removes the temporary file, or says it couldn't.
 
 ## 0.1.0-alpha.3
