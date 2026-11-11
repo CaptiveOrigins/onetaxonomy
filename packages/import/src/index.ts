@@ -1,4 +1,6 @@
 export { parseNewick, toNewick, NewickError, type NewickOptions } from './newick'
+export { nexusAdapter, readNexus, NexusError, type NexusOptions } from './nexus'
+export { phyloXmlAdapter, readPhyloXml, PhyloXmlError, type PhyloXmlOptions, type PhyloXmlTaxonomy } from './phyloxml'
 export { toSnapshot, type SourceAdapter, type ImportResult, type ImportWarning, type AdapterDescription } from './adapter'
 export { normalizeChecklist, DEFAULT_STATUS_MAP, type ChecklistRow, type ChecklistOptions } from './checklist'
 export { parseDelimited, parseDelimitedRecords } from './delimited'

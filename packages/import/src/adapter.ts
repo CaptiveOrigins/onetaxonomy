@@ -12,9 +12,15 @@ export type ImportWarning = {
     | 'missing-column'
     | 'unsupported-row-type'
     | 'schema'
+    | 'skipped-block'
+    | 'unsupported-command'
+    | 'untranslated-label'
+    | 'unsupported-element'
   message: string
   /** 1-based data row (header excluded), when the input is tabular. */
   row?: number
+  /** 1-based line, when the input is a text format such as NEXUS or phyloXML. */
+  line?: number
   /** The record's identifier in the source. */
   externalId?: string
 }
