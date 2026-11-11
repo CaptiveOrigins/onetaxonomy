@@ -82,8 +82,8 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] Phylogeny comparison (`comparePhylogenies`), explicit rooting tools (`rerootPhylogeny`, `midpointRoot`), support-threshold collapsing (`collapseBelowSupport` view action) (2026-11-11; core only, no explorer or Mac app controls yet)
 - [ ] Deep-time rendering where calibrated; trait overlays; documented discrete-character parsimony (labelled *inferred*)
 - [x] Nexus and phyloXML adapters (2026-11-11; the Mac app doesn't open them yet)
-- [ ] Canvas renderer with level of detail (1–2k visible nodes smoothly)
-- [ ] Benchmarks: 10k+ taxa datasets, 1–2k visible nodes; documented devices/browsers
+- [ ] Canvas renderer with level of detail (1–2k visible nodes smoothly). Built 2026-11-11: `TreeView` switches to a canvas above 1,000 drawn nodes, with level of detail, disclosure and hit-testing; planning one frame takes under 11 ms in Node at 50,000 tips (`docs/benchmarks.md`). Not ticked: paint time and smoothness haven't been measured in a browser.
+- [ ] Benchmarks: 10k+ taxa datasets, 1–2k visible nodes; documented devices/browsers. Started 2026-11-11: `scripts/bench-canvas.mjs` times projection, layout and the canvas plan on 1k, 10k and 50k made-up tips in Node and writes `docs/benchmarks.md` with the machine. Not ticked: no browser has been measured.
 - [x] Accessibility audit (code-level, WCAG 2.2 AA, 2026-11-11: `docs/test-audit.md`; small fixes made, gaps listed there; no screen reader or real browser run yet)
 
 ## Phase 2 (not started by design)
