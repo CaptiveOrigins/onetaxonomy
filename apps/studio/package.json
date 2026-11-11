@@ -1,7 +1,7 @@
 {
   "name": "onetaxonomy-studio",
   "private": true,
-  "version": "0.1.1",
+  "version": "0.2.0",
   "type": "module",
   "description": "OneTaxonomy for Mac: open checklists, Darwin Core Archives, trees and snapshots, then browse and save views.",
   "scripts": {
