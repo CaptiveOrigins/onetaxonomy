@@ -8,5 +8,6 @@ export { citationLine, disclosureLines, downloadBlob, standaloneSvg, svgToPng } 
 export { cameraBox, LessonPlayer, type LessonLabels, type LessonMode, type LessonPlayerProps } from './Lesson.js'
 export { ComparePanel, PHYLO_LABELS, rootedRecord, SupportControl, supportSummary, tipsUnder, type PhyloLabels } from './Phylo.js'
 export { linkedPhylogeny, proposeTipLinks, TIP_LINK_LABELS, TipLinker, type TipCandidate, type TipLinkerProps, type TipLinkLabels, type TipLinks, type TipMatch } from './TipLinks.js'
+export { isOneEdit, nearNameMatches, normaliseName, ONE_EDIT_MIN_LENGTH, withoutSpecimenCode, type NearMatch, type NearRule } from './nearNames.js'
 export { MARK_SHAPES, shapeAt, shapePath, ShapeSwatch, traitShapes, type MarkShape } from './shapes.js'
 export { useRovingToolbar } from './toolbar.js'

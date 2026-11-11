@@ -2,6 +2,32 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: possible tip matches, long trees, more shapes, drawing focus
+
+Scope: the gaps left by the linking and accessibility sections below. React gains `nearNameMatches` and paging in `TipLinker`, six more mark shapes, and ADR 0010 for drawing focus. Core, import and the Mac app are unchanged. Tests went from 267 to 281: react 71 to 85 (12 in the new `tipnear.test.tsx`, 2 in `a11y.test.tsx`). Everything ran in Node or jsdom: no screen reader, browser or built app.
+
+### Covered
+
+- **Near names are found by three rules, the closest first** (`tipnear.test.tsx`): underscores, spacing and case ("Alphus_primus", "deltus  SEXTUS"); a trailing specimen code left off ("Deltus_septimus_MZUSP1234", and "MZUSP 1234" and "KU-12345" in the unit test); one edit, including two letters swapped ("Epsilus octavsu") and one edit after a code is left off ("Gamus quartus_AB12"). A synonym found this way keeps its status. Capitals alone aren't a code, a label that is all code is left alone, and names under five letters aren't matched by one edit ("Bus" doesn't find "Bos").
+- **Near names never act alone.** They're proposed only for tips with no exact match, aren't `bulk`, and "Accept all exact unique matches (1)" takes only the exact one; every row stays unlinked until a person chooses. They're listed in their own "Possible matches, not exact" region and in their own group in the row's list, each with "(not exact: <rule>)". The Link button is a toggle (`aria-pressed`) whose name starts with its visible text; linking says "(not exact)" in the status region, and pressing it again unlinks.
+- **What was chosen is recorded.** `linkedPhylogeny` notes `near-name-confirmed` with the label, the name, the rule and what was left off; a taxon chosen another way stays `chosen-by-person`. The open snapshot's JSON is unchanged.
+- **Long trees.** Over `pageSize` rows (default 200; 200 tips isn't paged, 201 is) the table shows one page, with "Tips 1–200 of 201" in a status region. Previous and Next move pages, and when one becomes disabled focus moves to the other. "List tips" narrows to one kind of match with counts; it filters on the kind of match, which linking doesn't change, so a row doesn't vanish when linked. Accept all still counts every tip, on any page.
+- **Twelve shapes.** All closed paths, all different. Eight highlights on eight nodes draw the first eight shapes, and the legend shows the same eight; trait states get the twelve, then repeat (`a11y.test.tsx`).
+- **Drawing focus (ADR 0010).** Drawing nodes keep `tabindex="-1"` inside a `role="img"` SVG, and the outline tree is one Tab stop. The ADR says why roving focus in the drawing wasn't added: the image role hides focusable children from screen readers, arrows already pan the canvas, and the order on screen depends on the layout.
+
+### Gaps left
+
+- **Authorship in a label** ("Alphus primus Fixture, 2026") and trinomials written differently still aren't matched: "2026" is left off as a code, but "Fixture," stays.
+- **Near-name matching was timed only once,** on made-up data: 5,000 labels against 20,000 names took about 340 ms in Node. Not timed in WebKit.
+- **The Not linked list under the table isn't paged.** It's plain text, one line per tip.
+- **ADR 0010 is proposed, not accepted.** The owner may want roving focus in the drawing anyway.
+- **Shapes at print size** and the new shapes in dark mode haven't been looked at. Past twelve, shapes repeat.
+- **Not run for real:** VoiceOver on the possible-matches region, the toggle buttons and the page status.
+
+### Left out as overkill
+
+- Every label override, and more one-edit cases: `isOneEdit` is tested for each kind of edit and two near misses.
+
 ## 2026-11-11: rooting in describeView, two controls named "Show"
 
 Scope: two gaps from the sections below. The rooting note moves from the explorer into core's `describeView`, and the two "Show" dropdowns get distinct names. Tests went from 263 to 267: core 101 to 105 (4 in `rooting.test.ts`); react (71) and the studio (39) have the same counts, with assertions changed and one added. Everything ran in Node or jsdom with Tauri mocked.
@@ -39,9 +65,9 @@ Scope: the small and medium gaps from the accessibility audit below. The brand-o
 ### Gaps left
 
 - **The focus ring** is 2.88:1 on the panels: owner decision N154.
-- **Shapes repeat after six** highlights or trait states. Past that, color and the words in the inspector and legend tell them apart.
+- **Shapes repeat after six** highlights or trait states. Past that, color and the words in the inspector and legend tell them apart. (Addressed in "possible tip matches" above.)
 - **Only the first highlight on a node is drawn.** That hasn't changed: a node in two highlights shows one halo.
-- **The drawing's nodes still aren't reachable with Tab** (the outline is the way in), and live regions that mount with their first message (the clade check with a second taxon) still need a screen reader to confirm.
+- **The drawing's nodes still aren't reachable with Tab** (the outline is the way in; why is now ADR 0010), and live regions that mount with their first message (the clade check with a second taxon) still need a screen reader to confirm.
 - **Not run for real:** VoiceOver, keyboard use in WebKit and the built app, and how the shapes look at print size.
 
 ### Left out as overkill
@@ -65,8 +91,8 @@ Scope: the gap left in the section below ("Comparison in the Mac app always refu
 
 ### Gaps left
 
-- **Only exact names are proposed.** Spelling variants, authorship in the label ("Alphus primus Fixture, 2026"), trinomials written differently, and labels with specimen codes ("Alphus_primus_AB123") match nothing and must be found by hand. Fuzzy or rule-based matching would be a separate, labelled method, and is a decision for the lead.
-- **Long trees.** Every tip is a table row with a select. Not timed beyond the fixtures; a tree with thousands of tips may want paging or a filter for unmatched rows.
+- **Only exact names are proposed.** Spelling variants, authorship in the label ("Alphus primus Fixture, 2026"), trinomials written differently, and labels with specimen codes ("Alphus_primus_AB123") match nothing and must be found by hand. Fuzzy or rule-based matching would be a separate, labelled method, and is a decision for the lead. (Addressed in "possible tip matches" above.)
+- **Long trees.** Every tip is a table row with a select. Not timed beyond the fixtures; a tree with thousands of tips may want paging or a filter for unmatched rows. (Addressed in "possible tip matches" above.)
 - **Not run for real:** VoiceOver reading the table, the selects' optgroups and the status region; the datalist suggestions in WebKit; the Tauri dialogs and writes in the built app.
 - **Add tree… needs the taxa first.** A tree opened alone can't be linked: the step says so. Opening a snapshot that holds both is the other way in.
 
