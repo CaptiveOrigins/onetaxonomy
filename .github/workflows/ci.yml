@@ -22,3 +22,7 @@ jobs:
       - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm test
+      # The OneOrigin brand copy (brand/oneorigin/) must match brand/oneorigin.lock, and the CSS built from it must be current.
+      # The source is OnePhylogeny's docs/oneorigin/; the check warns, without failing, when it has moved ahead of the copy.
+      - name: OneOrigin brand check
+        run: node scripts/oneorigin.mjs check

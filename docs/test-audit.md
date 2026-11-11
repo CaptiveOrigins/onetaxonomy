@@ -34,6 +34,14 @@ Scope: the new `packages/payload` (`@captiveorigins/payload-plugin-onetaxonomy`,
 
 - Payload's own field validation (required fields, select options) and its relationship checks.
 - Every status transition pair: the allowed ones and three refused ones (published to staged, withdrawn to published, and starting published) are tested.
+## 2026-11-11: OneOrigin brand source
+
+Owner decision N105 (2026-11-11): "A: send it, accept guidelines (Recommended)". Tests went from 299 to 300: studio (Mac app) 40 to 41 (`apps/studio/test/theme.test.ts`). The rest are unchanged.
+
+- **Promises:** `brand/oneorigin/` matches `brand/oneorigin.lock` byte for byte, and CI fails on a hand edit; `apps/studio/src/oneorigin.css` is what `build` writes from the copy's tokens; the app's shell colors are the suite's tokens; nothing that was drawn changes color.
+- **Covered:** `node scripts/oneorigin.mjs check` in CI (11 files and the built CSS). `theme.test.ts` (1 new): `--bg`, `--panel`, `--text`, `--muted`, `--border`, `--accent`, `--focus` and `--error` in `app.css` equal the built `--ot-` tokens in light, system dark and a chosen Dark. The script itself is tested in OnePhylogeny, where it comes from (`scripts/oneorigin.test.mjs`, 19 tests: build output, lock and check passing, a hand edit failing, the warning paths); this repo carries the same file.
+- **Gaps left:** the built CSS hasn't been looked at in the running app. The check downloads the locked files from OnePhylogeny's main branch to see whether the source differs; that only warns, and until OnePhylogeny's PR lands it warns that the files aren't there yet.
+- **Left out as overkill:** repeating the script's tests here; they'd test the same file.
 
 ## 2026-11-11: Studio bundle
 

@@ -55,6 +55,17 @@ describe('studio colors', () => {
     for (const ring of rings) expect(ring).toBe('var(--focus)')
   })
 
+  it('the shell colors match the OneOrigin tokens built into oneorigin.css, in light and both dark blocks', () => {
+    // oneorigin.css is written from brand/oneorigin/tokens.json by `node scripts/oneorigin.mjs build`; CI's `check` keeps it current.
+    const tokenCss = readFileSync(join(__dirname, '../src/oneorigin.css'), 'utf8')
+    const shell: Record<string, string> = { '--bg': '--ot-background', '--panel': '--ot-panel', '--text': '--ot-text', '--muted': '--ot-muted', '--border': '--ot-border', '--accent': '--ot-accent', '--focus': '--ot-focus', '--error': '--ot-error' }
+    for (const start of [':root {', ':root:not(', ":root[data-appearance='dark'] {"]) {
+      const app = vars(block(appCss, start), '--')
+      const built = vars(block(tokenCss, start), '--ot-')
+      for (const [name, token] of Object.entries(shell)) expect(app[name], `${start} ${name} = ${token}`).toBe(built[token])
+    }
+  })
+
   it('a chosen appearance sets the explorer colors too, with the library values', () => {
     // Without this, Light on a dark system drew the explorer's light text (#eef1f6) on a white page: 1.13:1.
     const libLight = vars(block(libraryCss, '.ot-tip-links {'), '--ot-')

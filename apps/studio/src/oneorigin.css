@@ -1,0 +1,54 @@
+/* OneOrigin tokens for OneTaxonomy (--ot-), written by `node scripts/oneorigin.mjs build` from brand/oneorigin/tokens.json.
+   Don't edit by hand: `node scripts/oneorigin.mjs check` fails when this differs from what build writes. Tool: onetaxonomy. */
+:root {
+  --ot-accent: #cf8137;
+  --ot-focus: #a65f20;
+  --ot-brand-pink: #e48185;
+  --ot-structure: #4c312c;
+  --ot-mauve: #91645d;
+  --ot-text: #1d2330;
+  --ot-muted: #5b6577;
+  --ot-background: #ffffff;
+  --ot-panel: #fdf7f7;
+  --ot-border: #eeddde;
+  --ot-warning: #b45309;
+  --ot-error: #b91c1c;
+  --ot-radius-button: 8px;
+  --ot-radius-card: 10px;
+  --ot-button-height: 32px;
+  --ot-focus-width: 2px;
+  --ot-focus-offset: 1px;
+  --ot-icon-size: 24px;
+  --ot-tile-top: #f8d6d7;
+  --ot-tile-bottom: #eda9ac;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-appearance='light']) {
+    --ot-accent: #e7a066;
+    --ot-focus: #e7a066;
+    --ot-brand-pink: #eda9ac;
+    --ot-structure: #eda9ac;
+    --ot-mauve: #c79a92;
+    --ot-text: #e8ecf2;
+    --ot-muted: #a3acbb;
+    --ot-background: #12151b;
+    --ot-panel: #181c24;
+    --ot-border: #2c3340;
+    --ot-warning: #fbbf24;
+    --ot-error: #f87171;
+  }
+}
+:root[data-appearance='dark'] {
+  --ot-accent: #e7a066;
+  --ot-focus: #e7a066;
+  --ot-brand-pink: #eda9ac;
+  --ot-structure: #eda9ac;
+  --ot-mauve: #c79a92;
+  --ot-text: #e8ecf2;
+  --ot-muted: #a3acbb;
+  --ot-background: #12151b;
+  --ot-panel: #181c24;
+  --ot-border: #2c3340;
+  --ot-warning: #fbbf24;
+  --ot-error: #f87171;
+}
