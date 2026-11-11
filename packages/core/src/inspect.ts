@@ -198,13 +198,18 @@ export function describeView(dataset: DatasetIndex, view: TaxonomicView, project
   }
   if (notice) lines.push(notice)
   const c = projection.counts
-  const notShown = c.hidden + c.filtered + c.collapsed + c.outsideFocus
-  lines.push(notShown ? `${c.shown} of ${c.total} nodes shown; ${notShown} not shown (${[c.collapsed && `${c.collapsed} folded`, c.hidden && `${c.hidden} hidden`, c.filtered && `${c.filtered} filtered`, c.outsideFocus && `${c.outsideFocus} outside the focus`].filter(Boolean).join(', ')}).` : `All ${c.total} nodes shown.`)
+  const notShown = c.hidden + c.filtered + c.collapsed + c.outsideFocus + (c.supportCollapsed ?? 0)
+  lines.push(notShown ? `${c.shown} of ${c.total} nodes shown; ${notShown} not shown (${[c.collapsed && `${c.collapsed} folded`, c.supportCollapsed && `${c.supportCollapsed} merged into polytomies for low support`, c.hidden && `${c.hidden} hidden`, c.filtered && `${c.filtered} filtered`, c.outsideFocus && `${c.outsideFocus} outside the focus`].filter(Boolean).join(', ')}).` : `All ${c.total} nodes shown.`)
   if (projection.truncated) lines.push('The drawing was truncated at its node limit.')
   if (Object.keys(view.order).length) lines.push('Sibling order was rearranged for display; it carries no meaning.')
   for (const h of view.highlights) lines.push(h.kind === 'clade' ? `“${h.label}”: clade (monophyletic in ${h.assessment?.hypothesis ? `${h.assessment.hypothesis.id} v${h.assessment.hypothesis.version}` : 'this hypothesis'}).` : `“${h.label}”: a group for viewing, not a clade.`)
   const trait = view.overlays?.trait !== undefined ? (s.traits ?? []).find((t) => t.id === view.overlays!.trait) : undefined
   if (trait) lines.push(`Colors: observed states of “${trait.title}” as stated by its source; uncolored nodes have no stated value (nothing is inferred).`)
+  if (projection.supportCollapse) {
+    const sc = projection.supportCollapse
+    const n = sc.collapsed.length
+    lines.push(`${n} ${n === 1 ? 'branch' : 'branches'} with support below ${sc.threshold} ${n === 1 ? 'is collapsed into a polytomy' : 'are collapsed into polytomies'} for display; the hypothesis itself keeps ${n === 1 ? 'it' : 'them'}.${sc.withoutSupport ? ` ${sc.withoutSupport} internal ${sc.withoutSupport === 1 ? 'branch has' : 'branches have'} no support value and ${sc.withoutSupport === 1 ? 'was' : 'were'} not collapsed.` : ''}`)
+  }
   if (view.overlays?.support?.threshold !== undefined) lines.push(`Support below ${view.overlays.support.threshold} is marked weak.`)
   lines.push(`Data: snapshot ${s.id} ${s.version}${s.checksum ? ` (${s.checksum.slice(0, 19)}…)` : ''}.`)
   const citations = viewCitations(dataset, view, projection)

@@ -124,8 +124,12 @@ export type Phylogeny = {
   sources: Id[]
   citation?: string
   rooted: boolean
-  /** How the root was chosen, when it was chosen by someone after import. */
-  rooting?: { method: string; note?: string }
+  /**
+   * How the root was chosen, when it was chosen by someone after import. `rerootPhylogeny`
+   * and `midpointRoot` set `method` (`outgroup`, `midpoint`), the outgroup's node ids and
+   * the record it was made from.
+   */
+  rooting?: { method: string; note?: string; outgroup?: Id[]; from?: { id: Id; version: string } }
   lengthUnit?: LengthUnit
   /** Whether internal node ages are calibrated in a time unit. */
   timeCalibrated?: boolean

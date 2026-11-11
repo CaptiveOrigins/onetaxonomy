@@ -131,7 +131,7 @@
         "sources": { "type": "array", "items": { "$ref": "#/$defs/id" } },
         "citation": { "type": "string" },
         "rooted": { "type": "boolean" },
-        "rooting": { "type": "object", "required": ["method"], "additionalProperties": false, "properties": { "method": { "type": "string" }, "note": { "type": "string" } } },
+        "rooting": { "type": "object", "required": ["method"], "additionalProperties": false, "properties": { "method": { "type": "string" }, "note": { "type": "string" }, "outgroup": { "type": "array", "items": { "$ref": "#/$defs/id" } }, "from": { "type": "object", "required": ["id", "version"], "additionalProperties": false, "properties": { "id": { "$ref": "#/$defs/id" }, "version": { "type": "string" } } } } },
         "lengthUnit": { "enum": ["substitutions-per-site", "changes", "Ma", "ka", "years", "unspecified"] },
         "timeCalibrated": { "type": "boolean" },
         "sampling": { "enum": ["complete", "partial", "unknown"] },

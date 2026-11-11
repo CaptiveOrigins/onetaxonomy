@@ -18,6 +18,23 @@ toNewick(tree) // "[&R] ((A b:0.1,'C d':0.2)95:0.05,F:0.001);"
 
 Polytomies are kept, quoted labels and comments preserved (comments become `annotations.newickComments`), numeric internal labels read as support values (`internalLabels` option), and errors report the character position.
 
+## NEXUS and phyloXML
+
+```js
+import { nexusAdapter, phyloXmlAdapter } from '@captiveorigins/onetaxonomy-import'
+
+const source = { id: 'my-study', title: 'My study', citation: '…', license: 'CC BY 4.0' }
+const nexus = await nexusAdapter({ source, id: 'my-study', version: '1', lengthUnit: 'substitutions-per-site', mapLabel }).read(text)
+const xml = await phyloXmlAdapter({ source, id: 'my-study', version: '1', mapTaxonomy: (t) => byNcbi[t.ids.find((x) => x.provider === 'ncbi')?.id] }).read(text)
+// result.phylogenies: one per tree, ids `my-study:1`, `my-study:2`…
+```
+
+The NEXUS reader takes the trees from every TREES block. A TRANSLATE table turns tip tokens back into names before `mapLabel` sees them. A tree is rooted only if it says `[&R]`, unrooted if it says `[&U]` or is a `UTREE`; otherwise pass `rooted`, or the file is refused. Other blocks (TAXA, CHARACTERS…) are skipped with a warning, and so are tip labels that aren't in the table.
+
+The phyloXML reader takes each `<phylogeny>`: nested clades, names, branch lengths (attribute or element; refused if they disagree), every `<confidence>` (the first is `support`, the rest `additionalSupport`, each with its `type` as the method) and the taxonomy, which is kept as an annotation and offered to `mapTaxonomy`. Rooting comes from the `rooted` attribute. Elements it doesn't read (sequences, events, dates, colors…) are counted in the warnings. It reads no DTDs or external entities.
+
+Both refuse malformed input with the line (and the element, for phyloXML). Neither file format states a branch length unit, so give `lengthUnit` when you know it.
+
 ## Source adapters
 
 Every adapter implements `SourceAdapter<Input>` (`describe()`, `read(input) → ImportResult`) and returns names, concepts, one classification, the source's raw ids and **warnings** for anything it handled conservatively (missing parent → kept as a root; parent that is a synonym → its accepted taxon; synonym without its accepted taxon → skipped; unmapped status → `unknown`). `toSnapshot(results, { id, version, createdAt })` combines results into a snapshot; seal it with `sealSnapshot`.

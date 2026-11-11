@@ -38,11 +38,21 @@ export type Projection = {
   /** Visible nodes in preorder (parents before children, display order). */
   nodes: ProjectedNode[]
   roots: Id[]
-  counts: { total: number; shown: number; hidden: number; filtered: number; collapsed: number; outsideFocus: number }
+  /** `supportCollapsed`: internal nodes not drawn because the view collapses low-support branches (present only then). */
+  counts: { total: number; shown: number; hidden: number; filtered: number; collapsed: number; outsideFocus: number; supportCollapsed?: number }
   truncated: boolean
   rooted?: boolean
   lengthUnit?: LengthUnit
   timeCalibrated?: boolean
+  /**
+   * Branches drawn as polytomies because their support is below the view's threshold
+   * (`TaxonomicView.supportCollapse`). `collapsed` lists the nodes whose incoming branch
+   * was removed from the drawing; their children hang from the node above, with that
+   * branch's length added so distances from the root are unchanged. `withoutSupport`
+   * counts internal branches with no support value: they are never collapsed, since
+   * no value is not a low value.
+   */
+  supportCollapse?: { threshold: number; collapsed: Id[]; withoutSupport: number }
   /** The drawing shows a proposal, not the accepted arrangement. */
   proposed?: { title: string; author: string; moved: Id[] }
 }
@@ -111,14 +121,20 @@ export function projectView(dataset: DatasetIndex, view: TaxonomicView, { limit 
 
   const total = tree.ids.length
   const inScope = starts.reduce((n, s) => n + size.get(s)!, 0)
-  const counts = { total, shown: 0, hidden: 0, filtered: 0, collapsed: 0, outsideFocus: total - inScope }
+  const counts: Projection['counts'] = { total, shown: 0, hidden: 0, filtered: 0, collapsed: 0, outsideFocus: total - inScope }
   const nodes: ProjectedNode[] = []
   const byId = new Map<Id, ProjectedNode>()
   let truncated = false
-  const walk: { id: Id; parent: Id | null; depth: number }[] = [...starts].reverse().map((id) => ({ id, parent: null, depth: 0 }))
+  const walk: { id: Id; parent: Id | null; depth: number; extra?: number | undefined }[] = [...starts].reverse().map((id) => ({ id, parent: null, depth: 0 }))
   const roots: Id[] = []
+  // Support collapsing (display only): an internal, non-start node below the threshold is not drawn;
+  // its children are drawn under its parent. Explicitly collapsed nodes are the user's choice and stay.
+  const threshold = phy && view.supportCollapse ? view.supportCollapse.threshold : null
+  const supportOf = (id: Id) => phy!.node.get(id)!.support?.value ?? phy!.edgeTo.get(id)?.support?.value
+  const supportCollapsed: Id[] = []
+  let withoutSupport = 0
   while (walk.length) {
-    const { id, parent, depth } = walk.pop()!
+    const { id, parent, depth, extra } = walk.pop()!
     const parentNode = parent !== null ? byId.get(parent)! : null
     if (hidden.has(id)) {
       counts.hidden += size.get(id)!
@@ -129,6 +145,19 @@ export function projectView(dataset: DatasetIndex, view: TaxonomicView, { limit 
       counts.filtered += size.get(id)!
       if (parentNode) parentNode.hiddenDescendants += size.get(id)!
       continue
+    }
+    if (threshold !== null && parent !== null && tree.children.get(id)!.length > 0 && !collapsed.has(id)) {
+      const value = supportOf(id)
+      if (value === undefined) withoutSupport++
+      else if (value < threshold) {
+        supportCollapsed.push(id)
+        counts.supportCollapsed = (counts.supportCollapsed ?? 0) + 1
+        // The removed branch's length is added to the children's, so distances from the root stay the same.
+        // A missing length stays missing (NaN): the children are then drawn without one, never with a guess.
+        const carried = (phy!.edgeTo.get(id)?.length ?? Number.NaN) + (extra ?? 0)
+        for (const c of [...kids(id)].reverse()) walk.push({ id: c, parent, depth, extra: carried })
+        continue
+      }
     }
     if (nodes.length >= limit) {
       truncated = true
@@ -151,7 +180,7 @@ export function projectView(dataset: DatasetIndex, view: TaxonomicView, { limit 
       highlights: highlightsOf.get(id) ?? [],
       selected: selected.has(id),
       ...(movedIds.has(id) ? { moved: true } : {}),
-      ...(edge?.length !== undefined ? { length: edge.length } : {}),
+      ...(edge?.length !== undefined && !Number.isNaN(extra) ? { length: edge.length + (extra ?? 0) } : {}),
       ...(data?.age ? { age: data.age.value } : {}),
       ...(data?.support ? { support: data.support.value } : {}),
     }
@@ -177,6 +206,7 @@ export function projectView(dataset: DatasetIndex, view: TaxonomicView, { limit 
     roots,
     counts,
     truncated,
+    ...(threshold !== null ? { supportCollapse: { threshold, collapsed: supportCollapsed, withoutSupport } } : {}),
     ...(view.proposal ? { proposed: { title: view.proposal.title, author: view.proposal.author, moved: [...movedIds] } } : {}),
     ...(phy ? { rooted: phy.rooted, ...(phy.phylogeny.lengthUnit ? { lengthUnit: phy.phylogeny.lengthUnit } : {}), timeCalibrated: Boolean(phy.phylogeny.timeCalibrated) } : {}),
   }

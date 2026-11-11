@@ -71,6 +71,12 @@ export type TaxonomicView = {
   layout: { kind: LayoutKind }
   selected: Id[]
   overlays?: ViewOverlays
+  /**
+   * Draw branches whose support is below `threshold` (in the hypothesis' own scale)
+   * as polytomies. Display only: the hypothesis keeps every branch, and the projection
+   * lists the branches collapsed (`Projection.supportCollapse`). Phylogenies only.
+   */
+  supportCollapse?: { threshold: number }
   /** Proposed mode: the view shows the hierarchy with these moves, always disclosed as proposed. */
   proposal?: Proposal
 }
@@ -93,6 +99,8 @@ export type ViewAction =
   | { type: 'setLayout'; layout: LayoutKind }
   | { type: 'select'; nodes: Id[] }
   | { type: 'setOverlays'; overlays: ViewOverlays }
+  /** Collapse branches with support below `threshold` into polytomies; `null` turns it off. */
+  | { type: 'collapseBelowSupport'; threshold: number | null }
   | { type: 'startProposal'; proposal: Pick<Proposal, 'id' | 'title' | 'author' | 'created' | 'notes'> }
   | { type: 'proposeMove'; node: Id; to: Id | null; note?: string }
   | { type: 'revertMove'; node: Id }
@@ -236,6 +244,13 @@ export function applyViewAction(view: TaxonomicView, action: ViewAction, dataset
       const { overlays: _, ...rest } = view
       return Object.keys(next).length ? { ...rest, overlays: next } : rest
     }
+    case 'collapseBelowSupport': {
+      const { supportCollapse: _, ...rest } = view
+      if (action.threshold === null) return rest
+      if (view.target.kind !== 'phylogeny') throw new ViewActionError('Support values belong to a phylogeny; a classification has none to collapse by', action)
+      if (typeof action.threshold !== 'number' || !Number.isFinite(action.threshold)) throw new ViewActionError('The support threshold must be a finite number', action)
+      return { ...rest, supportCollapse: { threshold: action.threshold } }
+    }
     case 'startProposal': {
       if (view.proposal) throw new ViewActionError('This view already has a proposal', action)
       const accepted = acceptedTree(dataset, view)
@@ -319,7 +334,7 @@ export function makeHighlight(dataset: DatasetIndex, view: TaxonomicView, o: { i
 
 export type ViewDiagnostic = {
   severity: 'error' | 'warning'
-  code: 'proposal' | 'format' | 'snapshot-mismatch' | 'unknown-target' | 'unknown-node' | 'bad-order' | 'unsupported-clade' | 'stale-assessment' | 'layout' | 'unknown-trait'
+  code: 'support-collapse' | 'proposal' | 'format' | 'snapshot-mismatch' | 'unknown-target' | 'unknown-node' | 'bad-order' | 'unsupported-clade' | 'stale-assessment' | 'layout' | 'unknown-trait'
   message: string
   ids?: Id[]
 }
@@ -353,6 +368,8 @@ export function validateView(view: TaxonomicView, dataset: DatasetIndex): ViewDi
   }
   if (view.overlays?.trait !== undefined && !(dataset.snapshot.traits ?? []).some((t) => t.id === view.overlays!.trait))
     out.push({ severity: 'error', code: 'unknown-trait', message: `Trait set ${view.overlays.trait} is not in this snapshot` })
+  if (view.supportCollapse && (view.target.kind !== 'phylogeny' || !Number.isFinite(view.supportCollapse.threshold)))
+    out.push({ severity: 'error', code: 'support-collapse', message: view.target.kind !== 'phylogeny' ? 'A classification has no support values to collapse by' : 'The support threshold is not a number' })
   const lp = layoutProblem(dataset, view.target, view.layout.kind)
   if (lp) out.push({ severity: 'error', code: 'layout', message: lp })
   return out
