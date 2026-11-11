@@ -35,7 +35,7 @@ Dependencies only point downward. `core` has no runtime dependencies and compile
 | `layout` | Milestone 4 | core | rendering, storage |
 | `react` | Milestone 4 | core, layout | Payload, Next.js, network |
 | `education` | Milestone 5 | core | live networking |
-| `payload` | Milestone 7 | core, import, react | — (optional plugin) |
+| `payload` | Milestone 7 (part 1, [ADR 0012](adr/0012-payload-plugin.md)) | core (import and react in later parts) | — (optional plugin; nothing else may depend on Payload) |
 | `apps/studio` | Milestone 6 | core, import, layout, react, education | Payload, a hosted account |
 | `live`, `services/live-server` | Phase 2 | core | — (never required for offline use) |
 

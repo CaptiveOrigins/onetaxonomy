@@ -12,3 +12,4 @@
 | [0008](0008-package-scope.md) | npm names `@captiveorigins/onetaxonomy-*` | Accepted (owner) |
 | [0009](0009-license.md) | PolyForm Noncommercial 1.0.0 | Accepted (owner 2026-11-04) |
 | [0010](0010-outline-is-the-keyboard-path.md) | The outline is the keyboard path into the tree; drawing nodes stay out of the Tab order | Accepted (Science, 2026-11-11) |
+| [0012](0012-payload-plugin.md) | The Payload plugin stores sealed snapshots whole and answers bounded questions about them | Proposed (Science, 2026-11-11) |

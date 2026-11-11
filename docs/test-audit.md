@@ -2,6 +2,39 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: Payload plugin, part 1
+
+Scope: the new `packages/payload` (`@captiveorigins/payload-plugin-onetaxonomy`, M7 part 1, ADR 0012). No other package changed. Tests went from 283 to 329: payload 0 to 46, in five files, each on a real Payload 3.93 with an in-memory MongoDB replica set (indexes built, no network; the MongoDB binary was already cached). Endpoints were called through their handlers with a local request, as the sister plugins do, not through Payload's HTTP routing.
+
+### Covered
+
+- **Sealed on the way in** (`snapshots.test.ts`): a snapshot changed after sealing, or with a made-up checksum, is refused, also for trusted server code; so is one without a checksum, of schema version 2, with a validation error (a dangling edge, sealed anyway), or not JSON. Id, version and checksum are taken from the snapshot, and given values that differ are refused.
+- **No duplicates:** the same id and version is refused, with a different message when the content differs; the unique index on id and version exists in MongoDB.
+- **Immutable content:** snapshot, checksum and version can't change while staged or once published, including from trusted code.
+- **Staged versions:** new snapshots must start staged; publishing needs a signed-in manager and records who and when (trusted code without a user is refused); published can't go back to staged; who published can't be rewritten; withdrawn is final and hidden from readers; published snapshots can't be deleted even by trusted code; staged ones can, by managers only.
+- **Checked again when read:** a published snapshot edited directly in MongoDB gets a 500 with a plain reason from the API, not an answer.
+- **Search** (`api.test.ts`): exact before prefix, case aside; a split name gives both concepts; synonyms marked with their accepted name; common names only in the locale asked for (`de` finds "zweites Alpha", `en` and no locale don't); results capped at the plugin's limit with `truncated`, a request's own `limit` honoured and a larger one clamped; empty and over-long queries are 400; `searchNames` from host code applies the same access.
+- **Ancestors and descendants:** classification parents with names; phylogeny descendants breadth first, cut by the result limit and by `maxDepth`, both reported as `truncated`; ancestors nearest first with tip labels and concepts; an unrooted phylogeny answers `indeterminate` with no items; unknown hierarchy or node is 404; no hierarchy, two hierarchies or no node is 400.
+- **MRCA:** found in a rooted hypothesis, naming it; `none` across a forest; `indeterminate` when unrooted; a classification, too many nodes and no nodes are 400 with reasons; unknown nodes are 404.
+- **Access fails closed:** on every endpoint, a staged snapshot, a missing id and a malformed id all give the same 404 body to a reader; anonymous requests and a host callback that throws give 404; readers, anonymous requests and throwing callbacks can't create; a callback returning a truthy value that isn't `true` is a no (`truthy-access.test.ts`); anonymous `find` is refused.
+- **Tenants** (`tenants.test.ts`): a new record takes its maker's tenant; two tenants can store the same snapshot; naming another tenant is refused; each reader lists only their tenant's snapshots and can't read another's by id; every endpoint answers 404 to another tenant's reader and manager, to a user with no tenant and when the tenant lookup throws; another tenant's manager can't withdraw or delete; the tenant can't change, even from trusted code; a view can't use another tenant's snapshot, even from trusted code; views are listed per tenant.
+- **Views** (`views.test.ts`): stored as drafts; refused when they pin another checksum, no checksum or another snapshot, when core finds unknown nodes or an unknown hierarchy, and when they aren't views; readers can't create; publishing waits for a published snapshot; drafts can change, published views can't (view, title or snapshot, even from trusted code) and can't be deleted; readers see only published views; withdrawn views drop out; drafts can be deleted; no new view over a withdrawn snapshot.
+- **Core stays free of Payload:** no other package depends on or imports `payload` or `@payloadcms/*` (`snapshots.test.ts`). The plugin adds exactly its two collections and four endpoints.
+
+### Gaps left
+
+- **Not run in a real site:** no Next.js app, HTTP routing, Admin UI or GraphQL. The `apps/payload-example` part will cover this.
+- **Postgres** isn't tested; the plugin uses no MongoDB-only features, but the JSON field and the compound index haven't been tried there.
+- **Concurrent writes** of the same snapshot weren't raced; the unique index is shown to exist, not shown winning a race.
+- **Large snapshots:** nothing near MongoDB's 16 MB document limit was tried, and the cost of the first load and checksum wasn't timed.
+- **The index cache** isn't tested directly (eight entries, oldest dropped first).
+- **A published view of a withdrawn snapshot** stays readable; that's a known open question in ADR 0012, not tested as a rule.
+
+### Left out as overkill
+
+- Payload's own field validation (required fields, select options) and its relationship checks.
+- Every status transition pair: the allowed ones and three refused ones (published to staged, withdrawn to published, and starting published) are tested.
+
 ## 2026-11-11: focus ring colour
 
 Scope: the focus-ring gap from the accessibility audit below, closed by owner decision N154 (2026-11-11, option A): "keep the brand orange everywhere else, but use the darker orange #a65f20 for focus rings on light backgrounds (4.6 to 1 or better). Dark mode keeps the lighter orange, which already passes." Only colour variables and focus rules changed; core, import, layout and education are unchanged. Tests went from 281 to 283: react 85 to 86 (`a11y.test.tsx`), studio 39 to 40 (`theme.test.ts`).

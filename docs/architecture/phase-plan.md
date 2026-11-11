@@ -10,7 +10,7 @@ Work proceeds in **vertical slices**: each milestone ships runnable code, tests,
 | 4 | 1 | Serializable views, React viewer, layouts, interactions | Drag/collapse/filter/rotate with undo/redo; underlying graph checksum unchanged | **Done** (2026-11-02): core views, layouts, React explorer, `apps/playground`. Canvas level-of-detail rendering for very large trees moves to M8 |
 | 5 | 1 | Profiles, overlays, exports, lessons/presets | Accurate diagrams and a portable view; reopening reproduces the same scientific references | **Done** (2026-11-03): inspector, overlays, exports with disclosures, clade selector, education package and lesson player |
 | 6 | 1 | Studio for macOS, end to end | Import → curate → explore → save → close → reopen → export, all offline | Next |
-| 7 | 1 | Payload plugin and example app | Install via plugin, curate in admin, React viewer on a public page, tenant isolation verified | Planned |
+| 7 | 1 | Payload plugin and example app | Install via plugin, curate in admin, React viewer on a public page, tenant isolation verified | Started (2026-11-11): part 1, snapshots, views and the first read API ([ADR 0012](adr/0012-payload-plugin.md)) |
 | 8 | 1 | Science and performance polish | Alternative hypotheses, dating where valid, trait method, accessibility, large-tree benchmarks | Planned |
 | 9 | 2 | OneTaxonomy Live and instructor challenges | One instructor and several students join by code; private view actions; server-evaluated tasks; expiry | Phase 2 — not started by design |
 
