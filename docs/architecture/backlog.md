@@ -79,9 +79,9 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 ## M8 — Science and performance polish
 
-- [ ] Phylogeny comparison (`comparePhylogenies`), explicit rooting tools, support-threshold collapsing
+- [x] Phylogeny comparison (`comparePhylogenies`), explicit rooting tools (`rerootPhylogeny`, `midpointRoot`), support-threshold collapsing (`collapseBelowSupport` view action) (2026-11-11; core only, no explorer or Mac app controls yet)
 - [ ] Deep-time rendering where calibrated; trait overlays; documented discrete-character parsimony (labelled *inferred*)
-- [ ] Nexus and phyloXML adapters
+- [x] Nexus and phyloXML adapters (2026-11-11; the Mac app doesn't open them yet)
 - [ ] Canvas renderer with level of detail (1–2k visible nodes smoothly)
 - [ ] Benchmarks: 10k+ taxa datasets, 1–2k visible nodes; documented devices/browsers
 - [ ] Accessibility audit

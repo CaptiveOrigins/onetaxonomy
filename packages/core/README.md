@@ -24,6 +24,22 @@ assessTaxon(data.classification('traditional'), 'c:reptilia', null)
 - **Unrooted trees** give no MRCA or clade claims; **forests** get no invented common ancestor; **polytomies** are unresolved (`indeterminate`) unless you pass `{ polytomies: 'hard' }`.
 - **Traversal** (`getChildren`, `getAncestors`, `getLineage`, `getDescendants`) is iterative and accepts `maxDepth` / `limit`, returning `truncated` when cut.
 
+## Comparing and rooting hypotheses
+
+```js
+import { comparePhylogenies, midpointRoot, rerootPhylogeny } from '@captiveorigins/onetaxonomy-core'
+
+comparePhylogenies(treeA, treeB)
+// { status: 'compared', mode: 'unrooted', rf: 2, normalized: 0.5, shared, onlyInA, onlyInB, inAOnly, inBOnly, notes }
+const rooted = rerootPhylogeny(unrootedTree, ['t-lamprey'], { id: 'my-tree-rooted', version: '1' })
+// rooted.rooting: { method: 'outgroup', outgroup: ['t-lamprey'], from: { id, version }, note }
+const midpoint = midpointRoot(unrootedTree, { id: 'my-tree-midpoint', version: '1' }) // only when you ask; labelled as such
+```
+
+- `comparePhylogenies` gives the Robinson-Foulds distance on the tips the two hypotheses share, matched by explicit concept mappings only. Tips in only one are listed, not dropped silently. It compares rooted clades when both are explicitly rooted, unrooted splits otherwise, and it refuses unmapped or ambiguous tips and forests. Support values and branch lengths aren't used.
+- `rerootPhylogeny` and `midpointRoot` return a **new** record that says how it was rooted and from what. They never change the input. Support stays with the split it measures. Time-calibrated hypotheses, forests and outgroups that aren't a clade are refused.
+- Views can draw branches below a support threshold as polytomies (`{ type: 'collapseBelowSupport', threshold }`). The projection lists the collapsed branches and `describeView` discloses them. Branches with no support value are never collapsed.
+
 ## Curation, coverage and releases
 
 ```js

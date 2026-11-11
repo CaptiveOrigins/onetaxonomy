@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Core: `comparePhylogenies(a, b)` gives the Robinson-Foulds distance (raw and normalized) between two hypotheses on the tips they share, and lists the splits or clades each has that the other lacks. Tips are matched only through explicit concept mappings; tips in only one tree are listed, not dropped. It compares unrooted unless both are explicitly rooted, and refuses unmapped or ambiguous tips and forests.
+- Core: `rerootPhylogeny` (on an outgroup of one or more tips) and `midpointRoot` (only when called) make a new phylogeny record whose `rooting` says the method, the outgroup and the record it came from. The input is never changed. Support stays with its split when branches turn around. `Phylogeny.rooting` gains optional `outgroup` and `from` fields, in the JSON Schema too.
+- Core: the `collapseBelowSupport` view action draws branches with support below a threshold as polytomies. The projection lists them (`supportCollapse`, `counts.supportCollapsed`) and `describeView` discloses them. The hypothesis keeps every branch, and branches with no support value are never collapsed. There's no control for it in the explorer yet.
+- Import: NEXUS (`nexusAdapter`, `readNexus`: TREES blocks with TRANSLATE tables) and phyloXML (`phyloXmlAdapter`, `readPhyloXml`: clades, names, branch lengths, confidence, taxonomy) readers. Both carry the source's license and citation, warn about what they skip, and refuse malformed input with the line. `ImportWarning` gains a `line` field. The Mac app doesn't open these formats yet.
+
 ## Mac app 0.1.1
 
 Fixes saving in the Mac app. 0.1.0 wasn't given permission to rename its temporary file over the chosen one, so a save very likely failed and left a `.tmp` file beside it. That was missed because the app's tests run without Tauri's permission checks. Nobody has saved with a built 0.1.0 or 0.1.1 yet: please try a save after installing.
