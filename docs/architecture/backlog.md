@@ -71,10 +71,11 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 ## M7 — Payload plugin
 
-- [ ] `@captiveorigins/payload-plugin-onetaxonomy` with configurable slugs, locale, permissions, optional tenant scope, source adapters (part 1, 2026-11-11, [ADR 0012](adr/0012-payload-plugin.md): slugs, locale for common-name search, read and manage callbacks that fail closed, tenant scope, sealed snapshots and pinned views with staged/published/withdrawn states; source adapters wait for import jobs)
+- [ ] `@captiveorigins/payload-plugin-onetaxonomy` with configurable slugs, locale, permissions, optional tenant scope, source adapters (part 1, 2026-11-11, [ADR 0012](adr/0012-payload-plugin.md): slugs, locale for common-name search, read and manage callbacks that fail closed, tenant scope, sealed snapshots and pinned views with staged/published/withdrawn states; part 2, 2026-11-11: the six import adapters run in import jobs, configured per job. Not ticked: admin views, proposals and the example app remain)
 - [ ] Admin views: import progress, conflicts, curation preview, tree authoring, profiles, publishing, lessons (not started; part 1 uses Payload's default edit views)
-- [ ] Bounded API: search, ancestors/descendants, MRCA, coverage, projected views, exports; access checks; cross-tenant denial tests (part 1, 2026-11-11: search, ancestors, descendants and MRCA with access checks, limits, 404 for anything unreadable and cross-tenant denial tests; coverage, projected views and exports to come)
-- [ ] Resumable, idempotent import jobs (not started; the snapshot collection already refuses the same id and version twice)
+- [ ] Bounded API: search, ancestors/descendants, MRCA, coverage, projected views, exports; access checks; cross-tenant denial tests (part 1, 2026-11-11: search, ancestors, descendants and MRCA with access checks, limits, 404 for anything unreadable and cross-tenant denial tests; part 2, 2026-11-11: coverage, projected views with their disclosure, and snapshot and view exports, under the same rules and tests. Not ticked: not yet run through Payload's HTTP routing in a real site)
+- [x] Resumable, idempotent import jobs (part 2, 2026-11-11: a `taxonomy-imports` collection, not Payload's jobs queue (ADR 0012, point 12); staged sealed snapshots, "already imported" on a re-run, failures store nothing, interrupted jobs restart from the file; tested on an in-memory MongoDB, not in a real site)
+- [ ] Withdrawn snapshots' published views: proposed 2026-11-11 (ADR 0012, point 14) that they stay readable with a "withdrawn source" flag; waits for the lead
 - [ ] `apps/payload-example` (not started)
 
 ## M8 — Science and performance polish

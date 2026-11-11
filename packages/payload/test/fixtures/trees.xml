@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Illustrative trees with invented names, written by hand for the plugin tests -->
+<phyloxml xmlns="http://www.phyloxml.org">
+  <phylogeny rooted="true">
+    <name>Example</name>
+    <clade>
+      <clade branch_length="0.05">
+        <confidence type="bootstrap">95</confidence>
+        <clade><name>Alpha one</name><branch_length>0.1</branch_length></clade>
+        <clade branch_length="0.2">
+          <taxonomy><scientific_name>Beta two</scientific_name><rank>species</rank></taxonomy>
+          <sequence><mol_seq>ACGT</mol_seq></sequence>
+        </clade>
+      </clade>
+      <clade><name>Gamma</name></clade>
+      <clade><name>Delta</name></clade>
+    </clade>
+  </phylogeny>
+</phyloxml>

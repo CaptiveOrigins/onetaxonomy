@@ -1,7 +1,7 @@
 {
   "name": "@captiveorigins/payload-plugin-onetaxonomy",
   "version": "0.1.0-alpha.3",
-  "description": "OneTaxonomy for Payload: sealed taxonomy snapshots verified by checksum, published views pinned to them, and a bounded, permission-checked API for name search, ancestors, descendants and MRCA, with optional tenant scope.",
+  "description": "OneTaxonomy for Payload: sealed taxonomy snapshots verified by checksum, published views pinned to them, resumable import jobs that turn checklists, Darwin Core Archives and tree files into staged snapshots, and a bounded, permission-checked API for search, ancestors, descendants, MRCA, coverage, projected views and exports, with optional tenant scope.",
   "keywords": [
     "payload",
     "payload-plugin",
@@ -10,7 +10,9 @@
     "phylogeny",
     "classification",
     "mrca",
-    "biodiversity"
+    "biodiversity",
+    "darwin-core",
+    "newick"
   ],
   "homepage": "https://github.com/CaptiveOrigins/onetaxonomy#readme",
   "bugs": {
@@ -47,7 +49,8 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@captiveorigins/onetaxonomy-core": "workspace:^"
+    "@captiveorigins/onetaxonomy-core": "workspace:^",
+    "@captiveorigins/onetaxonomy-import": "workspace:^"
   },
   "peerDependencies": {
     "payload": "^3.80.0"

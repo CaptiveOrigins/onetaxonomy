@@ -1,11 +1,13 @@
 import {
   findMRCA,
+  getCoverageReport,
   getAncestors,
   getDescendants,
   indexDataset,
   verifySnapshot,
   type DatasetIndex,
   type DatasetSnapshot,
+  type GroupCoverage,
   type Id,
   type MrcaResult,
   type NameStatus,
@@ -17,12 +19,12 @@ import type { Endpoint, PayloadRequest } from 'payload'
 import { optionsOf, type ResolvedOptions } from './types.js'
 
 /** What every read function returns: a body, or an HTTP status with a plain-words reason. */
-export type ApiResult<T> = { ok: true; body: T } | { ok: false; status: 400 | 404 | 500; error: string }
+export type ApiResult<T> = { ok: true; body: T } | { ok: false; status: 400 | 404 | 409 | 500; error: string }
 
 export type SnapshotRef = { doc: string; id: Id; version: string; checksum: string }
 
-const NOT_FOUND = { ok: false, status: 404, error: 'Not found.' } as const
-const bad = (error: string) => ({ ok: false, status: 400, error }) as const
+export const NOT_FOUND = { ok: false, status: 404, error: 'Not found.' } as const
+export const bad = (error: string) => ({ ok: false, status: 400, error }) as const
 
 /** Thrown when a stored snapshot no longer matches its checksum. Nothing is answered from it. */
 export class SnapshotIntegrityError extends Error {}
@@ -31,6 +33,30 @@ export class SnapshotIntegrityError extends Error {}
 // request before the cache is used; the cache only saves rebuilding indexes.
 const CACHE_SIZE = 8
 const cache = new Map<string, DatasetIndex>()
+
+/**
+ * The stored snapshot's content, checked against its checksum the first time it is read and cached after that.
+ * Callers authorize first: this read skips access.
+ */
+export async function contentOf(req: PayloadRequest, opts: ResolvedOptions, ref: SnapshotRef): Promise<DatasetIndex> {
+  const key = `${opts.slugs.snapshots}:${ref.doc}:${ref.checksum}`
+  let index = cache.get(key)
+  if (!index) {
+    const full = (await req.payload.findByID({ collection: opts.slugs.snapshots as never, id: ref.doc, depth: 0, req, overrideAccess: true, select: { snapshot: true } as never })) as unknown as { snapshot: DatasetSnapshot }
+    const s = full.snapshot
+    let intact = false
+    try {
+      intact = verifySnapshot(s) && s.checksum === ref.checksum && s.id === ref.id && s.version === ref.version
+    } catch {
+      intact = false
+    }
+    if (!intact) throw new SnapshotIntegrityError(`Stored snapshot ${ref.id} ${ref.version} no longer matches its checksum. Nothing is answered from it.`)
+    index = indexDataset(s)
+    cache.set(key, index)
+    if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value!)
+  }
+  return index
+}
 
 /**
  * Loads a snapshot the requester may read, with its indexes. Null when it doesn't exist or they may not read it: the
@@ -46,36 +72,19 @@ export async function loadSnapshot(req: PayloadRequest, id: string, opts: Resolv
   }
   if (!doc || !doc.checksum) return null
   const ref: SnapshotRef = { doc: String(doc.id), id: doc.snapshotId!, version: doc.version!, checksum: doc.checksum }
-  const key = `${opts.slugs.snapshots}:${ref.doc}:${ref.checksum}`
-  let index = cache.get(key)
-  if (!index) {
-    // Already authorized above; this read only fetches the content.
-    const full = (await req.payload.findByID({ collection: opts.slugs.snapshots as never, id, depth: 0, req, overrideAccess: true, select: { snapshot: true } as never })) as unknown as { snapshot: DatasetSnapshot }
-    const s = full.snapshot
-    let intact = false
-    try {
-      intact = verifySnapshot(s) && s.checksum === ref.checksum
-    } catch {
-      intact = false
-    }
-    if (!intact) throw new SnapshotIntegrityError(`Stored snapshot ${ref.id} ${ref.version} no longer matches its checksum. Nothing is answered from it.`)
-    index = indexDataset(s)
-    cache.set(key, index)
-    if (cache.size > CACHE_SIZE) cache.delete(cache.keys().next().value!)
-  }
-  return { ref, index }
+  // Already authorized above; this read only fetches the content.
+  return { ref, index: await contentOf(req, opts, ref) }
 }
 
-const clamp = (v: unknown, fallback: number, max: number): number => {
+export const clamp = (v: unknown, fallback: number, max: number): number => {
   const n = typeof v === 'number' ? v : typeof v === 'string' && v.trim() !== '' ? Number(v) : NaN
   return Number.isFinite(n) ? Math.max(1, Math.min(max, Math.floor(n))) : Math.min(fallback, max)
 }
 
-async function guarded<T>(req: PayloadRequest, id: string, run: (loaded: { ref: SnapshotRef; index: DatasetIndex }, opts: ResolvedOptions) => ApiResult<T>): Promise<ApiResult<T>> {
-  const opts = optionsOf(req.payload)
+/** Turns a stored snapshot that fails its checksum into a 500 with the reason, logged; other errors propagate. */
+export async function integrityGuard<T>(req: PayloadRequest, run: () => Promise<ApiResult<T>>): Promise<ApiResult<T>> {
   try {
-    const loaded = await loadSnapshot(req, id, opts)
-    return loaded ? run(loaded, opts) : NOT_FOUND
+    return await run()
   } catch (error) {
     if (error instanceof SnapshotIntegrityError) {
       req.payload.logger.error(error.message)
@@ -83,6 +92,14 @@ async function guarded<T>(req: PayloadRequest, id: string, run: (loaded: { ref: 
     }
     throw error
   }
+}
+
+async function guarded<T>(req: PayloadRequest, id: string, run: (loaded: { ref: SnapshotRef; index: DatasetIndex }, opts: ResolvedOptions) => ApiResult<T>): Promise<ApiResult<T>> {
+  const opts = optionsOf(req.payload)
+  return integrityGuard(req, async () => {
+    const loaded = await loadSnapshot(req, id, opts)
+    return loaded ? run(loaded, opts) : NOT_FOUND
+  })
 }
 
 // ---------------------------------------------------------------------------------------------------------------
@@ -230,15 +247,95 @@ export async function mrcaOf(req: PayloadRequest, id: string, q: MrcaQuery & { c
 }
 
 // ---------------------------------------------------------------------------------------------------------------
+// Coverage
+
+export type CoverageQuery = { classification?: string; phylogeny?: string; included?: string | string[]; groups?: string | string[]; omittedLimit?: number | string }
+
+const list = (v: string | string[] | undefined) => [...new Set((Array.isArray(v) ? v : (v ?? '').split(',')).map((x) => x.trim()).filter(Boolean))]
+
+export type CoverageBody = {
+  snapshot: SnapshotRef
+  classification: { id: Id; version: string }
+  phylogeny?: { id: Id; version: string }
+  /** `all`: every concept in the classification counts as included. Otherwise how many listed ids were in it. */
+  included: 'all' | { listed: number; inClassification: number; notInClassification: Id[] }
+  groups: GroupCoverage[]
+  /** Counts of taxa known to science are never estimated; this API takes none, so each group says `not-stated`. */
+  note: string
+}
+
+/**
+ * Core's `getCoverageReport` over a snapshot: within each group of a classification, how many concepts are included,
+ * how many are omitted and where, and (with `phylogeny`) how many the hypothesis maps. `included` lists concept ids;
+ * without it every concept in the classification counts. Absence from the dataset is never reported as absence from
+ * nature.
+ */
+export async function coverageOf(req: PayloadRequest, id: string, q: CoverageQuery) {
+  return guarded(req, id, ({ ref, index }, opts): ApiResult<CoverageBody> => {
+    if (!q.classification) return bad('Name the classification (classification).')
+    let cls
+    try {
+      cls = index.classification(q.classification)
+    } catch {
+      return NOT_FOUND
+    }
+    let phy: PhylogenyIndex | undefined
+    if (q.phylogeny) {
+      try {
+        phy = index.phylogeny(q.phylogeny)
+      } catch {
+        return NOT_FOUND
+      }
+    }
+    const listed = q.included === undefined || q.included === '' ? null : list(q.included)
+    if (listed && listed.length > opts.limits.maxCoverageIds) return bad(`At most ${opts.limits.maxCoverageIds} included concepts at a time.`)
+    const groups = q.groups === undefined || q.groups === '' ? undefined : list(q.groups)
+    if (groups && groups.length > opts.limits.maxResults) return bad(`At most ${opts.limits.maxResults} groups at a time.`)
+    if (groups?.some((g) => !cls.parent.has(g))) return NOT_FOUND
+    if (!groups && cls.roots.length > opts.limits.maxResults) return bad(`This classification has ${cls.roots.length} roots, more than ${opts.limits.maxResults}: name the groups (groups).`)
+    const included = listed ?? cls.ids
+    const report = getCoverageReport(index, { classification: cls.id, included, ...(groups ? { groups } : {}), ...(phy ? { phylogeny: phy.id } : {}), omittedLimit: clamp(q.omittedLimit, 20, opts.limits.maxResults) })
+    const outside = listed ? listed.filter((x) => !cls.parent.has(x)) : []
+    return {
+      ok: true,
+      body: {
+        snapshot: ref,
+        classification: { id: cls.id, version: cls.version },
+        ...(phy ? { phylogeny: { id: phy.id, version: phy.version } } : {}),
+        included: listed ? { listed: listed.length, inClassification: listed.length - outside.length, notInClassification: outside.slice(0, opts.limits.maxResults) } : 'all',
+        groups: report,
+        note: 'Coverage of this dataset only. Taxa known to science are not stated: OneTaxonomy never estimates them.',
+      },
+    }
+  })
+}
+
+// ---------------------------------------------------------------------------------------------------------------
+// Export
+
+export type SnapshotExport = { filename: string; snapshot: DatasetSnapshot; ref: SnapshotRef }
+
+/** The sealed snapshot exactly as stored, after its checksum is checked again. Same access and 404 rules as the rest. */
+export async function exportSnapshot(req: PayloadRequest, id: string) {
+  return guarded(req, id, ({ ref, index }): ApiResult<SnapshotExport> => ({ ok: true, body: { filename: fileName(`${ref.id}-${ref.version}`), snapshot: index.snapshot, ref } }))
+}
+
+/** A safe download file name: letters, digits, dot, dash and underscore, ending in `.json`. */
+export const fileName = (stem: string) => `${stem.replace(/[^A-Za-z0-9._-]+/g, '_').replace(/^[._]+/, '').slice(0, 120) || 'onetaxonomy'}.json`
+
+export const asDownload = (filename: string, value: unknown) =>
+  new Response(`${JSON.stringify(value, null, 2)}\n`, { status: 200, headers: { 'Content-Type': 'application/json; charset=utf-8', 'Content-Disposition': `attachment; filename="${filename}"` } })
+
+// ---------------------------------------------------------------------------------------------------------------
 // Endpoints
 
-const respond = <T>(r: ApiResult<T>) => (r.ok ? Response.json(r.body) : Response.json({ error: r.error }, { status: r.status }))
+export const respond = <T>(r: ApiResult<T>) => (r.ok ? Response.json(r.body) : Response.json({ error: r.error }, { status: r.status }))
 
-const params = (req: PayloadRequest) => new URL(req.url ?? '', 'http://localhost').searchParams
-const routeId = (req: PayloadRequest) => String(req.routeParams?.id ?? '')
-const get = (p: URLSearchParams, k: string) => p.get(k) ?? undefined
+export const params = (req: PayloadRequest) => new URL(req.url ?? '', 'http://localhost').searchParams
+export const routeId = (req: PayloadRequest) => String(req.routeParams?.id ?? '')
+export const get = (p: URLSearchParams, k: string) => p.get(k) ?? undefined
 
-/** `GET /api/<snapshots>/:id/search`, `/ancestors`, `/descendants` and `/mrca`, each read as the requester. */
+/** `GET /api/<snapshots>/:id/search`, `/ancestors`, `/descendants`, `/mrca`, `/coverage` and `/export`, each read as the requester. */
 export function snapshotEndpoints(): Endpoint[] {
   return [
     { path: '/:id/search', method: 'get', handler: async (req) => { const p = params(req); return respond(await searchNames(req, routeId(req), { q: get(p, 'q'), limit: get(p, 'limit'), locale: get(p, 'locale') })) } },
@@ -251,5 +348,21 @@ export function snapshotEndpoints(): Endpoint[] {
       },
     })),
     { path: '/:id/mrca', method: 'get', handler: async (req) => { const p = params(req); return respond(await mrcaOf(req, routeId(req), { phylogeny: get(p, 'phylogeny'), classification: get(p, 'classification'), nodes: get(p, 'nodes') })) } },
+    {
+      path: '/:id/coverage',
+      method: 'get',
+      handler: async (req) => {
+        const p = params(req)
+        return respond(await coverageOf(req, routeId(req), { classification: get(p, 'classification'), phylogeny: get(p, 'phylogeny'), included: get(p, 'included'), groups: get(p, 'groups'), omittedLimit: get(p, 'omittedLimit') }))
+      },
+    },
+    {
+      path: '/:id/export',
+      method: 'get',
+      handler: async (req) => {
+        const r = await exportSnapshot(req, routeId(req))
+        return r.ok ? asDownload(r.body.filename, r.body.snapshot) : respond(r)
+      },
+    },
   ]
 }

@@ -2,6 +2,38 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: Payload plugin part 2
+
+Scope: `packages/payload` only (M7 part 2, ADR 0012 points 12 to 14): import jobs (`src/imports.ts`), coverage and snapshot export (`src/api.ts`), view projection and export (`src/views-api.ts`). No other package changed; the plugin now depends on `@captiveorigins/onetaxonomy-import`. Tests went from 395 to 429: payload 46 to 80 (`imports.test.ts` 20 new, `api.test.ts` 15 to 27, `tenants.test.ts` 7 to 9, and the plugin-shape test in `snapshots.test.ts` widened). All on a real Payload 3.93 with an in-memory MongoDB replica set, no network: the host `fetch` in the tests answers from memory and the upload collection writes to a temporary folder that is deleted afterwards. Endpoints were called through their handlers with a local request, as in part 1.
+
+### Covered
+
+- **Each format imports into a staged, sealed snapshot** (`imports.test.ts`): the CSV checklist upload, with the settings `examples/build-fixtures.mjs` uses, gives `fixtures/checklist.json` exactly, checksum and all; a Darwin Core Archive (ZIP of the same checklist) gives the same concepts; a Newick tree read through the host's `fetch`; NEXUS with its skipped-block warning and line recorded; phyloXML with its skipped `sequence` element recorded; a sealed OneTaxonomy JSON kept exactly as sealed. Each snapshot is `staged`, and the job records its five progress steps, input SHA-256 and checksum.
+- **Idempotent:** the same file and settings in a new job ends `already-imported`, links the same snapshot and stores nothing; running a finished job again changes nothing (attempts unchanged); the same id and version with different content fails ("a changed dataset needs a new version") and stores nothing. With tenants, the same file in another tenant is that tenant's own snapshot, and again in the first tenant is `already-imported` (`tenants.test.ts`).
+- **Refused input stores nothing:** malformed Newick (with position), malformed NEXUS (with line), a CSV missing its required columns (named), a dataset with a dangling reference (core's diagnostic code), a sealed JSON changed after sealing, a URL the host's `fetch` refuses, and a file over `maxBytes` each fail the job with the reason, and the snapshot count is unchanged. Settings that can't make a snapshot (no `createdAt`, no source, a tree without its id and version, both or neither input, adapter keys the plugin sets) and jobs that claim results or a status at creation are refused before a job exists.
+- **Resume:** a job left `running` while parsing is refused (409) while fresh and starts again from the file once stale, saying where the last run stopped (attempts 2); a job that stopped after storing finishes `done` with its own snapshot and stores nothing new; a failed job can be run again; server code needs `overrideAccess` to run one (404 without).
+- **Import access:** readers, anonymous requests and throwing host checks can't make jobs, and get the same 404 from `run` as for a missing job; readers can't list jobs; a job's settings and results can't be edited even by server code, its title can; another tenant's manager, a reader, a user with no tenant and a throwing tenant lookup can't see or run a job, can't make one in another tenant, and the tenant can't change. An imported snapshot is hidden from readers until published, then exports.
+- **Coverage** (`api.test.ts`): root groups with every concept included by default; a listed selection with a hypothesis gives included, omitted branches, mapped and unmapped counts, and lists ids outside the classification; `knownToScience` is `not-stated`; no classification or too many groups is 400; an unknown classification, phylogeny or group is 404; host code gets the same access.
+- **Projection:** a published view gives core's projection (a hidden node counted, not drawn) and its disclosure (hypothesis line, hidden count, data line, illustrative flag); a request's `limit` truncates and the disclosure says so.
+- **Withdrawn source (the proposal):** a published view of a withdrawn snapshot projects and exports with `source.withdrawn: true` and the "Source withdrawn" line, while the snapshot itself stays 404 to readers.
+- **A view changed in the database:** a view whose pinned checksum was edited directly in MongoDB answers 500 with the reason, not a projection.
+- **Exports:** a published snapshot downloads exactly as sealed, as a JSON attachment with a safe file name; a view exports as its plain view file (read back with `parseView`), its source and disclosure lines.
+- **Read access on the new endpoints:** draft views, staged and withdrawn snapshots, missing ids and malformed ids give readers the same 404; anonymous requests and throwing checks get 404; managers get drafts and staged snapshots; another tenant's reader and manager, no tenant and a throwing tenant lookup get 404 on coverage, both exports and the projection (`tenants.test.ts`).
+- **Plugin shape:** without `imports` there is no imports collection; an `imports.uploads` that isn't an upload collection, and a taken imports slug, are refused.
+
+### Gaps left
+
+- **Not run in a real site:** no HTTP routing, Admin UI, GraphQL or cloud upload storage; the default upload reader is tested only on local storage. `apps/payload-example` will cover this.
+- **Interruption inside a store** isn't simulated: that a run leaves no partial snapshot rests on the snapshot being one document written last, not on a test that kills a process mid-write.
+- **Two runs of one job at once** weren't raced; claiming a job isn't atomic (ADR 0012).
+- **Large inputs:** nothing near `maxBytes` was parsed for real, and an import's time on a large file wasn't measured.
+- **Payload's own reads of a view** don't carry the withdrawn flag; only the plugin's endpoints do. That waits for the lead's decision on point 14.
+
+### Left out as overkill
+
+- Each adapter's own parsing rules: `packages/import` tests them; these tests check that each one is wired and its warnings and errors carried through.
+- Every combination of adapter options: they go to the adapter unchanged.
+
 ## 2026-11-11: Payload plugin, part 1
 
 Scope: the new `packages/payload` (`@captiveorigins/payload-plugin-onetaxonomy`, M7 part 1, ADR 0012). No other package changed. Tests went from 283 to 329: payload 0 to 46, in five files, each on a real Payload 3.93 with an in-memory MongoDB replica set (indexes built, no network; the MongoDB binary was already cached). Endpoints were called through their handlers with a local request, as the sister plugins do, not through Payload's HTTP routing.
