@@ -158,6 +158,9 @@ importers:
       '@payloadcms/db-mongodb':
         specifier: 3.93.0
         version: 3.93.0(payload@3.93.0(graphql@16.15.0)(typescript@5.9.3))
+      '@payloadcms/graphql':
+        specifier: 3.93.0
+        version: 3.93.0(graphql@16.15.0)(payload@3.93.0(graphql@16.15.0)(typescript@5.9.3))(typescript@5.9.3)
       '@types/node':
         specifier: ^24.19.2
         version: 24.19.2
@@ -702,6 +705,13 @@ packages:
   '@payloadcms/db-mongodb@3.93.0':
     resolution: {integrity: sha512-cXcDSraT+1Spyl7JoIgBp6rnuuvdHGCkDKVBh+gwEWcUdQskU8FETMzezSCYQobRpSUNZ4AgRcq5Q+usPRnpNw==}
     peerDependencies:
+      payload: 3.93.0
+
+  '@payloadcms/graphql@3.93.0':
+    resolution: {integrity: sha512-EZGLxnZqkHCml4GUqeyydMZ1VUzELB69Qsmh6+GnAEzYFxxPRw1sdMJcsqRhc5xgaIo86zph1uZC5NGBoH5TJw==}
+    hasBin: true
+    peerDependencies:
+      graphql: ^16.8.1
       payload: 3.93.0
 
   '@payloadcms/translations@3.93.0':
@@ -1382,6 +1392,12 @@ packages:
 
   get-tsconfig@4.8.1:
     resolution: {integrity: sha512-k9PN+cFBmaLWtVz29SkUoqU5O0slLuHJXt/2P+tMVFT+phsSGXGkp9t3rQIqdz0e+06EHNGs3oM6ZX1s2zHxRg==}
+
+  graphql-scalars@1.22.2:
+    resolution: {integrity: sha512-my9FB4GtghqXqi/lWSVAOPiTzTnnEzdOXCsAC2bb5V7EFNQjVjwy3cSSbUvgYOtDuDibd+ZsCDhz+4eykYOlhQ==}
+    engines: {node: '>=10'}
+    peerDependencies:
+      graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
 
   graphql@16.15.0:
     resolution: {integrity: sha512-32kz9FecohDiC/tgcViwnRXM7HFBVTPiW7pHO+DikKOI5KjhU/jNULOReXsrFqt2WAYbE9xFXsTffJw6iTO8qw==}
@@ -2557,6 +2573,17 @@ snapshots:
       - socks
       - supports-color
 
+  '@payloadcms/graphql@3.93.0(graphql@16.15.0)(payload@3.93.0(graphql@16.15.0)(typescript@5.9.3))(typescript@5.9.3)':
+    dependencies:
+      graphql: 16.15.0
+      graphql-scalars: 1.22.2(graphql@16.15.0)
+      payload: 3.93.0(graphql@16.15.0)(typescript@5.9.3)
+      pluralize: 8.0.0
+      ts-essentials: 10.0.3(typescript@5.9.3)
+      tsx: 4.23.15
+    transitivePeerDependencies:
+      - typescript
+
   '@payloadcms/translations@3.93.0':
     dependencies:
       date-fns: 4.1.0
@@ -3161,6 +3188,11 @@ snapshots:
   get-tsconfig@4.8.1:
     dependencies:
       resolve-pkg-maps: 1.0.0
+
+  graphql-scalars@1.22.2(graphql@16.15.0):
+    dependencies:
+      graphql: 16.15.0
+      tslib: 2.9.1
 
   graphql@16.15.0: {}
 

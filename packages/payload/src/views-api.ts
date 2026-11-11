@@ -11,6 +11,35 @@ export type ViewRef = { doc: string; id: string; title: string; status: string }
 
 type LoadedView = { view: TaxonomicView; ref: ViewRef; source: ViewSource; index: DatasetIndex }
 
+const SOURCES = 'onetaxonomyViewSources'
+const sourcesOf = (req: PayloadRequest) => ((req.context ??= {})[SOURCES] ??= new Map<string, Promise<ViewSource | null>>()) as Map<string, Promise<ViewSource | null>>
+
+/**
+ * The snapshot a view is shown over, with its status now: the same `source` the view endpoints answer with. It reads
+ * only the snapshot's head (never its content) and skips the snapshot's own access rules, so call it only for a view
+ * the requester was already allowed to read. Null when the snapshot is gone. Remembered for the rest of the request,
+ * so a page of views over one snapshot costs one read; `forgetViewSource` drops it when the snapshot changes.
+ */
+export function viewSourceOf(req: PayloadRequest, opts: ResolvedOptions, snapshotDoc: string): Promise<ViewSource | null> {
+  const known = sourcesOf(req)
+  let source = known.get(snapshotDoc)
+  if (!source) {
+    type Head = { id: string | number; snapshotId?: string; version?: string; checksum?: string; status?: ViewSource['status'] }
+    source = (req.payload.findByID({ collection: opts.slugs.snapshots as never, id: snapshotDoc, depth: 0, req, overrideAccess: true, disableErrors: true, select: { snapshotId: true, version: true, checksum: true, status: true } as never }) as unknown as Promise<Head | null>).then((head) => {
+      if (!head?.checksum || !head.snapshotId || !head.version) return null
+      const status = head.status ?? 'staged'
+      return { doc: String(head.id), id: head.snapshotId, version: head.version, checksum: head.checksum, status, withdrawn: status === 'withdrawn' }
+    })
+    known.set(snapshotDoc, source)
+    // A read that failed is not remembered.
+    source.catch(() => known.delete(snapshotDoc))
+  }
+  return source
+}
+
+/** Drops what this request remembers about a snapshot's status. Called when the snapshot changes or is deleted. */
+export const forgetViewSource = (req: PayloadRequest, snapshotDoc: string) => void (req.context?.[SOURCES] as Map<string, unknown> | undefined)?.delete(snapshotDoc)
+
 /**
  * A view the requester may read, with its snapshot. Readers see published views; managers see every status, in their
  * tenant. The snapshot is read through the view: a published view whose snapshot was later withdrawn stays readable
@@ -27,16 +56,14 @@ async function loadView(req: PayloadRequest, id: string, opts: ResolvedOptions):
   const snapshotDoc = idOf(doc?.snapshot)
   if (!doc || !doc.view || !snapshotDoc) return null
   // Authorized through the view above (same tenant, by the view's own rules); this reads the snapshot's head.
-  type Head = { id: string | number; snapshotId?: string; version?: string; checksum?: string; status?: ViewSource['status'] }
-  const head = (await req.payload.findByID({ collection: opts.slugs.snapshots as never, id: snapshotDoc, depth: 0, req, overrideAccess: true, disableErrors: true, select: { snapshotId: true, version: true, checksum: true, status: true } as never })) as unknown as Head | null
-  if (!head?.checksum) throw new SnapshotIntegrityError(`The snapshot behind view ${doc.view.id} is missing. Nothing is answered from it.`)
+  const source = await viewSourceOf(req, opts, snapshotDoc)
+  if (!source) throw new SnapshotIntegrityError(`The snapshot behind view ${doc.view.id} is missing. Nothing is answered from it.`)
   const pin = doc.view.snapshot
-  if (!pin || pin.id !== head.snapshotId || pin.version !== head.version || pin.checksum !== head.checksum)
+  if (!pin || pin.id !== source.id || pin.version !== source.version || pin.checksum !== source.checksum)
     throw new SnapshotIntegrityError(`View ${doc.view.id} no longer pins the snapshot it is stored with. Nothing is answered from it.`)
-  const ref: SnapshotRef = { doc: String(head.id), id: head.snapshotId!, version: head.version!, checksum: head.checksum }
+  const ref: SnapshotRef = { doc: source.doc, id: source.id, version: source.version, checksum: source.checksum }
   const index = await contentOf(req, opts, ref)
-  const status = head.status ?? 'staged'
-  return { view: doc.view, ref: { doc: String(doc.id), id: doc.view.id, title: doc.title ?? doc.view.title, status: doc.status ?? 'draft' }, source: { ...ref, status, withdrawn: status === 'withdrawn' }, index }
+  return { view: doc.view, ref: { doc: String(doc.id), id: doc.view.id, title: doc.title ?? doc.view.title, status: doc.status ?? 'draft' }, source, index }
 }
 
 const withdrawnNotice = (s: ViewSource) =>
