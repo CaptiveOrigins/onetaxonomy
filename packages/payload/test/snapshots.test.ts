@@ -26,16 +26,19 @@ const update = (id: string | number, data: Record<string, unknown>, user: TypedU
 const findAs = (user: TypedUser | null) => payload.find({ collection: SNAPSHOTS as never, user, overrideAccess: false, depth: 0 })
 
 describe('the plugin', () => {
-  it('adds only the snapshots and views collections, and the read endpoints', () => {
+  it('adds only the snapshots and views collections (no imports unless asked), and the read endpoints', () => {
     const slugs = payload.config.collections.map((c) => c.slug).filter((s) => !s.startsWith('payload-'))
     expect(slugs.sort()).toEqual(['taxonomy-snapshots', 'taxonomy-views', 'users'])
-    const paths = (payload.collections[SNAPSHOTS as never]!.config.endpoints as { path: string }[]).map((e) => e.path)
-    expect(paths.slice(0, 4)).toEqual(['/:id/search', '/:id/ancestors', '/:id/descendants', '/:id/mrca'])
+    const paths = (slug: string) => (payload.collections[slug as never]!.config.endpoints as { path: string }[]).map((e) => e.path)
+    expect(paths(SNAPSHOTS).slice(0, 6)).toEqual(['/:id/search', '/:id/ancestors', '/:id/descendants', '/:id/mrca', '/:id/coverage', '/:id/export'])
+    expect(paths('taxonomy-views').slice(0, 2)).toEqual(['/:id/projection', '/:id/export'])
   })
 
   it('refuses a slug that is already taken, and a tenants collection that isn\'t there', () => {
     expect(() => oneTaxonomy({ slugs: { snapshots: 'users' } })({ collections: [usersCollection()] } as never)).toThrow(/already exists/)
     expect(() => oneTaxonomy({ tenant: { collection: 'tenants', resolve: () => 'a' } })({ collections: [usersCollection()] } as never)).toThrow(/isn't in this config/)
+    expect(() => oneTaxonomy({ imports: { uploads: { collection: 'users' } } })({ collections: [usersCollection()] } as never)).toThrow(/isn't an upload collection/)
+    expect(() => oneTaxonomy({ imports: { fetch: () => '' } })({ collections: [usersCollection(), { slug: 'taxonomy-imports', fields: [] }] } as never)).toThrow(/already exists/)
   })
 })
 

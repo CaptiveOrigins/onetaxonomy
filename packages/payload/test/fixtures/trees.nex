@@ -1,0 +1,16 @@
+#NEXUS
+[Illustrative trees with invented names, written by hand for the plugin tests]
+BEGIN TAXA;
+  DIMENSIONS NTAX=4;
+  TAXLABELS Alpha_one 'Beta two' Gamma Delta;
+END;
+BEGIN TREES;
+  TITLE Trees;
+  TRANSLATE
+    1 Alpha_one,
+    2 'Beta two',
+    3 Gamma,
+    4 Delta;
+  TREE best = [&R] ((1:0.1,2:0.2)95:0.05,(3:0.3,4:0.4)80:0.05);
+  UTREE 'second tree' = (1,2,(3,4));
+END;
