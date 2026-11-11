@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, describe, expect, it } from 'vitest'
 import { createView, describeView, indexDataset, makeHighlight, nodeOverlays, projectView, snapshotChecksum, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
@@ -195,12 +195,12 @@ describe('clade selector', () => {
     pick('t-aves', true)
     const panel = screen.getByRole('region', { name: 'Details' })
     expect(panel.textContent).toMatch(/Selected \(2\)/)
-    expect(screen.getByRole('status').textContent).toMatch(/A clade in/)
+    expect(within(panel).getByRole('status').textContent).toMatch(/A clade in/)
     fireEvent.click(screen.getByRole('button', { name: /Highlight \(Clade\)/ }))
     expect(container.querySelector('.ot-legend')!.textContent).toMatch(/Clade/)
 
     pick('t-squamata', true) // squamates + crocs + birds: not a clade (turtles left out)
-    expect(screen.getByRole('status').textContent).toMatch(/Not a clade/)
+    expect(within(panel).getByRole('status').textContent).toMatch(/Not a clade/)
     expect(screen.getByRole('button', { name: /Highlight \(Group\)/ })).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: /Remove/ }))
     expect(container.querySelector('.ot-legend .ot-highlights')).toBeNull()

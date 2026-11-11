@@ -8,15 +8,32 @@
   --border: #eeddde;
   --accent: #cf8137;
   --field: #ffffff;
+  /* Text-field borders: 3:1 against the field and the page (WCAG 1.4.11). */
+  --field-border: #968485;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-appearance='light']) {
-    --bg: #12151b; --panel: #181c24; --text: #e8ecf2; --muted: #a3acbb; --border: #2c3340; --accent: #e7a066; --field: #1f2430;
+    --bg: #12151b; --panel: #181c24; --text: #e8ecf2; --muted: #a3acbb; --border: #2c3340; --accent: #e7a066; --field: #1f2430; --field-border: #6b7383;
   }
 }
 :root[data-appearance='dark'] {
   color-scheme: dark;
-  --bg: #12151b; --panel: #181c24; --text: #e8ecf2; --muted: #a3acbb; --border: #2c3340; --accent: #e7a066; --field: #1f2430;
+  --bg: #12151b; --panel: #181c24; --text: #e8ecf2; --muted: #a3acbb; --border: #2c3340; --accent: #e7a066; --field: #1f2430; --field-border: #6b7383;
+}
+/*
+ * The explorer's own colors follow the system through a media query, so a chosen appearance has to set them too;
+ * otherwise Light on a dark system draws light text on a white page. Same values as the light and dark blocks in
+ * @captiveorigins/onetaxonomy-react/styles.css (test/theme.test.ts keeps them equal).
+ */
+:root[data-appearance='light'] :is(.ot-root, .ot-explorer, .ot-lesson) {
+  --ot-ink: #4c312c; --ot-text: #1d2330; --ot-muted: #5b6577; --ot-edge: #a08a83; --ot-node: var(--ot-ink);
+  --ot-selected: #cf8137; --ot-selected-text: #a65f20; --ot-warning: #b45309; --ot-error: #b91c1c; --ot-field-border: #a08a83;
+  --ot-surface: #ffffff; --ot-panel: #fbf7f4; --ot-border: #eaddd6; --ot-focus: #cf8137;
+}
+:root[data-appearance='dark'] :is(.ot-root, .ot-explorer, .ot-lesson) {
+  --ot-ink: #eda9ac; --ot-text: #eef1f6; --ot-muted: #a7b0c0; --ot-edge: #8a7470; --ot-node: var(--ot-ink);
+  --ot-selected: #e7a066; --ot-selected-text: #e7a066; --ot-warning: #fbbf24; --ot-error: #f87171; --ot-field-border: #8a7470;
+  --ot-surface: #1c1311; --ot-panel: #241916; --ot-border: #3a2a26; --ot-focus: #e7a066;
 }
 :root[data-appearance='light'] { color-scheme: light; }
 html, body, #root { height: 100%; }
@@ -24,10 +41,11 @@ body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.4 -app
 #root { display: flex; flex-direction: column; }
 button, select, input { font: inherit; color: var(--text); background: var(--field); border: 1px solid var(--border); border-radius: 6px; padding: 3px 8px; }
 button { cursor: pointer; }
+input { border-color: var(--field-border); }
 button:disabled { opacity: 0.5; cursor: default; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 1px; }
 .app-header { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; padding: 8px 12px; border-bottom: 1px solid var(--border); background: var(--panel); }
-.app-title { font-weight: 600; margin-inline-end: 8px; }
+.app-title { margin: 0 8px 0 0; font-size: inherit; font-weight: 600; }
 .app-spacer { flex: 1; }
 .app-status { padding: 4px 12px; min-height: 22px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--border); }
 .app-status summary { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }

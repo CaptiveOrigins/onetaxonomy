@@ -102,7 +102,8 @@ export type ExplorerLabels = Record<
   | 'proposalRevert' | 'proposalAccepted' | 'proposalProposed' | 'proposalMoveUnder' | 'proposalGained' | 'proposalLost' | 'proposalCompare' | 'proposalDefaultTitle'
   | 'overlays' | 'support' | 'extinction' | 'trait' | 'noTrait' | 'noStatedValue' | 'mixed' | 'weakSupport'
   | 'selection' | 'checkClade' | 'addHighlight' | 'highlightName' | 'checkAgainst' | 'clearSelection' | 'remove' | 'multiHint'
-  | 'downloadSvg' | 'downloadPng' | 'downloadView' | 'about' | 'sources' | 'references' | 'synonyms' | 'commonNames' | 'age' | 'branchLength' | 'unmapped' | 'traits',
+  | 'downloadSvg' | 'downloadPng' | 'downloadView' | 'about' | 'sources' | 'references' | 'synonyms' | 'commonNames' | 'age' | 'branchLength' | 'unmapped' | 'traits'
+  | 'keyboardHint' | 'extinct' | 'exportFailed',
   string
 >
 
@@ -130,7 +131,7 @@ const LABELS: ExplorerLabels = {
   fit: 'Fit to view',
   download: 'Download',
   print: 'Print',
-  canvas: 'Tree drawing: drag to pan, Ctrl or ⌘ + scroll to zoom, drag a taxon to reorder it among its siblings, double-click to fold',
+  canvas: 'Tree drawing: drag to pan, Ctrl or ⌘ + scroll to zoom, drag a taxon to reorder it among its siblings, double-click to fold. With the keyboard: arrow keys pan, + and − zoom, 0 fits, Escape clears the selection',
   controls: 'Drawing controls',
   propose: 'Propose changes',
   proposalTitle: 'Name of this proposal',
@@ -180,6 +181,9 @@ const LABELS: ExplorerLabels = {
   branchLength: 'Branch length',
   unmapped: 'Not linked to a named taxon (a sample, population or unnamed lineage).',
   traits: 'Traits',
+  keyboardHint: 'In the outline: Up and Down move, Right and Left open and close, Home and End jump, typing finds a name, Space selects (Shift+Space adds), Enter opens a branch, Alt+Up and Alt+Down reorder.',
+  extinct: 'extinct',
+  exportFailed: 'Could not export the drawing:',
 }
 
 /** Prints only this drawing: everything else on the page is hidden while printing. */
@@ -336,13 +340,49 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
     return svg ? standaloneSvg(svg, disclosure, { sourcesLabel: labels.sources }) : null
   }
   const [menu, setMenu] = useState(false)
-  const download = async (kind: 'svg' | 'png' | 'view') => {
+  const [exportError, setExportError] = useState<string | null>(null)
+  const menuButton = useRef<HTMLButtonElement>(null)
+  const menuList = useRef<HTMLDivElement>(null)
+  // Menu button pattern: opening moves focus to the first item; Escape closes and returns focus to the button.
+  useEffect(() => {
+    if (menu) menuList.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus()
+  }, [menu])
+  const closeMenu = () => {
     setMenu(false)
-    if (kind === 'view') return downloadBlob(new Blob([serializeView(view)], { type: 'application/json' }), `${view.id}.onetaxonomy-view.json`)
-    const text = exported()
-    if (!text) return
-    if (kind === 'svg') return downloadBlob(new Blob([text], { type: 'image/svg+xml' }), `${view.id}.svg`)
-    downloadBlob(await svgToPng(text), `${view.id}.png`)
+    menuButton.current?.focus()
+  }
+  const onMenuKeyDown = (e: KeyboardEvent<HTMLDivElement>) => {
+    const items = [...(menuList.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? [])]
+    const i = items.indexOf(document.activeElement as HTMLElement)
+    const to = (j: number) => {
+      e.preventDefault()
+      items[(j + items.length) % items.length]?.focus()
+    }
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      closeMenu()
+    } else if (e.key === 'ArrowDown') to(i + 1)
+    else if (e.key === 'ArrowUp') to(i - 1)
+    else if (e.key === 'Home') to(0)
+    else if (e.key === 'End') to(items.length - 1)
+    else if (e.key === 'Tab') {
+      e.preventDefault()
+      closeMenu()
+    }
+  }
+  const download = async (kind: 'svg' | 'png' | 'view') => {
+    closeMenu()
+    setExportError(null)
+    try {
+      if (kind === 'view') return downloadBlob(new Blob([serializeView(view)], { type: 'application/json' }), `${view.id}.onetaxonomy-view.json`)
+      const text = exported()
+      if (!text) return
+      if (kind === 'svg') return downloadBlob(new Blob([text], { type: 'image/svg+xml' }), `${view.id}.svg`)
+      downloadBlob(await svgToPng(text), `${view.id}.png`)
+    } catch (e) {
+      // An async result the person is waiting for: say it failed, in the status region.
+      setExportError(`${labels.exportFailed} ${(e as Error).message}`)
+    }
   }
 
   return (
@@ -432,11 +472,10 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
           </label>
         )}
       </div>
-      {t.error && (
-        <p className="ot-error" role="status">
-          {t.error}
-        </p>
-      )}
+      {/* Always present, so a screen reader announces a refusal or a failed export when the text appears. */}
+      <p className="ot-error" role="status">
+        {t.error ?? exportError ?? ''}
+      </p>
       <div className="ot-panes">
         <div
           ref={canvas}
@@ -468,20 +507,20 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
               <Icon name="fit" />
             </button>
             <div className="ot-menu">
-              <button type="button" onClick={() => setMenu((m) => !m)} aria-label={labels.download} data-tip={labels.download} aria-expanded={menu} aria-haspopup="menu">
+              <button ref={menuButton} type="button" onClick={() => setMenu((m) => !m)} aria-label={labels.download} data-tip={labels.download} aria-expanded={menu} aria-haspopup="menu">
                 <Icon name="download" />
               </button>
               {menu && (
-                <div className="ot-menu-list" role="menu" onKeyDown={(e) => e.key === 'Escape' && setMenu(false)}>
-                  <button type="button" role="menuitem" onClick={() => download('svg')}>
+                <div ref={menuList} className="ot-menu-list" role="menu" aria-label={labels.download} onKeyDown={onMenuKeyDown}>
+                  <button type="button" role="menuitem" tabIndex={-1} onClick={() => download('svg')}>
                     <Icon name="download" />
                     {labels.downloadSvg}
                   </button>
-                  <button type="button" role="menuitem" onClick={() => download('png')}>
+                  <button type="button" role="menuitem" tabIndex={-1} onClick={() => download('png')}>
                     <Icon name="image" />
                     {labels.downloadPng}
                   </button>
-                  <button type="button" role="menuitem" onClick={() => download('view')}>
+                  <button type="button" role="menuitem" tabIndex={-1} onClick={() => download('view')}>
                     <Icon name="file" />
                     {labels.downloadView}
                   </button>
@@ -520,6 +559,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
             projection={projection}
             label={labels.outline}
             hiddenLabel={hidden}
+            extinctLabel={labels.extinct}
             onToggle={(id) => dispatch({ type: 'toggle', node: id })}
             onSelect={(id, o) => choose(id, o?.additive)}
             onMove={move}
@@ -588,7 +628,9 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
             ) : (
               <p className="ot-hint">
                 <Icon name="info" />
-                {labels.nothingSelected} {labels.dragHint} {labels.multiHint}
+                <span>
+                  {labels.nothingSelected} {labels.dragHint} {labels.multiHint} {labels.keyboardHint}
+                </span>
               </p>
             )}
           </section>
@@ -661,18 +703,21 @@ function CladeCheck({ dataset, view, projection, dispatch, labels, single = fals
           </select>
         </label>
       )}
-      {words && (
-        <div className="ot-assessment-box" role="status">
-          <p>
-            <strong>{labels.checkClade}</strong> {words.headline}
-          </p>
-          {words.details.map((d, i) => (
-            <p key={i} className="ot-hint">
-              {d}
+      {/* The status region stays mounted, so a new answer is announced when the selection or the hypothesis changes. */}
+      <div role="status">
+        {words && (
+          <div className="ot-assessment-box">
+            <p>
+              <strong>{labels.checkClade}</strong> {words.headline}
             </p>
-          ))}
-        </div>
-      )}
+            {words.details.map((d, i) => (
+              <p key={i} className="ot-hint">
+                {d}
+              </p>
+            ))}
+          </div>
+        )}
+      </div>
       {result && (
         <form
           className="ot-inspector-actions"

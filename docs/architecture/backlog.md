@@ -84,7 +84,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [ ] Nexus and phyloXML adapters
 - [ ] Canvas renderer with level of detail (1–2k visible nodes smoothly)
 - [ ] Benchmarks: 10k+ taxa datasets, 1–2k visible nodes; documented devices/browsers
-- [ ] Accessibility audit
+- [x] Accessibility audit (code-level, WCAG 2.2 AA, 2026-11-11: `docs/test-audit.md`; small fixes made, gaps listed there; no screen reader or real browser run yet)
 
 ## Phase 2 (not started by design)
 

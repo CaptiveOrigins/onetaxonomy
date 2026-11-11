@@ -2,6 +2,57 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: accessibility audit
+
+Scope: milestone M8's accessibility audit. A code-level check of the React components (`TreeView`, `TreeOutline`, `Explorer` with its inspector, view controls and menus, `LessonPlayer`) and the Mac app (`apps/studio`) against WCAG 2.2 AA. The education package has no UI of its own; its lessons are checked through `LessonPlayer`. No screen reader was run, and nothing was looked at in a real browser or the built app: the tests render into jsdom or to a string, and contrast is computed from the CSS variables. Tests went from 145 to 158: react 18 to 29 (`a11y.test.tsx`, 11 new), studio 17 to 20 (`theme.test.ts`, 3 new). Core, import, layout and education are unchanged.
+
+### Checked and already right
+
+- **Names (2.5.3, 4.1.2).** Every toolbar, inspector, proposal and lesson button has its visible text as its name. The icon-only canvas buttons (zoom, fit, download, print) have an `aria-label` that matches their visible tooltip. Selects and inputs are inside their labels.
+- **Keyboard (2.1.1).** Every drawing action has a keyboard path: the outline (select, fold, Alt+Up/Down to reorder), the inspector (flip, focus, clade check, "Move under" in Proposed mode), the toolbar and the canvas buttons. The outline keys in the README all work; the new test walks through each of them (Home, End, Right to open and to the first child, Left to the parent, Enter, Space, Shift+Space, `*`, plus type-ahead and Alt+arrows in the existing tests).
+- **Focus (2.4.7).** Buttons, selects, the canvas and outline rows have a 2 px focus ring; the studio sets one on everything with `:focus-visible`.
+- **Reduced motion (2.3.3, as a courtesy).** The only animation, nodes sliding after a change, runs only under `prefers-reduced-motion: no-preference`. Now covered by a test of the stylesheet.
+- **Not by color alone (1.4.1).** Classification vs phylogeny is said in words in the legend, the drawing's description and every export. Folded branches are a triangle plus "(12 not shown)". Weak support is a dashed edge with the legend "Weak support (dashed)". Extinct taxa are a hollow dot and †. Moved taxa in Proposed mode are italic and underlined. A clade check's answer is in words.
+- **Status messages (4.1.3).** The studio's status line is a status region that is always present (tested on 2026-11-11, earlier).
+- **Contrast that already passed.** Light: text 15.73:1 and muted 5.88:1 on white (14.76 and 5.52 on the panel), edges 3.25:1, node ink 11.78:1. Dark: text 16.12:1, muted 8.36:1, edges 4.18:1, node ink 9.45:1, selection 8.36:1. Studio light and dark text and muted text are 5.55:1 or more on every background.
+
+### Fixed, with tests
+
+- **Selected text was 3.07:1.** The brand orange `#cf8137` was used for text (selected node labels, the selected outline row, drop targets, the "Proposed by" badge): 3.07:1 on white, 2.88:1 on the panel. Text now uses a new `--ot-selected-text`, `#a65f20` in light (4.91:1 on white, 4.61:1 on the panel) and the existing `#e7a066` in dark (8.36:1). Fills and the focus ring keep the brand orange.
+- **The "Proposed by" badge was orange on white in dark mode, 2.18:1.** It used an undefined `--ot-bg` with a white fallback. It now uses `--ot-surface` and `--ot-selected-text` (8.36:1 in dark, 4.91:1 in light).
+- **Warnings and errors failed in dark mode.** Weak-support values and cautions (`#b45309`) were 3.63:1 and 3.41:1, and errors (`#b91c1c`) 2.82:1, on the dark background. New `--ot-warning` and `--ot-error` keep the light values (5.02:1 and 6.47:1 on white; cautions 4.71:1 on the panel) and use `#fbbf24` (10.93:1) and `#f87171` (6.60:1) in dark.
+- **Lesson marker digits were 3.07:1** (white on orange, 2.18:1 in dark). They're now `#1d2330`: 5.13:1 on `#cf8137`, 7.20:1 on `#e7a066`.
+- **Text fields had 1.33:1 borders** (1.31:1 in the studio), too faint to find the field (1.4.11). Explorer and lesson fields now use `--ot-field-border` (`#a08a83`, 3.25:1 on white, 3.05:1 on the panel; dark `#8a7470`, 4.18:1). Studio inputs use `--field-border` (`#968485`, 3.54:1 on white; dark `#6b7383`, 3.26:1 on the field, 3.83:1 on the page).
+- **Light or Dark in the studio's Settings didn't reach the explorer.** The explorer's colors follow the system through a media query, so Light on a dark Mac drew `#eef1f6` text on a white page (1.13:1), and Dark on a light Mac drew `#1d2330` on `#12151b` (1.16:1). `app.css` now sets the explorer's variables for a chosen appearance; a test keeps them equal to the library's.
+- **Exported SVGs weren't valid XML in tests.** `standaloneSvg` set `xmlns` as a plain attribute, and the serializer added its own, so the file had it twice and an XML parser refused it. It's now set as a namespace declaration, once. The white background was also put before `<title>`; the title and description now come first. Whether browsers wrote the attribute twice wasn't checked; jsdom did. The new test parses the export and finds the title and description through `aria-labelledby` and `aria-describedby`.
+- **A failed PNG export said nothing.** `download` had no `catch`, so an error was an unhandled rejection. It now reports "Could not export the drawing: …" in the explorer's status region.
+- **The explorer's status region appeared with its message.** A live region added together with its text often isn't announced. The region (`.ot-error`, `role="status"`) is now always there and empty until needed. The clade check's answer sits in a status region that stays mounted as the selection changes.
+- **The download menu was a menu in name only.** It had `role="menu"` but focus stayed on the button and arrow keys did nothing. Opening it now moves focus to the first item; Up, Down, Home and End move; Escape and Tab close it and return focus to the button.
+- **Drawing keys weren't written down.** The canvas handled arrows, + and −, 0 and Escape, but its label only described the mouse. The label now lists the keys, and the inspector's hint lists the outline keys.
+- **† was read as "dagger".** The outline hides the mark from screen readers and adds "(extinct)" in its place (`extinctLabel`, replaceable). The tree also sets `aria-multiselectable`, since Shift+Space and Shift-click add to the selection.
+- **Lesson modes were three Tab stops with no arrow keys.** The mode switcher is a radio group, so it's now one Tab stop and the arrow keys move and choose.
+- **A lesson caution was shown only in amber.** It now starts with "Caution:" (replaceable `caution` label).
+- **Remove buttons on highlights were 20 px**, under the 24 px minimum (2.5.8). Now 24 px.
+- **The studio window had no level-one heading.** The file name in the toolbar is now the `h1`, styled as before.
+
+### Gaps left
+
+- **The brand-orange focus ring is 2.88:1 on the explorer panel** (`#cf8137` on `#fbf7f4`) and 2.89:1 on the studio toolbar (`#fdf7f7`), under 3:1. It's 3.07:1 on white and 7.8:1 or more in dark. `brand/README.md` names this exact color for focus and is kept identical across the One tools, so changing it is the owner's call: a deeper orange such as `#a65f20` for the ring, or panels close to white (`#fefcfb` gives 3.00:1).
+- **Highlights and trait states are told apart by color in the drawing.** Each node's highlights and trait state are in words in the inspector, and the legend names each color, but the halos (35% opacity) and trait dots have no shape or pattern of their own, and trait colors come from the data unchecked. Fixing it means a shape or letter per highlight or state: a design change.
+- **Dragging has no single-pointer alternative for two actions (2.5.7).** Reordering siblings (Alt+Up/Down in the outline is keyboard only; "Flip children" only reverses) and panning (zoom and fit are buttons, panning isn't). Moving under a new parent has the "Move under" list. Small "move up/down" buttons in the inspector and pan buttons would close it.
+- **The drawing's nodes are `role="button"` inside an SVG with `role="img"`,** whose children screen readers ignore, and they can't be reached with Tab. The outline is the accessible way to the same nodes, by design. Making the drawing itself navigable is larger and overlaps the planned canvas renderer.
+- **The explorer toolbar is `role="toolbar"` without arrow-key movement.** Every control is reachable with Tab, so nothing is lost, but the role promises arrows. Either add a roving tab stop or drop the role.
+- **Why a layout is unavailable is only in the option's `title`,** which a keyboard or screen-reader user may not get.
+- **Outline fold arrows are 16 px wide** (2.5.8). Enter, Right and Left, and double-click in the drawing, also fold, but no pointer alternative of 24 px exists. Making them wider shifts the outline's indent.
+- **The studio doesn't move focus to the forms it opens** (Newick questions, column choices, Settings), and errors go to the polite status line rather than an alert.
+- **Live regions that mount with their first message** (the clade check when a second taxon is added) may not be announced. Only a screen reader can confirm.
+- **Never run with a screen reader or in a browser.** VoiceOver, keyboard use in the built Mac app, and real rendering (focus rings on SVG, `:has()` borders, the PNG export) need a check by hand.
+
+### Left out as overkill
+
+- Contrast of disabled controls (exempt in 1.4.3) and of decorative panel borders (`--ot-border`, 1.33:1): buttons are identified by their text.
+- Re-testing the outline keys that the existing tests already cover (type-ahead, Alt+arrows).
+
 ## 2026-11-11: unsealed notice and temporary-file cleanup in the studio
 
 Scope: the two studio gaps left on 2026-11-10. Tests went from 142 to 145, all in the studio (14 to 17). The packages are unchanged.
