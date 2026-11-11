@@ -39,6 +39,7 @@ import { citationLine, disclosureLines, downloadBlob, standaloneSvg, svgToPng } 
 import { Icon } from './icons.js'
 import { ComparePanel, PHYLO_LABELS, rootedRecord, SupportControl, supportSummary, type PhyloLabels } from './Phylo.js'
 import { shapeAt, ShapeSwatch, traitShapes, type MarkShape } from './shapes.js'
+import { between, prefersReducedMotion, REVEAL_MS, revealBox } from './reveal.js'
 import { useRovingToolbar } from './toolbar.js'
 import { TreeOutline } from './TreeOutline.js'
 import { treeViewBox, TreeView, type ViewBox } from './TreeView.js'
@@ -110,7 +111,7 @@ export type ExplorerLabels = PhyloLabels & Record<
   | 'selection' | 'checkClade' | 'addHighlight' | 'highlightName' | 'checkAgainst' | 'clearSelection' | 'remove' | 'multiHint'
   | 'downloadSvg' | 'downloadPng' | 'downloadView' | 'about' | 'sources' | 'references' | 'synonyms' | 'commonNames' | 'age' | 'branchLength' | 'unmapped' | 'traits'
   | 'keyboardHint' | 'extinct' | 'exportFailed' | 'svgOnCanvas'
-  | 'moveUp' | 'moveDown' | 'panLeft' | 'panRight' | 'panUp' | 'panDown' | 'layoutUnavailable' | 'and',
+  | 'moveUp' | 'moveDown' | 'panLeft' | 'panRight' | 'panUp' | 'panDown' | 'layoutUnavailable' | 'and' | 'zoomedToSelection',
   string
 >
 
@@ -203,6 +204,7 @@ const LABELS: ExplorerLabels = {
   panDown: 'Pan down',
   layoutUnavailable: 'Not available here:',
   and: 'and',
+  zoomedToSelection: 'Zoomed out to show the selection.',
 }
 
 /** Prints only this drawing: everything else on the page is hidden while printing. */
@@ -302,13 +304,26 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   const hasExtinct = projection.nodes.some((n) => n.status === 'extinct')
   const overlays = view.overlays ?? {}
   const setOverlays = (next: ViewOverlays) => dispatch({ type: 'setOverlays', overlays: next })
-  const choose = (id: Id, additive = false) =>
-    dispatch({ type: 'select', nodes: additive ? (view.selected.includes(id) ? view.selected.filter((x) => x !== id) : [...view.selected, id]) : [id] })
+  const nextSelection = (id: Id, additive: boolean) => (additive ? (view.selected.includes(id) ? view.selected.filter((x) => x !== id) : [...view.selected, id]) : [id])
+  const choose = (id: Id, additive = false) => dispatch({ type: 'select', nodes: nextSelection(id, additive) })
 
   // Pan and zoom (same controls as OnePedigree): the box resets when the layout or focus changes.
   const full = useMemo(() => treeViewBox(layout), [layout])
-  const [box, setBox] = useState<ViewBox | null>(null)
+  const [box, setBoxNow] = useState<ViewBox | null>(null)
   const shown = box ?? full
+  // A pan to the outline's selection in progress; anything else that moves the drawing stops it.
+  const revealing = useRef<number | null>(null)
+  const stopRevealing = () => {
+    if (revealing.current !== null) cancelAnimationFrame(revealing.current)
+    revealing.current = null
+  }
+  useEffect(() => stopRevealing, [])
+  const [revealNote, setRevealNote] = useState('')
+  const setBox = (next: ViewBox | null) => {
+    stopRevealing()
+    setRevealNote('')
+    setBoxNow(next)
+  }
   useEffect(() => setBox(null), [view.layout.kind, view.focus, view.target.id])
   const canvas = useRef<HTMLDivElement>(null)
   const pointer = useRef<{ x: number; y: number; box: ViewBox; node: Id | null; moved: boolean; additive: boolean } | null>(null)
@@ -329,6 +344,38 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   }
   const pan = (fx: number, fy: number) => setBox({ ...shown, x: shown.x + shown.width * fx, y: shown.y + shown.height * fy })
 
+  /** The drawing's size in CSS pixels: the canvas's plan, or the SVG's box; `null` before layout. */
+  const drawnSize = () => {
+    const onCanvas = canvas.current?.querySelector('canvas.ot-tree-canvas') ?? null
+    const plan = canvasPlanOf(onCanvas)
+    if (plan) return { width: plan.width, height: plan.height }
+    const r = canvas.current?.querySelector('.ot-root')?.getBoundingClientRect()
+    return r && r.width > 0 && r.height > 0 ? { width: r.width, height: r.height } : null
+  }
+  /**
+   * Selection from the outline (the keyboard path, ADR 0010): pan the drawing so the
+   * selected taxa are in view, zooming out only if they can't fit. Clicks in the drawing
+   * don't come here, so the drawing never moves under the pointer. Focus stays where it is.
+   */
+  const revealSelection = (ids: readonly Id[]) => {
+    const at = new Map(layout.nodes.map((n) => [n.id, n]))
+    const points = ids.flatMap((id) => at.get(id) ?? [])
+    const from = shown
+    const next = revealBox(from, points, drawnSize())
+    if (!next) return
+    stopRevealing()
+    // Announce only a change of zoom, once; a plain pan says nothing. The trailing space makes a repeat announce again.
+    setRevealNote(next.zoomed ? (n) => (n === labels.zoomedToSelection ? `${labels.zoomedToSelection}\u00a0` : labels.zoomedToSelection) : '')
+    if (prefersReducedMotion()) return setBoxNow(next.box)
+    const start = performance.now()
+    const step = (now: number) => {
+      const t = (now - start) / REVEAL_MS
+      setBoxNow(t >= 1 ? next.box : between(from, next.box, t))
+      revealing.current = t >= 1 ? null : requestAnimationFrame(step)
+    }
+    revealing.current = requestAnimationFrame(step)
+  }
+
   const allChildren = (parent: Id) => view.order[parent] ?? viewChildren(dataset, view, parent)
   const move = (id: Id, direction: -1 | 1) => {
     const n = projection.nodes.find((x) => x.id === id)
@@ -344,6 +391,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     const target = e.target as Element
     if (target.closest('button, a, select, .ot-floating')) return
+    stopRevealing()
     // An SVG node, or the node under the pointer on the canvas renderer (hit-tested).
     const nodeId = target.closest('.ot-node')?.getAttribute('data-id') ?? canvasNodeAt(target, e.clientX, e.clientY)
     pointer.current = { x: e.clientX, y: e.clientY, box: shown, node: nodeId, moved: false, additive: e.shiftKey || e.ctrlKey || e.metaKey }
@@ -573,6 +621,10 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
           {rootingLine}
         </p>
       )}
+      {/* Says when the drawing zoomed out to show the outline's selection; a plain pan stays quiet. */}
+      <p className="ot-sr-only ot-reveal-status" role="status">
+        {revealNote}
+      </p>
       <div className="ot-panes">
         <div
           ref={canvas}
@@ -671,7 +723,11 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
             hiddenLabel={hidden}
             extinctLabel={labels.extinct}
             onToggle={(id) => dispatch({ type: 'toggle', node: id })}
-            onSelect={(id, o) => choose(id, o?.additive)}
+            onSelect={(id, o) => {
+              const next = nextSelection(id, Boolean(o?.additive))
+              choose(id, o?.additive)
+              if (next.includes(id)) revealSelection(next)
+            }}
             onMove={move}
           />
           <section className="ot-inspector" aria-label={labels.details}>

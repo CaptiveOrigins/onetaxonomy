@@ -33,6 +33,30 @@ Scope: `packages/payload` only (M7 part 2, ADR 0012 points 12 to 14): import job
 
 - Each adapter's own parsing rules: `packages/import` tests them; these tests check that each one is wired and its warnings and errors carried through.
 - Every combination of adapter options: they go to the adapter unchanged.
+## 2026-11-11: pan to the outline's selection
+
+Scope: `packages/react` only (K495, ADR 0010's follow-up). Tests went from 395 to 408: react 102 to 115, all in the new `test/reveal.test.tsx`. Nothing else changed.
+
+### Covered
+
+- **The box math** (`revealBox`): a point clear of the 40 px margin gives no change; an off-screen point, and one inside the box but under the margin, pan the shortest way to the margin without zooming; the area SVG and the canvas letterbox beside a narrower box counts as on screen; points that can't fit zoom out by the smallest factor that puts both on the margin, keeping the aspect ratio; a box already zoomed out is never zoomed in.
+- **SVG drawing:** selecting an off-screen taxon from the outline with Space pans it inside the margin and keeps the zoom; an on-screen taxon doesn't move the drawing; a taxon near the edge clicked in the drawing doesn't move it, and the same taxon chosen in the outline does.
+- **Canvas drawing** (a made-up tree of 600 tips, drawn on canvas): an off-screen taxon chosen in the outline ends up drawn inside the margin of the 800 × 600 canvas; one already well inside leaves every drawn node where it was.
+- **Reduced motion:** with `prefers-reduced-motion: reduce`, and with no `matchMedia` at all, the box jumps and no animation frame is asked for. With `no-preference` nothing moves before the first frame, it's part way at 100 ms and there at 250 ms, with no frames left.
+- **Focus stays in the outline:** after the selection, after a jump and after the last animation frame, on SVG and canvas.
+- **Announcements:** a plain pan leaves the status region empty; a zoom out puts "Zoomed out to show the selection." in a `role="status"` region.
+- **Stops for the person:** Fit during a glide cancels the remaining frames.
+
+### Gaps left
+
+- **No browser:** jsdom has no layout, so the SVG counts one unit per pixel; the real `getBoundingClientRect` sizing and the canvas's measured size are untested. The glide's smoothness wasn't seen.
+- **No screen reader** confirmed that the status line is read once and a plain pan is silent.
+- **Radial layouts** weren't tested separately; the math is the same for every layout.
+
+### Left out as overkill
+
+- Each easing value of the glide: the start, middle and end are checked.
+- The repeat-announcement trick (a trailing no-break space when the same zoom note comes twice) is a known screen-reader workaround, not a promise.
 
 ## 2026-11-11: Payload plugin, part 1
 

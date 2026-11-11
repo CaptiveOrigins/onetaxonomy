@@ -142,7 +142,7 @@ describe('linking tree tips to taxa in the Mac app', () => {
   async function linkAll(count: number) {
     fireEvent.click(linkButton())
     const title = await screen.findByRole('heading', { level: 2, name: /^Link tips to taxa: / })
-    expect(document.activeElement).toBe(title)
+    await waitFor(() => expect(document.activeElement).toBe(title))
     fireEvent.click(screen.getByRole('button', { name: `Accept all exact unique matches (${count})` }))
     fireEvent.click(screen.getByRole('button', { name: `Make a new tree with these links (${count})` }))
   }
@@ -157,7 +157,7 @@ describe('linking tree tips to taxa in the Mac app', () => {
     expect(screen.getByText('4 tips: 0 match one taxon, 0 match several, 4 match none.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(screen.queryByRole('heading', { name: /^Link tips to taxa/ })).toBeNull()
-    expect(document.activeElement).toBe(linkButton())
+    await waitFor(() => expect(document.activeElement).toBe(linkButton()))
   })
 
   it('adds a tree to an open checklist, links its tips as a new tree, compares two linked trees and saves to a new file only', async () => {
@@ -171,7 +171,7 @@ describe('linking tree tips to taxa in the Mac app', () => {
     expect(vi.mocked(dialog.open).mock.calls.at(-1)![0]!.filters![0]!.extensions).not.toContain('csv')
     await linkAll(4)
     expect(status().textContent).toMatch(/^Made a new tree, “alpha \(tips linked\)”, with 4 tip links changed, and showed it\. checklist\.json is unchanged/)
-    expect(document.activeElement).toBe(linkButton())
+    await waitFor(() => expect(document.activeElement).toBe(linkButton()))
     const show = within(header()).getByRole('combobox', { name: 'Show tree or classification' }) as HTMLSelectElement
     expect(show.value).toBe('phylogeny:alpha-linked')
 
@@ -210,15 +210,13 @@ describe('focus and errors in the Mac app (accessibility audit gaps, 2026-11-11)
     render(<App />)
     const header = () => document.querySelector('.app-header') as HTMLElement
     fireEvent.click(within(header()).getByRole('button', { name: 'Settings' }))
-    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Settings' }))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Settings' })))
     fireEvent.click(screen.getByRole('button', { name: 'Done' }))
-    expect(document.activeElement).toBe(within(header()).getByRole('button', { name: 'Settings' }))
-
+    await waitFor(() => expect(document.activeElement).toBe(within(header()).getByRole('button', { name: 'Settings' })))
     await openFile('/made-up/unsaid.nwk', '((a,b),c);')
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'About unsaid.nwk' })))
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(document.activeElement).toBe(within(header()).getByRole('button', { name: 'Open…' }))
-
+    await waitFor(() => expect(document.activeElement).toBe(within(header()).getByRole('button', { name: 'Open…' })))
     await openFile('/made-up/list.csv', 'taxonID,scientificName\n1,Alphus\n')
     await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Columns in list.csv' })))
   })
@@ -264,11 +262,11 @@ describe('.onetaxonomy bundles in the Mac app', () => {
     render(<App />)
     await opened('/made-up/checklist.json', V1)
     fireEvent.click(bundleButton())
-    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Save as bundle' }))
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Save as bundle' })))
     expect(screen.getByText(/^It will hold 1 view, 0 lessons, 0 media files, made with fixture-checklist version 1\.$/)).toBeTruthy()
     expect((screen.getByRole('checkbox', { name: /^Include the dataset \(\d+ KB\)/ }) as HTMLInputElement).checked).toBe(true)
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
-    expect(document.activeElement).toBe(bundleButton())
+    await waitFor(() => expect(document.activeElement).toBe(bundleButton()))
     expect(calls).toEqual([])
 
     // Cancelling the save dialog writes nothing either.
@@ -314,13 +312,12 @@ describe('.onetaxonomy bundles in the Mac app', () => {
     const bundle = madeBundle(V1, true)
     await openBundle('/made-up/release-1.onetaxonomy', bundle)
     const title = await screen.findByRole('heading', { level: 2, name: 'Which version of fixture-checklist?' })
-    expect(document.activeElement).toBe(title)
+    await waitFor(() => expect(document.activeElement).toBe(title))
     expect(screen.getByText('This bundle was made with fixture-checklist version 1; the dataset open now is version 2.')).toBeTruthy()
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     expect(status().textContent).toMatch(/^Didn't open release-1\.onetaxonomy\. Nothing was changed\./)
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('checklist-v2.json')
-    expect(document.activeElement).toBe(within(header()).getByRole('button', { name: 'Open…' }))
-
+    await waitFor(() => expect(document.activeElement).toBe(within(header()).getByRole('button', { name: 'Open…' })))
     await openBundle('/made-up/release-1.onetaxonomy', bundle)
     fireEvent.click(await screen.findByRole('button', { name: 'Relink to version 2 (open now)' }))
     expect(status().textContent).toMatch(/^Opened release-1\.onetaxonomy, relinked to fixture-checklist version 2\./)
