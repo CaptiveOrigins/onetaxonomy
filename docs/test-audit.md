@@ -2,6 +2,37 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: Studio bundle
+
+Scope: M6's `.onetaxonomy` bundle and relink flow, and the SQLite decision (ADR 0011, proposed: not needed now). Import gains `bundle.ts` (`writeBundle`, `readBundle`) and a ZIP writer in `zip.ts` (`writeZip`, `crc32`); core gains `sha256Bytes`; the Mac app gains `bundle.ts` (`planBundleOpen`, `keepPinned`, `relinkToAvailable`, `planBundleSave`, `bundleBytes`), `saveBundle` in `files.ts`, the Save as bundle and relink forms in `App.tsx`, and `fs:allow-write-file` in its capability file. Tests went from 299 to 348: core 105 to 106, import 42 to 63 (21 in the new `bundle.test.ts`), studio 40 to 67 (17 in the new `bundle.test.ts`, 5 in `files.test.ts`, 5 in `app.test.tsx`). Tauri was mocked throughout: dialogs and the file system are fakes that record calls, so no real disk, built app or screen reader was involved. The one outside check is the system `unzip -t` and `unzip -p` on a written bundle.
+
+### Promises and the tests that hold them
+
+- **Round trip.** A bundle with a snapshot, a view, a lesson and a binary media file reads back equal, with the manifest naming each file and role (import `bundle.test.ts`). In the Mac app, a bundle saved from an open checklist reads back with the right pin, and opening it shows the dataset and its view (`app.test.tsx`); a bundle built by `planBundleSave` opens again with the same dataset, view and lesson (studio `bundle.test.ts`).
+- **Readable without the app.** The manifest is the first entry; every file's SHA-256 matches the manifest; the embedded snapshot is byte-for-byte what Save snapshot… writes; CRC-32 matches the standard check value; `unzip -t` reports no errors and `unzip -p` prints a view that parses to the original (skipped where `/usr/bin/unzip` is absent).
+- **Each diagnostic, failing closed.** One test per code: not a ZIP (and a bundle cut short), no manifest, bad JSON in the manifest and in a view (with the manifest's checksum updated so only the JSON fails), not a bundle, unknown format version (message names both versions), a manifest missing its pins, a missing file, a checksum mismatch at the same size, a size mismatch, several problems listed together, an embedded snapshot edited after sealing (with the manifest updated to match), an embedded snapshot that isn't the pinned one, a view pinned to an unlisted version, and a path that climbs out of `media/`. Each returns `ok: false` with no bundle. Files the manifest doesn't list are left out with a note.
+- **Never half a bundle.** A damaged bundle is refused with every problem in one message, and the Mac app keeps what was open (its title is unchanged, the alert names the file and the problem). A bundle whose view doesn't fit its own embedded dataset is refused whole. A bundle without its dataset, when that dataset isn't open, is refused with what to open first. More than one pinned dataset is refused with the reason.
+- **Writing refuses what wouldn't read.** `writeBundle` throws on a view made with an unpinned snapshot, an unsafe media path, or no snapshot; duplicate ids get distinct file names.
+- **Relink, never silently.** Same dataset open: no question. An unsealed copy with the same contents counts as the same. Another version open: the app asks, with the difference in words (by version, or by checksum when the version is the same); focus goes to the question's title. Keep uses the embedded copy; Relink moves every view and lesson to the open version and says so in the notes; Cancel changes nothing and says so. Relink is refused whole when a view doesn't fit the open version (a hidden node that release 2 lacks), and Keep still works after. Keep is disabled when the bundle has no embedded copy, and `aria-describedby` points at the reason.
+- **Nothing written on cancel.** Cancel in the Save as bundle form and Cancel in the save dialog both leave the call log empty, and focus returns to Save as bundle…. Cancelling the relink question writes nothing.
+- **Safe saves for bytes.** A bundle is written to `.tmp` with `writeFile` and renamed; a failed rename removes the `.tmp` and reports the original error; choosing the opened bundle (any letter case) is refused before writing; the dialog offers only `.onetaxonomy`.
+- **Save form honesty.** It states what goes in (views, lessons, media, the dataset's id and version); views or lessons made with another version are listed as relinked before saving; anything that doesn't fit blocks the save. An unsealed dataset is pinned by the checksum it gets when sealed, which isn't called a relink. The manifest records the app's real version from `package.json`.
+- **Permission the built app needs.** A test reads `src-tauri/capabilities/default.json` and requires `fs:allow-write-file` beside the text write, read, rename, remove and exists permissions (0.1.0 shipped without rename because tests don't run Tauri's checks).
+- **`sha256Bytes`** matches `node:crypto` on 300 binary bytes and `sha256Hex` on text.
+
+### Gaps left
+
+- **Not tried in the built app.** The real Tauri file system, the save dialog's `.onetaxonomy` filter and the new permission haven't been exercised in a build. Owner or a build run: save a bundle, open it, open a damaged copy.
+- **No screen reader.** The forms reuse the existing pattern (focus to the title, buttons, a labelled checkbox, `aria-describedby` for the disabled Keep), checked in jsdom only.
+- **Lessons and media are carried, not shown.** The Mac app has no lesson player or media view; their round trip is tested, their display isn't part of this work.
+- **Large datasets.** Only the fixtures (a few KB) were bundled. Hashing a large snapshot with the plain-TypeScript SHA-256 and holding the bundle in memory are untimed; ADR 0011 names this as the first thing to measure.
+- **Offline journey.** Nothing in the bundle path uses the network, but the whole journey offline in the built app hasn't been walked through, so the backlog line stays open.
+- **Deflated bundles** written by other tools are accepted by the reader (it reads Darwin Core Archives the same way), but no deflated bundle is in the tests.
+
+### Left out as overkill
+
+- ZIP header fields beyond what readers use (version made by, external attributes): `unzip -t` covers the archive as a whole.
+- Each `bad-manifest` field separately: one missing-pins case covers the path, and the checks share one function.
 ## 2026-11-11: canvas renderer and benchmarks
 
 Scope: M8's canvas renderer and benchmarks. React gains `CanvasTreeView`, chosen by `TreeView` above 1,000 drawn nodes, with its level of detail in a pure module (`canvasPlan.ts`: `prepareTree`, `planCanvas`, `hitTest`, `drawPlan`, `describeLod`), and `scripts/bench-canvas.mjs` writes `docs/benchmarks.md`. `shapes.tsx` now builds its SVG paths from `shapePolygon`, which the canvas uses too. Core, import, layout, education and the Mac app are unchanged. Tests went from 281 to 297: react 85 to 101 (14 in the new `canvas.test.tsx`, 2 in the new `svg-unchanged.test.tsx`). Everything ran in Node or jsdom, where a canvas can't paint: the drawing was checked by recording the calls made on a stand-in 2D context. No browser, screen reader or built app.

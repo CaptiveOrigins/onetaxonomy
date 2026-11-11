@@ -1,10 +1,11 @@
 import { createView, indexDataset, parseView, serializeView, validateDataset, validateView, type DatasetSnapshot, type Phylogeny, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
-import type { ChecklistColumns } from '@captiveorigins/onetaxonomy-import'
+import { readBundle, type ChecklistColumns } from '@captiveorigins/onetaxonomy-import'
 import { Explorer, TipLinker } from '@captiveorigins/onetaxonomy-react'
 import { invoke } from '@tauri-apps/api/core'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
-import { pickDataset, pickTree, pickView, saveJson, type PickedFile } from './files'
+import { bundleBytes, keepPinned, NOTHING_CARRIED, planBundleOpen, planBundleSave, relinkToAvailable, type BundleOpening, type BundleSave, type Carried } from './bundle'
+import { pickDataset, pickTree, pickView, saveBundle, saveJson, type PickedFile } from './files'
 import { COLUMN_KEYS, delimiterOf, kindOf, openDwca, openSnapshot, openTable, openTree, sealedJson, suggestColumns, tableHeader, targetsOf, treeQuestions, withPhylogeny, withTrees, type ColumnKey, type Opened, type Target, type TreeKind } from './open'
 import { StatusBar } from './StatusBar'
 import { checkForUpdates, IN_APP_UPDATES, loadSettings, saveSettings, type Settings } from './updates'
@@ -23,6 +24,8 @@ type Pending =
   | { kind: 'tree'; format: TreeKind; file: PickedFile; rooted: boolean; supportMethods: number; add?: boolean }
   | { kind: 'links'; phylogeny: string }
   | { kind: 'table'; file: PickedFile; header: string[]; delimiter: string; columns: Partial<Record<ColumnKey, string>> }
+  | { kind: 'relink'; plan: Extract<BundleOpening, { kind: 'relink' }>; path: string }
+  | { kind: 'bundle-save'; plan: BundleSave; size: number }
 
 const baseName = (path: string) => path.split(/[\\/]/).pop() ?? path
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e))
@@ -56,9 +59,12 @@ export function App() {
   const [addedPaths, setAddedPaths] = useState<string[]>([])
   // What the dataset on screen was made with, for the suggested file name: '' when it is the opened file as it was.
   const [derived, setDerived] = useState<'' | 'rooted' | 'linked' | 'with-trees'>('')
+  // Views, lessons and media from an opened bundle: Save as bundle… writes them back out.
+  const [carried, setCarried] = useState<Carried>(NOTHING_CARRIED)
   const linkButton = useRef<HTMLButtonElement>(null)
   const openButton = useRef<HTMLButtonElement>(null)
   const settingsButton = useRef<HTMLButtonElement>(null)
+  const bundleButton = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     void loadSettings().then((s) => {
@@ -85,7 +91,8 @@ export function App() {
     return dataset && target ? createView(dataset, { id: 'main', title: target.title, target: { kind: target.kind, id: target.id } }) : null
   }, [dataset, target, loadedView])
 
-  const show = (opened: Opened, path: string) => {
+  // `carried` comes with a bundle; `never` adds files that must not be written over (the dataset a bundle was relinked to).
+  const show = (opened: Opened, path: string, { carried = NOTHING_CARRIED, never = [] }: { carried?: Carried; never?: string[] } = {}) => {
     // Throws on a dataset that can't be shown, so it reaches the caller's error message rather than a blank window.
     const index = indexDataset(opened.snapshot)
     const first = targetsOf(opened.snapshot)[0]
@@ -93,13 +100,14 @@ export function App() {
     const problems = validateDataset(opened.snapshot).filter((d) => d.severity === 'error').length
     setSnapshot(opened.snapshot)
     setOpenedPath(path)
-    setAddedPaths([])
+    setAddedPaths(never)
     setDerived('')
+    setCarried(carried)
     setFileName(baseName(path))
     setNotices(opened.notices)
     setSeal(opened.seal ?? '')
     setTargetKey('')
-    setLoadedView(null)
+    setLoadedView(carried.views[0] ?? null)
     setPending(null)
     setViewKey((n) => n + 1)
     setStatus(targetsOf(opened.snapshot).length ? `Opened ${baseName(path)}.${problems ? ` ${problems} problems found; see the list below.` : ''}` : `${baseName(path)} has no classification or tree to show. Check that it's the right file, or map its columns differently.`)
@@ -113,6 +121,7 @@ export function App() {
       if (!file) return
       const now = new Date().toISOString()
       const kind = kindOf(file.path, file.text)
+      if (kind === 'bundle') return await openBundle(file)
       if (kind === 'snapshot') show(openSnapshot(file.text), file.path)
       else if (kind === 'dwca') show(await openDwca(file.bytes!, file.path, now), file.path)
       else if (kind === 'newick' || kind === 'nexus' || kind === 'phyloxml') {
@@ -125,7 +134,57 @@ export function App() {
         setPending({ kind: 'table', file, header, delimiter, columns: suggestColumns(header) })
       }
     } catch (e) {
-      fail('open that file', e, 'Check that it is a checklist, Darwin Core Archive, Newick, NEXUS or phyloXML tree, or OneTaxonomy snapshot, then try again.')
+      fail('open that file', e, 'Check that it is a checklist, Darwin Core Archive, Newick, NEXUS or phyloXML tree, OneTaxonomy snapshot or bundle, then try again.')
+    }
+  }
+
+  // A bundle is checked whole before anything in it is used: damage is listed in the alert and nothing changes.
+  const openBundle = async (file: PickedFile) => {
+    try {
+      const plan = planBundleOpen(await readBundle(file.bytes!), snapshot)
+      if (plan.kind === 'show') {
+        show(plan, file.path, { carried: plan.carried })
+        if (plan.carried.views.length) setStatus(`Opened ${baseName(file.path)} with its view “${plan.carried.views[0]!.title}”.`)
+      } else setPending({ kind: 'relink', plan, path: file.path })
+    } catch (e) {
+      setError(`Could not open ${baseName(file.path)}: ${message(e)} What was open before is unchanged.`)
+    }
+  }
+
+  const finishRelink = (choose: typeof keepPinned, pending: Extract<Pending, { kind: 'relink' }>) => {
+    try {
+      const plan = choose(pending.plan)
+      // Relinking keeps the open dataset, so its file joins the ones never written over.
+      show(plan, pending.path, { carried: plan.carried, never: choose === relinkToAvailable ? [openedPath, ...addedPaths].filter(Boolean) : [] })
+      setStatus(choose === relinkToAvailable ? `Opened ${baseName(pending.path)}, relinked to ${plan.snapshot.id} version ${plan.snapshot.version}.` : `Opened ${baseName(pending.path)} with the version it pins, ${plan.snapshot.id} version ${plan.snapshot.version}.`)
+      openButton.current?.focus()
+    } catch (e) {
+      setError(message(e))
+    }
+  }
+
+  const startBundleSave = () => {
+    if (!snapshot) return
+    try {
+      const current = currentView.current ?? view
+      // Keep the view on screen as it is when the Explorer comes back after the form.
+      if (current) setLoadedView(current)
+      setPending({ kind: 'bundle-save', plan: planBundleSave(snapshot, current, carried), size: sealedJson(snapshot).length })
+    } catch (e) {
+      fail('prepare the bundle', e, 'Nothing was saved.')
+    }
+  }
+
+  const finishBundleSave = async (plan: BundleSave, embed: boolean) => {
+    if (!snapshot) return
+    try {
+      const bytes = bundleBytes(snapshot, plan, { embed, now: new Date().toISOString(), ...(view ? { title: view.title } : {}) })
+      const path = await saveBundle(`${snapshot.id}${derived ? `-${derived}` : ''}.onetaxonomy`, bytes, openedPath ? { never: [openedPath, ...addedPaths] } : {})
+      setPending(null)
+      bundleButton.current?.focus()
+      if (path) setStatus(`Saved bundle to ${baseName(path)}${embed ? ', with its dataset' : ', without its dataset'}.`)
+    } catch (e) {
+      fail('save the bundle', e, 'Nothing was changed. Try another location.')
     }
   }
 
@@ -237,6 +296,7 @@ export function App() {
         <button type="button" disabled={!snapshot} onClick={() => void addTree()}>Add tree…</button>
         <button type="button" disabled={!view} onClick={() => void save(`${fileName.replace(/\.[^.]+$/, '') || 'view'}.view.json`, () => serializeView(currentView.current ?? view!), 'Saved view to')}>Save view…</button>
         <button type="button" disabled={!snapshot} onClick={() => void save(`${snapshot?.id ?? 'dataset'}${derived ? `-${derived}` : ''}.snapshot.json`, () => sealedJson(snapshot!), 'Saved snapshot to')}>Save snapshot…</button>
+        <button ref={bundleButton} type="button" disabled={!snapshot} aria-expanded={pending?.kind === 'bundle-save'} onClick={startBundleSave}>Save as bundle…</button>
         {targets.length > 1 && (
           <label>
             Show{' '}
@@ -300,6 +360,27 @@ export function App() {
               }}
             />
           </div>
+        ) : pending?.kind === 'relink' ? (
+          <RelinkForm
+            pending={pending}
+            onKeep={() => finishRelink(keepPinned, pending)}
+            onRelink={() => finishRelink(relinkToAvailable, pending)}
+            onCancel={() => {
+              setPending(null)
+              setStatus(`Didn't open ${baseName(pending.path)}. Nothing was changed.`)
+              openButton.current?.focus()
+            }}
+          />
+        ) : pending?.kind === 'bundle-save' && snapshot ? (
+          <BundleSaveForm
+            pending={pending}
+            snapshot={snapshot}
+            onSave={(embed) => void finishBundleSave(pending.plan, embed)}
+            onCancel={() => {
+              setPending(null)
+              bundleButton.current?.focus()
+            }}
+          />
         ) : pending?.kind === 'table' ? (
           <TableForm
             pending={pending}
@@ -320,7 +401,7 @@ export function App() {
         ) : (
           <section className="app-panel">
             <h2>Open a dataset</h2>
-            <p className="app-hint">A CSV or TSV checklist, a Darwin Core Archive (.zip), a Newick, NEXUS or phyloXML tree, or a OneTaxonomy snapshot. Your file is read on this Mac and is never changed.</p>
+            <p className="app-hint">A CSV or TSV checklist, a Darwin Core Archive (.zip), a Newick, NEXUS or phyloXML tree, or a OneTaxonomy snapshot or bundle (.onetaxonomy). Your file is read on this Mac and is never changed.</p>
             <button type="button" onClick={() => void open()}>Open…</button>
           </section>
         )}
@@ -393,6 +474,68 @@ function TableForm({ pending, onOpen, onCancel }: { pending: Extract<Pending, { 
       ))}
       <div className="app-row">
         <button type="button" disabled={!taxonID || !name} onClick={() => onOpen({ ...Object.fromEntries(Object.entries(columns).filter(([, v]) => v)), taxonID: taxonID!, name: name! })}>Open table</button>
+        <button type="button" onClick={onCancel}>Cancel</button>
+      </div>
+    </section>
+  )
+}
+
+const kb = (bytes: number) => (bytes < 1024 * 1024 ? `${Math.max(1, Math.round(bytes / 1024))} KB` : `${(bytes / 1024 / 1024).toFixed(1)} MB`)
+
+/** The bundle pins a version of the dataset that isn't the one open: the person chooses which to use. */
+function RelinkForm({ pending, onKeep, onRelink, onCancel }: { pending: Extract<Pending, { kind: 'relink' }>; onKeep: () => void; onRelink: () => void; onCancel: () => void }) {
+  const { pin, embedded, available, bundle, differences } = pending.plan
+  const n = bundle.views.length + bundle.lessons.length
+  return (
+    <section className="app-panel" aria-describedby="relink-why">
+      <FormTitle>Which version of {pin.id}?</FormTitle>
+      <p id="relink-why">{differences}</p>
+      <p className="app-hint">
+        {n ? `Its ${n === 1 ? 'view or lesson was' : `${n} views and lessons were`} made with version ${pin.version}. ` : ''}OneTaxonomy won't choose for you. The bundle file is not changed either way.
+      </p>
+      <div className="app-row">
+        <button type="button" disabled={!embedded} aria-describedby={embedded ? undefined : 'relink-no-embedded'} onClick={onKeep}>
+          Keep version {pin.version} (from the bundle)
+        </button>
+        <button type="button" onClick={onRelink}>Relink to version {available.version} (open now)</button>
+        <button type="button" onClick={onCancel}>Cancel</button>
+      </div>
+      {!embedded && <p className="app-hint" id="relink-no-embedded">The bundle doesn't include version {pin.version}, so it can't be kept here. Open that version's snapshot first to use it.</p>}
+    </section>
+  )
+}
+
+/** What a bundle will hold, the one choice it needs (include the dataset?), and anything that will be relinked. */
+function BundleSaveForm({ pending, snapshot, onSave, onCancel }: { pending: Extract<Pending, { kind: 'bundle-save' }>; snapshot: DatasetSnapshot; onSave: (embed: boolean) => void; onCancel: () => void }) {
+  const [embed, setEmbed] = useState(true)
+  const { carried, relinked, problems } = pending.plan
+  const parts = [plural(carried.views.length, 'view', 'views'), plural(carried.lessons.length, 'lesson', 'lessons'), plural(carried.media.length, 'media file', 'media files')]
+  return (
+    <section className="app-panel">
+      <FormTitle>Save as bundle</FormTitle>
+      <p className="app-hint">A .onetaxonomy file is a ZIP of plain JSON files listed in a manifest.json, with a checksum for each, so it can be read without OneTaxonomy.</p>
+      <p>
+        It will hold {parts.join(', ')}, made with {snapshot.id} version {snapshot.version}.
+      </p>
+      <label className="app-field" style={{ display: 'flex', gap: 8 }}>
+        <input type="checkbox" checked={embed} onChange={(e) => setEmbed(e.target.checked)} />
+        Include the dataset ({kb(pending.size)}), so the bundle opens on any Mac without it
+      </label>
+      {!embed && <p className="app-hint">Without it, the bundle names the dataset by id, version and checksum, and opens only where that snapshot is opened first.</p>}
+      {relinked.length > 0 && (
+        <div>
+          <p>These were made with another version and will point to version {snapshot.version}:</p>
+          <ul>{relinked.map((r) => <li key={r}>{r}</li>)}</ul>
+        </div>
+      )}
+      {problems.length > 0 && (
+        <div>
+          <p>Can't save yet: these don't fit the dataset on screen.</p>
+          <ul>{problems.map((p) => <li key={p}>{p}</li>)}</ul>
+        </div>
+      )}
+      <div className="app-row">
+        <button type="button" disabled={problems.length > 0} onClick={() => onSave(embed)}>Save bundle…</button>
         <button type="button" onClick={onCancel}>Cancel</button>
       </div>
     </section>

@@ -1,5 +1,5 @@
 import { open as openDialog, save as saveDialog } from '@tauri-apps/plugin-dialog'
-import { exists, readFile, readTextFile, remove, rename, writeTextFile } from '@tauri-apps/plugin-fs'
+import { exists, readFile, readTextFile, remove, rename, writeFile, writeTextFile } from '@tauri-apps/plugin-fs'
 
 import { OPEN_EXTENSIONS, kindOf } from './open'
 
@@ -8,9 +8,10 @@ import { OPEN_EXTENSIONS, kindOf } from './open'
 export type PickedFile = { path: string; text: string; bytes?: Uint8Array }
 
 export async function pickDataset(): Promise<PickedFile | null> {
-  const path = await openDialog({ multiple: false, filters: [{ name: 'Checklists, archives, trees and snapshots', extensions: OPEN_EXTENSIONS }] })
+  const path = await openDialog({ multiple: false, filters: [{ name: 'Checklists, archives, trees, snapshots and bundles', extensions: OPEN_EXTENSIONS }] })
   if (typeof path !== 'string') return null
-  if (kindOf(path) === 'dwca') return { path, text: '', bytes: await readFile(path) }
+  const kind = kindOf(path)
+  if (kind === 'dwca' || kind === 'bundle') return { path, text: '', bytes: await readFile(path) }
   return { path, text: await readTextFile(path) }
 }
 
@@ -36,10 +37,11 @@ const sentence = (text: string) => (/[.!?]$/.test(text) ? text : `${text}.`)
  * fails, the temporary file is removed and the original error is still reported. If it can't be removed either,
  * the error says so, so a leftover `.tmp` file is never a surprise.
  */
-export async function writeFileSafely(path: string, text: string) {
+export async function writeFileSafely(path: string, contents: string | Uint8Array) {
   const temp = `${path}.tmp`
   try {
-    await writeTextFile(temp, text)
+    if (typeof contents === 'string') await writeTextFile(temp, contents)
+    else await writeFile(temp, contents)
     await rename(temp, path)
   } catch (error) {
     try {
@@ -59,11 +61,17 @@ export const OPENED_FILE_REFUSAL = "That is the file you opened, and OneTaxonomy
  * several: trees added to it count too): choosing one is refused before anything is written,
  * so an open file is never replaced.
  */
-export async function saveJson(defaultPath: string, text: string, { never }: { never?: string | string[] } = {}): Promise<string | null> {
-  const path = await saveDialog({ defaultPath, filters: [{ name: 'JSON', extensions: ['json'] }] })
+export const saveJson = (defaultPath: string, text: string, options: { never?: string | string[] } = {}) => saveAs(defaultPath, text, { name: 'JSON', extensions: ['json'] }, options)
+
+/** The same, for a `.onetaxonomy` bundle's bytes. */
+export const saveBundle = (defaultPath: string, bytes: Uint8Array, options: { never?: string | string[] } = {}) =>
+  saveAs(defaultPath, bytes, { name: 'OneTaxonomy bundle', extensions: ['onetaxonomy'] }, options)
+
+async function saveAs(defaultPath: string, contents: string | Uint8Array, filter: { name: string; extensions: string[] }, { never }: { never?: string | string[] }): Promise<string | null> {
+  const path = await saveDialog({ defaultPath, filters: [filter] })
   if (!path) return null
   // macOS volumes usually ignore case, so the comparison does too: a false refusal is safer than an overwrite.
   if ([never ?? []].flat().some((p) => p && path.toLowerCase() === p.toLowerCase())) throw new Error(OPENED_FILE_REFUSAL)
-  await writeFileSafely(path, text)
+  await writeFileSafely(path, contents)
   return path
 }

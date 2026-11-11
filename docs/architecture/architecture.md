@@ -51,7 +51,7 @@ Import pipeline (`import`): **read → parse → normalize → link names/concep
 
 ## Persistence and transport are adapters
 
-`core` defines records and pure functions over in-memory indexes. Where records are stored — a `.onetaxonomy` bundle and SQLite in Studio, Payload collections or storage records in a CMS, static JSON in a website — is decided by the adapter packages. Large topologies are stored as whole snapshot records, not as millions of CMS documents.
+`core` defines records and pure functions over in-memory indexes. Where records are stored — plain JSON files and a `.onetaxonomy` bundle in Studio (no SQLite for now: [ADR 0011](adr/0011-bundle-not-sqlite.md); format in [bundle-format.md](bundle-format.md)), Payload collections or storage records in a CMS, static JSON in a website — is decided by the adapter packages. Large topologies are stored as whole snapshot records, not as millions of CMS documents.
 
 ## Source ownership
 
