@@ -6,12 +6,82 @@ How long a frame takes while a made-up tree is panned, zoomed and scrolled, draw
 
 **What it doesn't.**
 
-- Other browser engines. Only the browsers with a section below were measured. WebKit, which the Mac app and Safari use, and Firefox may differ. To measure one, open `apps/playground/dist/bench.html` in it, press Run, save the numbers and run `node scripts/bench-browser.mjs --from onetaxonomy-bench.json`.
+- Safari, the Mac app and Firefox. Only the browsers with a section below were measured. The WebKit section is Playwright's build of WebKit: the same engine Safari and the Mac app's web view use, but not either program, and headless. It has no slowed-thread pass, because the throttle is Chrome's. To measure another browser, open `apps/playground/dist/bench.html` in it, press Run, save the numbers and run `node scripts/bench-browser.mjs --from onetaxonomy-bench.json`.
+- How the WebKit section was made. This script drives Chrome only. For WebKit, `playwright-core` (not a dependency of this repo) opened the built page from disk in its `webkit` browser, headless, once at device scale 1 and once at 2, and called `window.runBench()`, which is what the Run button calls. The two reports went into one file in the shape `--json` prints, and `--from` wrote the section.
 - A window on a real screen. A headless run draws with the graphics card but shows nothing.
 - All of painting. Raster and compositing happen off the main thread. They show in the frame time only once they fall behind and the browser holds the next frame back, so a steady frame time means the page kept up, not that painting cost nothing.
 - A slow device. "Main thread slowed 4 times" is Chrome's own throttle. It slows script, style and layout on the main thread and leaves the graphics card and the other threads at full speed, so it is a rough stand-in, not a phone or an old laptop.
 - Radial layouts, highlights, traits, support values and folded branches. The trees are plain rectangular ones with names on the tips.
 - The outline (`TreeOutline`), which isn't virtualized.
+
+## WebKit 27.2 (Playwright's build), headless, 2026-11-11
+
+- Machine: Mac14,13, Apple M2 Max, 12 cores.
+- Browser: WebKit 27.2 (Playwright's build), headless (no window on a screen). Graphics: Apple GPU.
+- Load: the machine was busy with other work. Load average 7.5, 8.3, 8.7 before and 6.9, 7.8, 8.4 after (1, 5 and 15 minutes).
+- Clock: this browser gives the time in whole milliseconds. Every time below is rounded to one: a 16.7 ms frame shows as 17, and script that took under a millisecond shows as 0 or 1.
+- Drawing: 1000 × 1000 CSS pixels. 180 frames for each motion, after 20 warm-up frames. One run of each; not repeated.
+
+What the numbers say, counting a size as on time when under 5% of its frames were late in every motion:
+
+- **Pixel density 1:** SVG was on time up to 1,999 nodes; it first fell behind at 4,999 nodes (33% of frames late while panning, median frame 24 ms, about 42 frames a second). The canvas was on time at every size, up to 19,999 nodes.
+- **Pixel density 2:** SVG was on time up to 1,999 nodes; it first fell behind at 4,999 nodes (56% of frames late while panning, median frame 27 ms, about 37 frames a second). The canvas was on time at every size, up to 19,999 nodes.
+
+`TreeView` draws as SVG up to 1,000 drawn nodes and on the canvas above that. The largest SVG tree measured at or under the switch: pixel density 1: 999 nodes, on time; pixel density 2: 999 nodes, on time.
+
+### Pixel density 1
+
+The display frame here, with nothing to draw: 17 ms on this browser's whole-millisecond clock (60 frames a second is 16.7 ms).
+
+| Renderer | Tips | Nodes | Pan: frame, late | Zoom: frame, late | Read: frame, late | Script (pan / zoom / read) | First render, script |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| svg | 125 | 249 | 17 / 17 / 19, 0% | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 1 / 0 / 0 | 8 |
+| canvas | 125 | 249 | 17 / 18 / 18, 0% | 17 / 18 / 28, 1% | 17 / 18 / 18, 0% | 0 / 0 / 0 | 4 |
+| svg | 250 | 499 | 17 / 18 / 19, 0% | 17 / 18 / 23, 0% | 17 / 17 / 18, 0% | 1 / 1 / 1 | 5 |
+| canvas | 250 | 499 | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 0 / 0 / 0 | 2 |
+| svg | 500 | 999 | 17 / 18 / 19, 0% | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 1 / 1 / 1 | 8 |
+| canvas | 500 | 999 | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 17 / 17 / 18, 0% | 1 / 0 / 0 | 2 |
+| svg | 1,000 | 1,999 | 17 / 18 / 18, 0% | 17 / 18 / 19, 0% | 17 / 18 / 19, 0% | 3 / 3 / 3 | 15 |
+| canvas | 1,000 | 1,999 | 17 / 18 / 19, 0% | 17 / 18 / 19, 0% | 17 / 18 / 18, 0% | 1 / 0 / 0 | 4 |
+| svg | 2,500 | 4,999 | 24 / 31 / 35, 33% | 17 / 23 / 26, 2% | 17 / 19 / 21, 0% | 7 / 7 / 7 | 38 |
+| canvas | 2,500 | 4,999 | 17 / 17 / 18, 0% | 17 / 18 / 18, 0% | 17 / 17 / 18, 0% | 2 / 1 / 0 | 6 |
+| svg | 5,000 | 9,999 | 48 / 56 / 63, 100% | 33 / 47 / 62, 100% | 33 / 38 / 44, 98% | 14 / 14 / 14 | 75 |
+| canvas | 5,000 | 9,999 | 17 / 18 / 19, 0% | 17 / 18 / 19, 0% | 17 / 18 / 18, 0% | 2 / 1 / 0 | 7 |
+| canvas | 10,000 | 19,999 | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 3 / 1 / 1 | 14 |
+
+### Pixel density 2
+
+The display frame here, with nothing to draw: 17 ms on this browser's whole-millisecond clock (60 frames a second is 16.7 ms).
+
+| Renderer | Tips | Nodes | Pan: frame, late | Zoom: frame, late | Read: frame, late | Script (pan / zoom / read) | First render, script |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| svg | 125 | 249 | 17 / 18 / 19, 0% | 17 / 18 / 19, 0% | 17 / 18 / 18, 0% | 1 / 1 / 1 | 15 |
+| canvas | 125 | 249 | 17 / 18 / 18, 0% | 17 / 18 / 25, 0% | 17 / 18 / 18, 0% | 1 / 1 / 1 | 7 |
+| svg | 250 | 499 | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 1 / 1 / 1 | 4 |
+| canvas | 250 | 499 | 17 / 18 / 20, 0% | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 1 / 0 / 0 | 1 |
+| svg | 500 | 999 | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 17 / 18 / 20, 0% | 1 / 1 / 1 | 8 |
+| canvas | 500 | 999 | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 0 / 0 / 0 | 1 |
+| svg | 1,000 | 1,999 | 17 / 18 / 18, 0% | 17 / 18 / 18, 0% | 17 / 18 / 27, 1% | 3 / 3 / 3 | 15 |
+| canvas | 1,000 | 1,999 | 17 / 18 / 18, 0% | 17 / 17 / 18, 0% | 17 / 17 / 18, 0% | 1 / 1 / 0 | 3 |
+| svg | 2,500 | 4,999 | 27 / 34 / 36, 56% | 18 / 25 / 27, 3% | 17 / 19 / 21, 0% | 7 / 7 / 7 | 36 |
+| canvas | 2,500 | 4,999 | 17 / 18 / 18, 0% | 17 / 17 / 18, 0% | 17 / 17 / 18, 0% | 2 / 1 / 0 | 6 |
+| svg | 5,000 | 9,999 | 48 / 63 / 73, 100% | 35 / 49 / 58, 100% | 33 / 39 / 47, 98% | 14 / 14 / 14 | 75 |
+| canvas | 5,000 | 9,999 | 17 / 18 / 19, 0% | 17 / 17 / 18, 0% | 17 / 18 / 18, 0% | 3 / 1 / 0 | 9 |
+| canvas | 10,000 | 19,999 | 17 / 18 / 20, 0% | 17 / 18 / 19, 0% | 17 / 18 / 18, 0% | 5 / 1 / 0 | 15 |
+
+### What was on screen
+
+The SVG holds every element whatever the view. The canvas plans each frame: it leaves out what is out of view and merges subtrees too small to tell apart. Median for each frame, with the most in any frame in brackets.
+
+| Tips | Nodes | SVG elements | Canvas, pan: nodes drawn | Canvas, zoom: nodes drawn, names | Canvas, read: nodes drawn, names |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 125 | 249 | 875 | 249 (249) | 181 (249), 0 (55) | 113 (115), 40 (41) |
+| 250 | 499 | 1,750 | 483 (499) | 243 (499), 0 (55) | 109 (111), 40 (41) |
+| 500 | 999 | 3,500 | 949 (999) | 332 (999), 0 (55) | 114 (116), 40 (41) |
+| 1,000 | 1,999 | 7,000 | 1,309 (1,389) | 460 (1,999), 0 (55) | 112 (113), 40 (41) |
+| 2,500 | 4,999 | 17,500 | 2,320 (2,479) | 718 (2,686), 0 (55) | 115 (116), 39 (41) |
+| 5,000 | 9,999 | 35,000 | 2,369 (2,519) | 1,010 (3,171), 0 (53) | 115 (116), 40 (41) |
+| 10,000 | 19,999 | not run | 2,499 (2,679) | 1,429 (3,321), 0 (55) | 112 (114), 40 (41) |
 
 ## Chrome 157.0.8103.40, headless, 2026-11-11
 
