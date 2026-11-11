@@ -1,0 +1,151 @@
+/* The example site's own page styles. The trees are styled by @captiveorigins/onetaxonomy-react/styles.css. */
+:root {
+  --ink: #4c312c;
+  --text: #1d2330;
+  --muted: #5b6577;
+  --surface: #ffffff;
+  --panel: #fbf7f4;
+  --border: #eaddd6;
+  --link: #a65f20;
+  --focus: #a65f20;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f1e4dd;
+    --text: #eef1f6;
+    --muted: #aab3c2;
+    --surface: #12151c;
+    --panel: #1a1f29;
+    --border: #343b49;
+    --link: #f0a868;
+    --focus: #f0a868;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--surface);
+}
+a {
+  color: var(--link);
+}
+:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+.skip {
+  position: absolute;
+  left: -999rem;
+}
+.skip:focus {
+  left: 1rem;
+  top: 1rem;
+  padding: 0.5rem 0.75rem;
+  background: var(--surface);
+  z-index: 1;
+}
+.site-header,
+.site-footer,
+main {
+  max-width: 60rem;
+  margin: 0 auto;
+  padding: 1rem 1.25rem;
+}
+.site-header {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.5rem;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--border);
+}
+.site-header nav {
+  display: flex;
+  gap: 1.25rem;
+}
+.site-name {
+  font-weight: 700;
+  color: var(--ink);
+  text-decoration: none;
+}
+.site-footer {
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+h1 {
+  margin: 0.5rem 0;
+  font-size: 1.6rem;
+  line-height: 1.25;
+  color: var(--ink);
+}
+h2 {
+  margin: 1.75rem 0 0.5rem;
+  font-size: 1.15rem;
+  color: var(--ink);
+}
+.lede {
+  margin: 0 0 1rem;
+  color: var(--muted);
+  max-width: 44rem;
+}
+.view-list {
+  list-style: none;
+  margin: 1rem 0;
+  padding: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+.view-list li {
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  background: var(--panel);
+}
+.view-list a {
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+.view-list p {
+  margin: 0.25rem 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.notice {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--border);
+  border-left: 0.3rem solid #b45309;
+  border-radius: 0.25rem;
+  background: var(--panel);
+}
+.figure {
+  margin: 1rem 0;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 0.5rem;
+  overflow-x: auto;
+}
+.figure svg {
+  display: block;
+  width: 100%;
+  /* Small trees aren't blown up to the page's width; on a narrow screen the drawing keeps a readable size and scrolls. */
+  max-width: var(--widest, 100%);
+  min-width: 32rem;
+  height: auto;
+}
+.about {
+  margin: 0;
+  padding-left: 1.2rem;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+.about li + li {
+  margin-top: 0.25rem;
+}

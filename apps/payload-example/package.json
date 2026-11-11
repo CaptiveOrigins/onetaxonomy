@@ -1,0 +1,32 @@
+{
+  "name": "@captiveorigins/onetaxonomy-payload-example",
+  "private": true,
+  "type": "module",
+  "description": "A small Payload site that uses the OneTaxonomy plugin: a seeded snapshot, a published view drawn on a public page, and the plugin's API behind Payload's sign-in.",
+  "scripts": {
+    "dev": "node scripts/run.mjs dev",
+    "site:build": "node scripts/run.mjs build",
+    "start": "node scripts/run.mjs start",
+    "smoke": "node scripts/smoke.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@captiveorigins/onetaxonomy-core": "workspace:^",
+    "@captiveorigins/onetaxonomy-react": "workspace:^",
+    "@captiveorigins/payload-plugin-onetaxonomy": "workspace:^",
+    "@payloadcms/db-mongodb": "3.93.0",
+    "@payloadcms/next": "3.93.0",
+    "graphql": "^16.15.0",
+    "mongodb-memory-server": "^11.3.0",
+    "next": "^16.4.6",
+    "payload": "3.93.0",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "typescript": "^5.9.0"
+  }
+}
