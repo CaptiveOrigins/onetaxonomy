@@ -2,6 +2,37 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: people by id in proposals
+
+Scope: `packages/payload` (`src/proposals.ts`, `src/types.ts`) and `apps/payload-example`. The plugin promised that an accepted proposal sealed a name the host chose. It now promises that only an opaque person id is stored and sealed, and that a name is looked up when shown and never kept. This replaces the lines about handles in the two audits below ("example Payload site" and "Payload plugin part 4"). Plugin tests went from 139 to 142, all unit tests from 523 to 526, the example's smoke checks from 46 to 47.
+
+### Covered
+
+- **Only the id is stored** (`proposals.test.ts`, "making a proposal"): a new proposal's author is the person id the site gives, whatever the request sent, including a forged `authorName`. The document read straight from the database has no `authorName` and none of the test's made-up names.
+- **A name or an email address is never an id:** fourteen values are refused on create (empty, spaces, a full name, an email address, leading or trailing space, a leading hyphen, a slash, a no-break space, 65 characters, a number, null, undefined, an object), and a throw too. Each stores nothing, and the log line for each doesn't repeat the value.
+- **Names are looked up, not kept:** a name changed at the site shows on the next read, for the author and for another reader, with the proposal's checksum unchanged; one list asks once per person per request; a lookup that throws or gives nothing shows the id alone; the preview carries the same name.
+- **Accepting seals ids:** the new version's source record and `derivedFrom.proposal` hold the author's and the manager's ids, and the whole stored snapshot document matches none of the made-up names and has no `@`. Accepting is refused, and stores nothing, when the manager's id throws or is a name.
+- **When someone leaves:** after the site stops giving a name, an accepted proposal still reads, under the id alone, and nothing stored or sealed names the person; open proposals are taken back and deleted by server code as before.
+- **Over HTTP** (`http.test.ts`): a proposal posted with a forged author is stored under the sender's id; the accepted snapshot's record holds the two ids.
+- **No tenants, defaults** (`proposals-plain.test.ts`): with no `personId`, the id is the user document's id, and with no `displayName` no name is shown.
+- **The example site** (`scripts/smoke.mjs`): a member's proposal is stored under their account id and shows their handle; another member reads the handle and no email address; version 2 records both people by id and holds no handle and no email address; a handle changed by the curator shows on the accepted proposal at once, and version 2's checksum is unchanged and still verifies. Passed on `next dev` and on the built site.
+
+### Checked by breaking it
+
+Eight deliberate breaks in `src/proposals.ts`, one at a time, each failed at least one test: the pattern not checked; the refused value added to the log line; `authorName` made a stored field; accept and create each taking the host's value unchecked; a failed name lookup not caught; no per-request cache; the preview without the name.
+
+### Gaps left
+
+- **A one-word handle passes the pattern.** "morgan" is a valid id. The plugin can't tell, the README says so, and no test can close it.
+- **Free text is sealed as written:** the title, the moves' notes and the manager's note. Nothing screens them for names. The README says so.
+- **More than one auth collection:** the default id is the user document's id, which two collections can share. The README says to give your own; not tested.
+- **The link to the user document:** an accepted proposal keeps its `author` and `decidedBy` relationships, and no code can change them. What a site does with the user document afterwards is its own; not tested here.
+- **Postgres and SQLite:** as before, not run.
+
+### Left out as overkill
+
+- Every character class of the pattern: the fourteen refused values cover each rule it has, and the accepted forms are used throughout the tests.
+
 ## 2026-11-11: where names go in the drawing
 
 Scope: a defect found while looking at the example site's pages. In rectangular layouts an inner node's name was drawn 6 units above the node, and a child's branch one row apart ran through it ("Reptilia" in the amniotes classes view). A folded branch's name started on top of its triangle. Both are fixed in `packages/react/src/labelPlace.ts`, used by the SVG and the canvas. React tests went from 119 to 132.

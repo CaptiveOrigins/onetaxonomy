@@ -31,8 +31,13 @@ export default buildConfig({
       },
       locale: { default: 'en' },
       proposals: {
-        // The public handle, never the email address: an accepted proposal keeps this name for good.
-        nameOf: ({ req }) => String((req.user as { handle?: unknown } | null)?.handle ?? ''),
+        // `personId` is left at its default, the account's id: that is all a proposal stores and all an accepted one
+        // seals. The handle is looked up here each time a proposal is shown. A member can't read other accounts, so
+        // this read is trusted and asks for the handle alone, never the email address.
+        displayName: async ({ req, personId }) => {
+          const person = await req.payload.findByID({ collection: 'users', id: personId, depth: 0, select: { handle: true }, overrideAccess: true, disableErrors: true, req })
+          return (person as { handle?: string } | null)?.handle
+        },
       },
     }),
   ],

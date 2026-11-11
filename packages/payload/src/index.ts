@@ -40,6 +40,7 @@ export {
 export {
   acceptProposal,
   declineProposal,
+  PERSON_ID,
   previewProposal,
   proposalChecksum,
   proposalsCollection,

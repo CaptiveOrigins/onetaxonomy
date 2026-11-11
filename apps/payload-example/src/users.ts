@@ -13,7 +13,8 @@ const selfOrCurator = ({ req }: { req: { user?: unknown } }) => {
 
 /**
  * The site's accounts. Two roles: a curator manages the taxonomy and decides on proposals; a member reads and makes
- * proposals. `handle` is the public name a person's proposals carry, so it is not their email address.
+ * proposals. `handle` is the public name shown beside a person's proposals, so it is not their email address. Proposals store the
+ * account's id; the handle is looked up when one is shown.
  */
 export const users: CollectionConfig = {
   slug: 'users',
@@ -33,7 +34,7 @@ export const users: CollectionConfig = {
       type: 'text',
       required: true,
       unique: true,
-      admin: { description: 'Shown on your proposals. If a curator accepts one, this name is kept in the new snapshot version and can\'t be taken out later.' },
+      admin: { description: 'Shown beside your proposals to people who can read them. Change it and the new name shows everywhere at once. It is not stored in any snapshot.' },
     },
     {
       name: 'role',

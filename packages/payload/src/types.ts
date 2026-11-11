@@ -64,12 +64,23 @@ export type OneTaxonomyPluginOptions = {
 
 export type ProposalOptions = {
   /**
-   * The name a person's proposals and decisions carry. An accepted proposal's author and the curator who accepted it
-   * are sealed into the new snapshot under these names and can't be taken out later, so give a name people are happy
-   * to have published: a public handle, not an email address. Default `User <id>`. A throw, or anything but a
-   * non-empty string, stops the action.
+   * The id a person's proposals and decisions carry: an opaque reference to their account, never their name. An
+   * accepted proposal's author and the manager who accepted it are sealed into the new snapshot under these ids,
+   * inside its checksum, and can't be taken out later. An id that means nothing on its own leaves nothing personal
+   * there when the person goes. Default: the signed-in user's document id. A site with more than one auth collection
+   * should give its own, since two collections can hold the same id.
+   *
+   * It must be 1 to 64 characters: letters, digits, `.`, `_`, `:` and `-`, starting with a letter or digit. So an
+   * email address or a name with a space in it is refused. The plugin can't tell a handle from an id beyond that:
+   * don't give one. A throw, or anything else, stops the action and nothing is saved.
    */
-  nameOf?: (args: { req: PayloadRequest }) => string | Promise<string>
+  personId?: (args: { req: PayloadRequest }) => string | Promise<string>
+  /**
+   * The name to show this requester for a person id, looked up each time a proposal is shown. It is never stored and
+   * never sealed, so changing or removing a name changes what is shown from then on. Give nothing (or throw) when
+   * there is no name to show: the id is shown alone. Without this option only ids are shown.
+   */
+  displayName?: (args: { req: PayloadRequest; personId: string }) => string | null | undefined | Promise<string | null | undefined>
   /** Most moves one proposal may hold. Default 500. */
   maxMoves?: number
   /** Most proposals one person may keep at a time, not counting accepted ones. Default 200. */
@@ -108,7 +119,7 @@ export type ResolvedOptions = {
   limits: { maxResults: number; maxDepth: number; maxMrcaNodes: number; maxNodes: number; maxCoverageIds: number }
   admin: { group: string }
   imports: { uploads: ImportOptions['uploads'] | null; fetch: ImportOptions['fetch'] | null; maxBytes: number; staleAfterMs: number; runOnCreate: boolean } | null
-  proposals: { nameOf: NonNullable<ProposalOptions['nameOf']>; maxMoves: number; maxPerUser: number } | null
+  proposals: { personId: NonNullable<ProposalOptions['personId']>; displayName: ProposalOptions['displayName'] | null; maxMoves: number; maxPerUser: number } | null
 }
 
 export const CUSTOM_KEY = 'onetaxonomy'
@@ -139,7 +150,8 @@ export function resolveOptions(o: OneTaxonomyPluginOptions = {}): ResolvedOption
       : null,
     proposals: o.proposals
       ? {
-          nameOf: (o.proposals === true ? undefined : o.proposals.nameOf) ?? (({ req }) => `User ${String(req.user?.id ?? '')}`),
+          personId: (o.proposals === true ? undefined : o.proposals.personId) ?? (({ req }) => (req.user ? String(req.user.id) : '')),
+          displayName: (o.proposals === true ? undefined : o.proposals.displayName) ?? null,
           maxMoves: positive(o.proposals === true ? undefined : o.proposals.maxMoves, 500),
           maxPerUser: positive(o.proposals === true ? undefined : o.proposals.maxPerUser, 200),
         }

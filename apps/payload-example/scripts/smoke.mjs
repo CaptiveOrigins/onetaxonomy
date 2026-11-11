@@ -168,7 +168,7 @@ async function checks() {
   check('the member\'s cookie sent from another site counts for nothing', elsewhere.status === 403, { status: elsewhere.status })
   const made = await call('POST', '/api/taxonomy-proposals?depth=0', { as: member, origin: site, body: { snapshot: snap, proposal: { ...draft, author: 'Somebody Else' } } })
   const proposal = made.json?.doc
-  check('the member\'s proposal is stored private, under their handle', made.status === 201 && proposal?.status === 'private' && proposal?.proposal?.author === 'Morgan Member', made.json?.errors ?? { status: made.status, author: proposal?.proposal?.author })
+  check('the member\'s proposal is stored private, under their account\'s id, with their handle shown beside it', made.status === 201 && proposal?.status === 'private' && Boolean(me?.id) && proposal?.proposal?.author === String(me?.id) && proposal?.authorName === 'Morgan Member', made.json?.errors ?? { status: made.status, author: proposal?.proposal?.author, authorName: proposal?.authorName })
   check('the stored proposal does not hold the member\'s email address', Boolean(proposal) && !JSON.stringify(proposal).includes('@example.org'))
   check('a private proposal is not there for the curator', (await get(`/api/taxonomy-proposals/${proposal?.id}/preview`, curator)).status === 404)
   const shared = await call('PATCH', `/api/taxonomy-proposals/${proposal?.id}?depth=0`, { as: member, origin: site, body: { status: 'shared' } })
@@ -180,13 +180,14 @@ async function checks() {
   check('the curator adds an account', second.status === 201 && second.json?.doc?.role === 'member', second.json?.errors ?? { status: second.status })
   const sam = await signIn('second@example.org')
   const seenBySam = await get(`/api/taxonomy-proposals/${proposal?.id}`, sam)
-  check('another member reads the shared proposal by handle, without the author\'s email address', seenBySam.status === 200 && seenBySam.text.includes('Morgan Member') && !seenBySam.text.includes('member@example.org'), { status: seenBySam.status })
+  check('another member reads the shared proposal with the author\'s handle, and without their email address', seenBySam.status === 200 && seenBySam.json?.authorName === 'Morgan Member' && !seenBySam.text.includes('member@example.org'), { status: seenBySam.status, authorName: seenBySam.json?.authorName })
   const checksum = shared.json?.doc?.checksum
   for (const [who, as] of [['its author', member], ['another member', sam]]) {
     check(`${who} cannot accept it`, (await call('POST', `/api/taxonomy-proposals/${proposal?.id}/accept`, { as, origin: site, body: { version: '2', checksum } })).status === 404)
   }
 
-  // The curator previews and accepts: a new staged version, sealed, naming both people by handle.
+  // The curator previews and accepts: a new staged version, sealed, recording both people by id and neither by name.
+  const curatorId = (await get('/api/users/me', curator)).json?.user?.id
   const preview = await get(`/api/taxonomy-proposals/${proposal?.id}/preview`, curator)
   check('the curator previews it and it can be accepted', preview.status === 200 && preview.json?.acceptable === true, preview.json?.problems ?? { status: preview.status })
   const accepted = await call('POST', `/api/taxonomy-proposals/${proposal?.id}/accept`, { as: curator, origin: site, body: { version: '2', checksum } })
@@ -195,8 +196,14 @@ async function checks() {
   const content = (await get(`/api/taxonomy-snapshots/${next?.doc}/export`, curator)).json
   check('version 2 is sealed and its checksum holds', Boolean(content) && verifySnapshot(content))
   const record = content?.derivedFrom?.proposal
-  check('version 2 names the proposer and the curator by handle', record?.author === 'Morgan Member' && record?.acceptedBy === 'Cara Curator', record)
-  check('version 2 holds no email address', Boolean(content) && !JSON.stringify(content).includes('@example.org'))
+  check('version 2 records the proposer and the curator by id', Boolean(me?.id) && Boolean(curatorId) && record?.author === String(me?.id) && record?.acceptedBy === String(curatorId), record)
+  const sealed = JSON.stringify(content ?? '')
+  check('version 2 holds no handle and no email address', Boolean(content) && !sealed.includes('Morgan Member') && !sealed.includes('Cara Curator') && !sealed.includes('@example.org'))
+  // The handle is looked up when shown: a new one shows at once, and nothing sealed changes.
+  await call('PATCH', `/api/users/${me?.id}`, { as: curator, origin: site, body: { handle: 'Morgan Renamed' } })
+  const renamed = await get(`/api/taxonomy-proposals/${proposal?.id}`, sam)
+  const again = (await get(`/api/taxonomy-snapshots/${next?.doc}/export`, curator)).json
+  check('a changed handle shows on the accepted proposal at once, and version 2 is unchanged', renamed.json?.authorName === 'Morgan Renamed' && Boolean(content?.checksum) && again?.checksum === content?.checksum && verifySnapshot(again), { authorName: renamed.json?.authorName })
   check('version 2 is not public until the curator publishes it', (await get(`/api/taxonomy-snapshots/${next?.doc}/export`)).status === 404 && ((await get('/api/taxonomy-snapshots?depth=0')).json?.docs ?? []).length === 1)
   for (const [who, as] of [['its author', member], ['the curator', curator]]) {
     check(`an accepted proposal can't be deleted by ${who}`, (await call('DELETE', `/api/taxonomy-proposals/${proposal?.id}`, { as, origin: site })).status >= 400)

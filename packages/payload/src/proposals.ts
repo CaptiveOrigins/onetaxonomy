@@ -166,27 +166,62 @@ function hierarchies(index: DatasetIndex, proposal: Proposal): { before: TreeInd
   return { before: index.phylogeny(b.id), after: indexPhylogeny(applyToPhylogeny(p, proposal)) }
 }
 
-class NameError extends Error {}
+class PersonIdError extends Error {}
 
-/** The requester's name as the host gives it. Anything but a usable string stops the action: a record needs its name. */
-async function nameFor(opts: ResolvedOptions, req: PayloadRequest): Promise<string> {
-  let name: unknown
+/**
+ * What a person id may look like: 1 to 64 letters, digits, `.`, `_`, `:` and `-`, starting with a letter or digit.
+ * No space and no `@`, so a full name or an email address never passes.
+ */
+export const PERSON_ID = /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/
+
+/**
+ * The requester's id for the record, as the host gives it. It is the only thing about a person that an accepted
+ * proposal seals into a snapshot, so anything that isn't a plain id stops the action. The value is never logged: a
+ * refused one may be somebody's name.
+ */
+async function personIdFor(opts: ResolvedOptions, req: PayloadRequest): Promise<string> {
+  let id: unknown
+  let threw = false
   try {
-    name = await opts.proposals!.nameOf({ req })
+    id = await opts.proposals!.personId({ req })
   } catch {
-    name = undefined
+    threw = true
   }
-  const usable = text(name, MAX.name)
-  if (!usable) throw new NameError('This site couldn\'t give your name for the record, so nothing was saved. Ask the site\'s owner.')
-  return usable
+  if (typeof id === 'string' && PERSON_ID.test(id)) return id
+  req.payload.logger.error(
+    threw
+      ? 'OneTaxonomy proposals: proposals.personId threw, so nothing was saved.'
+      : 'OneTaxonomy proposals: proposals.personId gave something that isn\'t an id (1 to 64 letters, digits, ".", "_", ":" or "-", starting with a letter or digit), so nothing was saved. Give an opaque id, never a name or an email address.',
+  )
+  throw new PersonIdError('This site couldn\'t give your id for the record, so nothing was saved. Ask the site\'s owner.')
 }
 
-const nameInHook = async (opts: ResolvedOptions, req: PayloadRequest): Promise<string> => {
+const personIdInHook = async (opts: ResolvedOptions, req: PayloadRequest): Promise<string> => {
   try {
-    return await nameFor(opts, req)
+    return await personIdFor(opts, req)
   } catch (error) {
     throw new APIError((error as Error).message, 500, undefined, true)
   }
+}
+
+// One lookup per person per request, however many proposals of theirs a list holds.
+const shownNames = new WeakMap<PayloadRequest, Map<string, Promise<string | undefined>>>()
+
+/**
+ * The name to show the requester for a person id, from the host's `proposals.displayName`, asked now and never
+ * stored. Undefined when the host has no name to show, has no lookup, or the lookup fails: the id is shown alone.
+ */
+function displayNameFor(opts: ResolvedOptions, req: PayloadRequest, personId: unknown): Promise<string | undefined> {
+  const lookup = opts.proposals?.displayName
+  if (!lookup || typeof personId !== 'string' || personId === '') return Promise.resolve(undefined)
+  let names = shownNames.get(req)
+  if (!names) shownNames.set(req, (names = new Map()))
+  let name = names.get(personId)
+  if (!name) {
+    name = (async () => text(await lookup({ req, personId }), MAX.name))().catch(() => undefined)
+    names.set(personId, name)
+  }
+  return name
 }
 
 /**
@@ -244,7 +279,7 @@ const proposalBeforeChange = (opts: ResolvedOptions): CollectionBeforeChangeHook
     if (field) kept.push({ [field]: { equals: tenant ?? null } })
     const { totalDocs } = await req.payload.count({ collection: opts.slugs.proposals as never, where: { and: kept }, req, overrideAccess: true })
     if (totalDocs >= po.maxPerUser) fail(`You have ${totalDocs} proposals, the most this site keeps for one person. Delete one you no longer need first.`)
-    const proposal = assemble(newId(), await nameInHook(opts, req), new Date().toISOString(), w)
+    const proposal = assemble(newId(), await personIdInHook(opts, req), new Date().toISOString(), w)
     mustFit(over!.index, proposal)
     return { ...data, ...derived(proposal), author: user, status: 'private', decidedBy: null, decidedAt: null, decisionNote: null, acceptedInto: null }
   }
@@ -258,7 +293,7 @@ const proposalBeforeChange = (opts: ResolvedOptions): CollectionBeforeChangeHook
   for (const f of DECISION) if (f in data && stamp(data[f]) !== stamp(originalDoc[f])) fail(DECIDED_BY_ACTION)
   if (to !== from && (to === 'accepted' || to === 'declined')) fail(DECIDED_BY_ACTION)
 
-  let next = 'proposal' in data ? assemble(original.id, original.author, original.created, written(asObject(data.proposal, 'proposal'), po.maxMoves)) : original
+  const next = 'proposal' in data ? assemble(original.id, original.author, original.created, written(asObject(data.proposal, 'proposal'), po.maxMoves)) : original
   const changed = !same(next, original)
   if (from === 'accepted' && (changed || to !== from)) fail('An accepted proposal is part of a snapshot version\'s record and can\'t change.')
   if (to !== from && !TRANSITIONS[from]?.includes(to)) fail(`A proposal can't go from ${from} to ${to}.`)
@@ -267,8 +302,6 @@ const proposalBeforeChange = (opts: ResolvedOptions): CollectionBeforeChangeHook
 
   const sharing = to === 'shared' && from !== 'shared'
   if (changed || sharing) {
-    // The author's name is taken again when they save or share, so a proposal carries the name they use now.
-    if (req.user && idOf(req.user.id) === stamp(originalDoc.author)) next = { ...next, author: await nameInHook(opts, req) }
     const snapshotDoc = idOf(originalDoc.snapshot)
     if (changed) {
       const over = snapshotDoc ? await snapshotFor(req, opts, snapshotDoc, field ? idOf(originalDoc[field]) : undefined) : null
@@ -327,7 +360,10 @@ export function proposalsCollection(opts: ResolvedOptions): CollectionConfig {
         name: 'proposal',
         type: 'json',
         required: true,
-        admin: { description: 'title, notes, base { kind, id, version } and moves [{ node, from, to, note }]. Its id, author and date are set when it is made. It can be edited while it is private.' },
+        admin: {
+          description:
+            'title, notes, base { kind, id, version } and moves [{ node, from, to, note }]. Its id, its author (an id, not a name) and its date are set when it is made. It can be edited while it is private. If it is accepted, its title and notes become part of that snapshot version for good, so leave personal details out of them.',
+        },
       },
       {
         name: 'status',
@@ -341,6 +377,13 @@ export function proposalsCollection(opts: ResolvedOptions): CollectionConfig {
       { name: 'proposalId', type: 'text', index: true, admin: ro() },
       { name: 'checksum', type: 'text', admin: ro('SHA-256 of the proposal. Accepting names it, so what is accepted is what was looked at.') },
       { name: 'author', type: 'text', index: true, admin: { position: 'sidebar', ...ro('The signed-in user who made it.') } },
+      {
+        name: 'authorName',
+        type: 'text',
+        virtual: true,
+        admin: { position: 'sidebar', ...ro('The author\'s name as this site shows it now. Looked up each time and never stored.') },
+        hooks: { afterRead: [async ({ siblingData, req }) => (await displayNameFor(opts, req, (siblingData?.proposal as Proposal | undefined)?.author)) ?? null] },
+      },
       { name: 'decisionNote', type: 'textarea', admin: ro('What the manager said when deciding.') },
       { name: 'decidedAt', type: 'date', admin: { position: 'sidebar', ...ro() } },
       { name: 'decidedBy', type: 'text', access: { read: manager }, admin: { position: 'sidebar', ...ro('The signed-in user who accepted or declined it.') } },
@@ -357,7 +400,19 @@ export function proposalsCollection(opts: ResolvedOptions): CollectionConfig {
 
 type ProposalDoc = { id: string | number; proposal: Proposal; status: ProposalStatus; checksum: string; snapshot?: unknown; author?: string; [tenant: string]: unknown }
 
-export type ProposalRef = { doc: string; id: Id; title: string; author: string; created: string; status: ProposalStatus; checksum: string; base: ProposalBase }
+export type ProposalRef = {
+  doc: string
+  id: Id
+  title: string
+  /** The author's person id, as sealed if the proposal is accepted. */
+  author: string
+  /** The author's name as the host shows it to this requester now (`proposals.displayName`). Left out when there is none. */
+  authorName?: string
+  created: string
+  status: ProposalStatus
+  checksum: string
+  base: ProposalBase
+}
 
 export type ProposalPreview = {
   proposal: ProposalRef
@@ -430,6 +485,7 @@ export async function previewProposal(req: PayloadRequest, id: string, query: { 
     }
     const notes = new Map(doc.proposal.moves.map((m) => [m.node, m.note]))
     const head = await viewSourceOf(req, opts, snapshotDoc)
+    const authorName = await displayNameFor(opts, req, doc.proposal.author)
     const why =
       doc.status === 'accepted'
         ? 'It was already accepted.'
@@ -447,7 +503,7 @@ export async function previewProposal(req: PayloadRequest, id: string, query: { 
     return {
       ok: true,
       body: {
-        proposal: refOf(doc),
+        proposal: { ...refOf(doc), ...(authorName ? { authorName } : {}) },
         snapshot: loaded.ref,
         acceptable: why === undefined,
         ...(why ? { notAcceptable: why } : {}),
@@ -479,8 +535,8 @@ const writeConflict = (error: unknown) => {
  * Accepts a shared proposal on a classification, as a manager in its tenant (404 for anyone else). It makes a **new
  * staged snapshot version** with core's `acceptIntoSnapshot`, seals and checks it, and marks the proposal accepted.
  * The published snapshot it was made from is not changed, and readers see nothing new until a manager publishes the
- * new version. The proposer's and the manager's names, as `proposals.nameOf` gives them, are sealed into the new
- * version's source record.
+ * new version. The proposer's and the manager's person ids, as `proposals.personId` gives them, are sealed into the
+ * new version's source record. Their names are not: `proposals.displayName` gives those when a proposal is shown.
  *
  * `body.version` names the new version. `body.checksum` is the proposal's checksum as the manager last saw it (the
  * preview gives it): if the proposal has changed since, nothing is accepted. `createdAt` (default now) and `note`
@@ -523,7 +579,7 @@ export async function acceptProposal(req: PayloadRequest, id: string, body: unkn
 
     let acceptedBy: string
     try {
-      acceptedBy = await nameFor(opts, req)
+      acceptedBy = await personIdFor(opts, req)
     } catch (error) {
       return { ok: false, status: 500, error: (error as Error).message }
     }

@@ -1,8 +1,8 @@
 import { verifySnapshot, type DatasetSnapshot, type Proposal } from '@captiveorigins/onetaxonomy-core'
 import type { Payload, TypedUser } from 'payload'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
-import { oneTaxonomy, proposalChecksum } from '../src'
+import { oneTaxonomy, PERSON_ID, proposalChecksum } from '../src'
 import { access, callEndpoint, makeUser, roleOf, sealed, startPayload, tenantsCollection, usersCollection } from './helpers'
 
 const SNAPSHOTS = 'taxonomy-snapshots'
@@ -23,10 +23,17 @@ let thrower: TypedUser
 let snapA: string
 let snapB: string
 
-// Made-up names. The host gives them; a test can change one, or make the lookup fail.
-const names = new Map<string, string>()
+// Made-up people. The host gives each signed-in user a person id, and looks a name up for a person id when one is
+// shown. A test can change either, or make either lookup fail.
+const ids = new Map<string, unknown>() // user document id -> person id
+const names = new Map<string, string>() // person id -> the name shown now
+let idFails = false
 let nameFails = false
-// Runs once, inside the next name lookup: in an accept, that is after the proposal was read and before it is claimed.
+let nameLookups: string[] = []
+const pid = (user: TypedUser) => ids.get(String(user.id)) as string
+// Every made-up name, to check that none of them is ever stored or sealed.
+const EVERY_NAME = /Ann K|Ben R|Bo T|Keeper|Cara |Dev Cur|Eli Cur|Forged|@/
+// Runs once, inside the next id lookup: in an accept, that is after the proposal was read and before it is claimed.
 let meanwhile: (() => Promise<unknown>) | null = null
 
 const tenantOfUser = (user: unknown) => {
@@ -69,12 +76,17 @@ beforeAll(async () => {
         },
         tenant: { collection: 'tenants', resolve: ({ req }) => tenantOfUser(req.user) },
         proposals: {
-          nameOf: async ({ req }) => {
-            if (nameFails) throw new Error('directory down')
+          personId: async ({ req }) => {
+            if (idFails) throw new Error('directory down')
             const run = meanwhile
             meanwhile = null
             await run?.()
-            return names.get(String(req.user?.id)) ?? ''
+            return ids.get(String(req.user?.id)) as string
+          },
+          displayName: ({ personId }) => {
+            nameLookups.push(personId)
+            if (nameFails) throw new Error('directory down')
+            return names.get(personId)
           },
           maxMoves: 3,
           maxPerUser: 5,
@@ -93,8 +105,11 @@ beforeAll(async () => {
   readerB = await makeUser(payload, 'reader', { tenant: tenantB })
   noTenant = await makeUser(payload, 'manager')
   thrower = await makeUser(payload, 'thrower', { tenant: tenantA })
-  for (const [user, name] of [[managerA, 'Cara Curator'], [managerA2, 'Dev Curator'], [managerB, 'Eli Curator'], [ann, 'Ann K.'], [ben, 'Ben R.'], [readerB, 'Bo T.'], [noTenant, 'No Tenant'], [thrower, 'Thrower'], [viewerA, 'Vi Viewer']] as const)
-    names.set(String(user.id), name)
+  const people = [[managerA, 'Cara Curator'], [managerA2, 'Dev Curator'], [managerB, 'Eli Curator'], [ann, 'Ann K.'], [ben, 'Ben R.'], [readerB, 'Bo T.'], [noTenant, 'No Tenant'], [thrower, 'Thrower'], [viewerA, 'Vi Viewer']] as const
+  people.forEach(([user, name], i) => {
+    ids.set(String(user.id), `P-${1001 + i}`)
+    names.set(`P-${1001 + i}`, name)
+  })
   for (const [user, set] of [[managerA, (id: string) => (snapA = id)], [managerB, (id: string) => (snapB = id)]] as const) {
     const doc = (await payload.create({ collection: SNAPSHOTS as never, data: { snapshot: sealed.amniotes() } as never, user, overrideAccess: false })) as Doc
     await payload.update({ collection: SNAPSHOTS as never, id: doc.id, data: { status: 'published' } as never, user, overrideAccess: false })
@@ -104,10 +119,11 @@ beforeAll(async () => {
 afterAll(async () => stop?.())
 
 describe('making a proposal', () => {
-  it('stores it as its author\'s, private, with the plugin\'s own id, name, date and checksum', async () => {
+  it('stores it as its author\'s, private, with the plugin\'s own id, date and checksum, under their person id and not their name', async () => {
     const before = Date.now()
     const doc = await propose(ann, {
       author: String(managerA.id),
+      authorName: 'Forged Name',
       proposalId: 'forged',
       checksum: 'sha256:forged',
       title: 'Forged title',
@@ -118,8 +134,15 @@ describe('making a proposal', () => {
     expect(idOf(doc.tenant)).toBe(tenantA)
     expect(String(idOf(doc.snapshot))).toBe(snapA)
     expect(p.id).toMatch(/^p-[0-9a-f]{12}$/)
-    expect(p).toEqual({ id: p.id, title: 'Birds are reptiles', author: 'Ann K.', created: p.created, notes: 'Two lines of evidence.', base: { kind: 'classification', id: 'traditional', version: '1' }, moves: [birds] })
+    expect(p).toEqual({ id: p.id, title: 'Birds are reptiles', author: 'P-1004', created: p.created, notes: 'Two lines of evidence.', base: { kind: 'classification', id: 'traditional', version: '1' }, moves: [birds] })
+    expect(pid(ann)).toBe('P-1004')
     expect(Date.parse(p.created)).toBeGreaterThanOrEqual(before)
+    // The name is looked up for whoever reads it, and isn't in what is stored.
+    expect(doc.authorName).toBe('Ann K.')
+    const kept = await payload.db.findOne({ collection: PROPOSALS as never, where: { id: { equals: doc.id } } })
+    expect(kept).toBeTruthy()
+    expect(kept).not.toHaveProperty('authorName')
+    expect(JSON.stringify(kept)).not.toMatch(EVERY_NAME)
     for (const f of ['decidedBy', 'decidedAt', 'decisionNote', 'acceptedInto']) expect((await stored(doc.id))[f] ?? null).toBeNull()
     await remove(doc.id, ann)
   })
@@ -171,18 +194,29 @@ describe('making a proposal', () => {
     await payload.delete({ collection: SNAPSHOTS as never, id: staged.id })
   })
 
-  it('stops when the site can\'t give the person\'s name', async () => {
+  it('stops when the site can\'t give the person\'s id, or gives a name or an email address instead', async () => {
     const before = (await payload.count({ collection: PROPOSALS as never })).totalDocs
-    nameFails = true
+    const logged = vi.spyOn(payload.logger, 'error').mockImplementation(() => undefined)
     try {
-      await expect(propose(ann)).rejects.toMatchObject({ status: 500, message: expect.stringMatching(/couldn't give your name/) })
+      idFails = true
+      await expect(propose(ann)).rejects.toMatchObject({ status: 500, message: expect.stringMatching(/couldn't give your id/) })
+      idFails = false
+      const refused = ['', '   ', 'Ann Keeper', 'ann.keeper@example.org', ' P-1004', 'P-1004 ', '-P-1004', 'P/1004', 'Ann\u00a0K', 'x'.repeat(65), 1004, null, undefined, { id: 'P-1004' }]
+      for (const bad of refused) {
+        ids.set(String(ann.id), bad)
+        await expect(propose(ann), JSON.stringify(bad)).rejects.toMatchObject({ status: 500, message: expect.stringMatching(/couldn't give your id/) })
+      }
+      // The log says what went wrong each time, and never repeats the value: it may be somebody's name.
+      expect(logged).toHaveBeenCalledTimes(refused.length + 1)
+      expect(JSON.stringify(logged.mock.calls)).not.toMatch(/Ann|example\.org|1004/)
+      expect(JSON.stringify(logged.mock.calls)).toMatch(/never a name or an email address/)
     } finally {
-      nameFails = false
+      idFails = false
+      ids.set(String(ann.id), 'P-1004')
+      logged.mockRestore()
     }
-    names.set(String(ann.id), '   ')
-    await expect(propose(ann)).rejects.toThrow(/couldn't give your name/)
-    names.set(String(ann.id), 'Ann K.')
     expect((await payload.count({ collection: PROPOSALS as never })).totalDocs).toBe(before)
+    for (const ok of ['P-1004', '42', '6730ab12cd34ef56ab78cd90', 'users:6730ab12', 'a1b2c3d4-0000-4000-8000-000000000000', 'CO_1.2', 'x'.repeat(64)]) expect(PERSON_ID.test(ok), ok).toBe(true)
   })
 
   it('keeps at most maxPerUser proposals per person', async () => {
@@ -262,13 +296,12 @@ describe('private and shared', () => {
     expect(await stored(p.id)).toMatchObject({ status: 'shared', checksum: p.checksum })
   })
 
-  it('lets its author take it back, revise it under their current name, and share it again', async () => {
+  it('lets its author take it back, revise it and share it again, under the id it was made with', async () => {
     await update(p.id, { status: 'private' }, ann)
     expect(await seen(ben)).toEqual([])
-    names.set(String(ann.id), 'Ann Keeper')
     const revised = await update(p.id, { proposal: draft({ title: 'Birds and mammals are reptiles', moves: [birds, mammals] }) }, ann)
     const before = p.proposal as Proposal
-    expect(revised.proposal).toMatchObject({ id: before.id, created: before.created, author: 'Ann Keeper', title: 'Birds and mammals are reptiles' })
+    expect(revised.proposal).toMatchObject({ id: before.id, created: before.created, author: 'P-1004', title: 'Birds and mammals are reptiles' })
     expect(revised).toMatchObject({ title: 'Birds and mammals are reptiles', proposalId: before.id, checksum: proposalChecksum(revised.proposal as Proposal) })
     expect(revised.checksum).not.toBe(p.checksum)
     // An edit that doesn't fit is refused, and the stored proposal stays as it was.
@@ -276,6 +309,47 @@ describe('private and shared', () => {
     expect((await stored(p.id)).checksum).toBe(revised.checksum)
     p = await update(p.id, { proposal: draft(), status: 'shared' }, ann)
     expect(p).toMatchObject({ status: 'shared', title: 'Birds are reptiles' })
+  })
+
+  it('shows a new name at once, with nothing stored to change', async () => {
+    expect((await readAs(p.id, ben)).authorName).toBe('Ann K.')
+    names.set(pid(ann), 'Ann Keeper')
+    const now = await readAs(p.id, ben)
+    expect(now).toMatchObject({ authorName: 'Ann Keeper', checksum: p.checksum })
+    expect((now.proposal as Proposal).author).toBe('P-1004')
+    // A name can't be written through the proposal: the field is only ever looked up.
+    await update(p.id, { authorName: 'Forged Name' }, ann)
+    expect((await readAs(p.id, ben)).authorName).toBe('Ann Keeper')
+    expect(JSON.stringify(await payload.db.findOne({ collection: PROPOSALS as never, where: { id: { equals: p.id } } }))).not.toMatch(/Forged|Keeper/)
+  })
+
+  it('asks for each person\'s name once per request, and shows the id alone when the lookup fails or has no name', async () => {
+    const more = [await shared(ann, { proposal: draft({ title: 'Second' }) }), await shared(ann, { proposal: draft({ title: 'Third' }) })]
+    nameLookups = []
+    const listed = (await payload.find({ collection: PROPOSALS as never, user: ben, overrideAccess: false, depth: 0, limit: 100 })).docs as Doc[]
+    expect(listed.filter((d) => (d.proposal as Proposal).author === 'P-1004').length).toBeGreaterThanOrEqual(3)
+    expect(nameLookups.filter((id) => id === 'P-1004')).toHaveLength(1)
+    nameFails = true
+    try {
+      const doc = await readAs(p.id, ben)
+      expect(doc.authorName ?? null).toBeNull()
+      expect((doc.proposal as Proposal).author).toBe('P-1004')
+      const shown = await preview(p.id, ben)
+      expect(shown.status).toBe(200)
+      expect(shown.body.proposal).toMatchObject({ author: 'P-1004' })
+      expect(shown.body.proposal).not.toHaveProperty('authorName')
+    } finally {
+      nameFails = false
+    }
+    for (const empty of ['', '   ', 'x'.repeat(201)]) {
+      names.set(pid(ann), empty)
+      expect((await readAs(p.id, ben)).authorName ?? null).toBeNull()
+    }
+    names.set(pid(ann), 'Ann Keeper')
+    for (const doc of more) {
+      await update(doc.id, { status: 'private' }, ann)
+      await remove(doc.id, ann)
+    }
   })
 
   it('never lets a decision, the author, the snapshot or the tenant be set through an update', async () => {
@@ -307,7 +381,7 @@ describe('preview', () => {
     const [p] = (await payload.find({ collection: PROPOSALS as never, user: ben, overrideAccess: false, depth: 0 })).docs as Doc[]
     const { status, body } = await preview(p!.id, ben)
     expect(status).toBe(200)
-    expect(body.proposal).toMatchObject({ doc: String(p!.id), id: p!.proposalId, title: 'Birds are reptiles', author: 'Ann Keeper', status: 'shared', checksum: p!.checksum, base: { kind: 'classification', id: 'traditional', version: '1' } })
+    expect(body.proposal).toMatchObject({ doc: String(p!.id), id: p!.proposalId, title: 'Birds are reptiles', author: 'P-1004', authorName: 'Ann Keeper', status: 'shared', checksum: p!.checksum, base: { kind: 'classification', id: 'traditional', version: '1' } })
     expect(body.snapshot).toMatchObject({ doc: snapA, id: 'fixture-amniotes', version: '1' })
     expect(body).toMatchObject({ acceptable: true, truncated: false, counts: { moves: 1 } })
     expect(body).not.toHaveProperty('notAcceptable')
@@ -349,17 +423,24 @@ describe('accepting', () => {
       [undefined, 400, /Name the new snapshot version/],
     ]
     for (const [body, status, error] of tries) expect(await accept(p.id, managerA, body), JSON.stringify(body)).toMatchObject({ status, body: { error: expect.stringMatching(error) } })
-    nameFails = true
+    const logged = vi.spyOn(payload.logger, 'error').mockImplementation(() => undefined)
     try {
-      expect(await accept(p.id, managerA, { version: '2', checksum: p.checksum })).toMatchObject({ status: 500, body: { error: expect.stringMatching(/couldn't give your name/) } })
+      idFails = true
+      expect(await accept(p.id, managerA, { version: '2', checksum: p.checksum })).toMatchObject({ status: 500, body: { error: expect.stringMatching(/couldn't give your id/) } })
+      idFails = false
+      // A manager whose id comes back as a name accepts nothing: the name would be sealed.
+      ids.set(String(managerA.id), 'Cara Curator')
+      expect(await accept(p.id, managerA, { version: '2', checksum: p.checksum })).toMatchObject({ status: 500, body: { error: expect.stringMatching(/couldn't give your id/) } })
     } finally {
-      nameFails = false
+      idFails = false
+      ids.set(String(managerA.id), 'P-1001')
+      logged.mockRestore()
     }
     expect(await snapshotCount()).toBe(count)
     expect(await stored(p.id)).toMatchObject({ status: 'shared', checksum: p.checksum })
   })
 
-  it('makes a new staged version, with both names in its record, and leaves the published one alone', async () => {
+  it('makes a new staged version, with both people\'s ids and neither name in its record, and leaves the published one alone', async () => {
     const base = await snapshot(snapA)
     const { status, body } = await accept(p.id, managerA, { version: '2', checksum: p.checksum, createdAt: '2026-11-11T12:00:00.000Z', note: 'Agreed at the review' })
     expect(status).toBe(200)
@@ -375,10 +456,12 @@ describe('accepting', () => {
     expect(verifySnapshot(content)).toBe(true)
     expect(content.derivedFrom).toEqual({
       snapshot: 'fixture-amniotes', version: '1', checksum: base.checksum,
-      proposal: { id: p.proposalId, title: 'Birds are reptiles', author: 'Ann Keeper', acceptedBy: 'Cara Curator', classification: { id: 'traditional', version: '1' }, moved: ['c:aves'] },
+      proposal: { id: p.proposalId, title: 'Birds are reptiles', author: 'P-1004', acceptedBy: 'P-1001', classification: { id: 'traditional', version: '1' }, moved: ['c:aves'] },
     })
     expect(content.classifications[0]!.placements.find((x) => x.concept === 'c:aves')!.parent).toBe('c:reptilia')
-    expect(content.sources.find((s) => s.id === `proposal:${p.proposalId}`)).toBeTruthy()
+    expect(content.sources.find((s) => s.id === `proposal:${p.proposalId}`)!.provenance).toMatch(/^Proposed by P-1004 \(.+\)\. Accepted by P-1001 \(/)
+    // Nothing sealed names a person: the whole stored document, checksum included, holds ids only.
+    expect(JSON.stringify(next)).not.toMatch(EVERY_NAME)
 
     // The published snapshot is what it was, and readers see nothing new until the new version is published.
     const after = await snapshot(snapA)
@@ -440,7 +523,8 @@ describe('accepting', () => {
     const again = await accept(p.id, managerA2, { version: '2', checksum: p.checksum })
     expect(again.status).toBe(200)
     const content = (await snapshot(again.body.snapshot.doc)).snapshot as DatasetSnapshot
-    expect(content.derivedFrom!.proposal).toMatchObject({ author: 'Ann Keeper', acceptedBy: 'Dev Curator' })
+    expect(content.derivedFrom!.proposal).toMatchObject({ author: 'P-1004', acceptedBy: 'P-1002' })
+    expect(JSON.stringify(content)).not.toMatch(EVERY_NAME)
     expect((await stored(p.id)).status).toBe('accepted')
   })
 
@@ -545,22 +629,42 @@ describe('declining', () => {
 })
 
 describe('when someone leaves', () => {
-  it('lets the site take back and delete their open proposals, under the name they last used', async () => {
+  it('lets the site take back and delete their open proposals', async () => {
     const open = await shared(ben, { proposal: draft({ title: 'Mammals are reptiles', moves: [mammals] }) })
     const drafted = await propose(ben, { proposal: draft({ title: 'A thought' }) })
-    // Server code, with no user. The name isn't asked for again: nobody is signed in to ask about.
-    nameFails = true
+    // Server code, with no user. The id isn't asked for again: nobody is signed in to ask about.
+    idFails = true
     try {
       const back = (await payload.update({ collection: PROPOSALS as never, id: open.id as string, data: { status: 'private' } as never, depth: 0 })) as Doc
       expect(back).toMatchObject({ status: 'private', checksum: open.checksum, author: String(ben.id) })
-      expect((back.proposal as Proposal).author).toBe('Ben R.')
+      expect((back.proposal as Proposal).author).toBe('P-1005')
     } finally {
-      nameFails = false
+      idFails = false
     }
     expect(await seen(ann)).not.toContain(open.id)
     for (const doc of [open, drafted]) await payload.delete({ collection: PROPOSALS as never, id: doc.id as string })
     for (const doc of [open, drafted]) await expect(stored(doc.id)).rejects.toThrow()
-    // Accepted ones stay ("accepts once" above): a snapshot version names them.
+  })
+
+  it('shows their accepted proposals without a name once the site stops giving one, with nothing to take out of the snapshot', async () => {
+    const [accepted] = (await payload.find({ collection: PROPOSALS as never, where: { and: [{ status: { equals: 'accepted' } }, { author: { equals: String(ann.id) } }] }, depth: 0, limit: 1 })).docs as Doc[]
+    expect(accepted).toBeTruthy()
+    expect((await readAs(accepted!.id, ben)).authorName).toBe('Ann Keeper')
+    const version = await snapshot(accepted!.acceptedInto)
+    names.delete(pid(ann))
+    try {
+      const doc = await readAs(accepted!.id, ben)
+      expect(doc.authorName ?? null).toBeNull()
+      expect(doc).toMatchObject({ status: 'accepted', checksum: accepted!.checksum })
+      expect((doc.proposal as Proposal).author).toBe('P-1004')
+      // The sealed version is what it was, still verifies, and never held the name.
+      const after = await snapshot(accepted!.acceptedInto)
+      expect(after.checksum).toBe(version.checksum)
+      expect(verifySnapshot(after.snapshot as DatasetSnapshot)).toBe(true)
+      expect(JSON.stringify(after)).not.toMatch(EVERY_NAME)
+    } finally {
+      names.set(pid(ann), 'Ann Keeper')
+    }
   })
 })
 
