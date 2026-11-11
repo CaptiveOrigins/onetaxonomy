@@ -1,6 +1,6 @@
 # 0011 — The Mac app keeps its work in files: a `.onetaxonomy` bundle, no SQLite for now
 
-**Status.** Proposed by Science (the area lead), 2026-11-11. Changes the plan in the backlog's M6 line "SQLite persistence, backups, migrations", so it waits for the owner.
+**Status.** Accepted by Science (the area lead), 2026-11-11. It follows the owner's rule that files stay plain and readable without the tool; revisit only on the measured triggers below.
 
 **Context.** M6 listed SQLite persistence, backups and migrations beside a `.onetaxonomy` bundle. The Mac app already works on plain files: it opens checklists, archives, trees and sealed snapshots, never writes over the file it opened, and saves views and sealed snapshots with a temporary file and a rename. The owner's rules for these tools say a person's files stay theirs, as plain documented files readable without the tool, and that a feature which adds something to look after has to take away more than it adds.
 
