@@ -168,9 +168,11 @@ if (process.argv.includes('--json')) {
   process.exit(0)
 }
 
-const f = (ms) => (ms < 10 ? ms.toFixed(1) : ms.toFixed(0))
 const n = (x) => Math.round(x).toLocaleString('en-US')
 const first = run.reports[0]
+// Some browsers round performance.now() to whole milliseconds. Then a decimal place would claim more than was measured.
+const coarse = run.reports.every((r) => Number.isInteger(r.refresh) && r.results.every((x) => MOTIONS.every((m) => Number.isInteger(x[m].interval.median) && Number.isInteger(x[m].script.median))))
+const f = (ms) => (ms < 10 && !coarse ? ms.toFixed(1) : ms.toFixed(0))
 const headless = run.headless !== false
 /** On time: under 5% late frames in every motion. */
 const onTime = (x) => MOTIONS.every((m) => x[m].late < 0.05)
@@ -182,6 +184,7 @@ lines.push('')
 lines.push(`- Machine: ${run.machine ? `${run.machine}, ${run.cores} cores` : `not recorded${run.cores ? ` (${run.cores} cores)` : ''}`}.`)
 lines.push(`- Browser: ${first.browser.includes(' ') ? first.browser : first.browser.replace('/', ' ')}${headless ? ', headless (no window on a screen)' : ', in a window'}. Graphics: ${first.gpu}.`)
 lines.push(run.loadBefore ? `- Load: the machine was busy with other work. Load average ${run.loadBefore.join(', ')} before and ${run.loadAfter.join(', ')} after (1, 5 and 15 minutes).` : '- Load: not recorded.')
+if (coarse) lines.push('- Clock: this browser gives the time in whole milliseconds. Every time below is rounded to one: a 16.7 ms frame shows as 17, and script that took under a millisecond shows as 0 or 1.')
 lines.push(`- Drawing: ${first.stage} × ${first.stage} CSS pixels. 180 frames for each motion, after 20 warm-up frames. One run of each; not repeated.`)
 lines.push('')
 lines.push('What the numbers say, counting a size as on time when under 5% of its frames were late in every motion:')
@@ -196,7 +199,7 @@ for (const r of run.reports) {
     // The motion with the most late frames. A median alone can hide them: 44% late still has a median of one frame.
     const worst = MOTIONS.reduce((w, m) => (miss[m].late > miss[w].late ? m : w))
     const doing = { pan: 'panning', zoom: 'zooming', read: 'scrolling at reading size' }[worst]
-    const at = `${name} first fell behind at ${n(miss.nodes)} nodes (${(miss[worst].late * 100).toFixed(0)}% of frames late while ${doing}, median frame ${f(miss[worst].interval.median)} ms, ${(1000 / miss[worst].interval.median).toFixed(0)} frames a second)`
+    const at = `${name} first fell behind at ${n(miss.nodes)} nodes (${(miss[worst].late * 100).toFixed(0)}% of frames late while ${doing}, median frame ${f(miss[worst].interval.median)} ms, ${coarse ? 'about ' : ''}${(1000 / miss[worst].interval.median).toFixed(0)} frames a second)`
     return ok ? `${name} was on time up to ${n(ok.nodes)} nodes; ${at.replace(`${name} first`, 'it first')}` : `${at}, the smallest size run`
   }
   lines.push(`- **${title(r)}:** ${say('svg', 'SVG')}. ${say('canvas', 'The canvas')}.`)
@@ -217,7 +220,7 @@ lines.push('')
 for (const r of run.reports) {
   lines.push(`### ${title(r)}`)
   lines.push('')
-  lines.push(`The display frame here, with nothing to draw: ${r.refresh.toFixed(1)} ms (${(1000 / r.refresh).toFixed(0)} frames a second).`)
+  lines.push(coarse ? `The display frame here, with nothing to draw: ${r.refresh} ms on this browser's whole-millisecond clock (60 frames a second is 16.7 ms).` : `The display frame here, with nothing to draw: ${r.refresh.toFixed(1)} ms (${(1000 / r.refresh).toFixed(0)} frames a second).`)
   lines.push('')
   lines.push('| Renderer | Tips | Nodes | Pan: frame, late | Zoom: frame, late | Read: frame, late | Script (pan / zoom / read) | First render, script |')
   lines.push('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |')
@@ -249,7 +252,8 @@ How long a frame takes while a made-up tree is panned, zoomed and scrolled, draw
 
 **What it doesn't.**
 
-- Other browser engines. Only the browsers with a section below were measured. WebKit, which the Mac app and Safari use, and Firefox may differ. To measure one, open \`apps/playground/dist/bench.html\` in it, press Run, save the numbers and run \`node scripts/bench-browser.mjs --from onetaxonomy-bench.json\`.
+- Safari, the Mac app and Firefox. Only the browsers with a section below were measured. The WebKit section is Playwright's build of WebKit: the same engine Safari and the Mac app's web view use, but not either program, and headless. It has no slowed-thread pass, because the throttle is Chrome's. To measure another browser, open \`apps/playground/dist/bench.html\` in it, press Run, save the numbers and run \`node scripts/bench-browser.mjs --from onetaxonomy-bench.json\`.
+- How the WebKit section was made. This script drives Chrome only. For WebKit, \`playwright-core\` (not a dependency of this repo) opened the built page from disk in its \`webkit\` browser, headless, once at device scale 1 and once at 2, and called \`window.runBench()\`, which is what the Run button calls. The two reports went into one file in the shape \`--json\` prints, and \`--from\` wrote the section.
 - A window on a real screen. A headless run draws with the graphics card but shows nothing.
 - All of painting. Raster and compositing happen off the main thread. They show in the frame time only once they fall behind and the browser holds the next frame back, so a steady frame time means the page kept up, not that painting cost nothing.
 - A slow device. "Main thread slowed 4 times" is Chrome's own throttle. It slows script, style and layout on the main thread and leaves the graphics card and the other threads at full speed, so it is a rough stand-in, not a phone or an old laptop.

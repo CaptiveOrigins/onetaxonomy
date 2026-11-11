@@ -39,5 +39,5 @@ Edges are batched into at most four paths (plain, weak, and each while dragging)
 
 ## Not measured here
 
-- Anything in a browser. [benchmarks-browser.md](benchmarks-browser.md) has frame times for both renderers in headless Chrome, and lists what is still unmeasured there: WebKit (the Mac app and Safari), a window on a real screen, and a real slow device.
+- Anything in a browser. [benchmarks-browser.md](benchmarks-browser.md) has frame times for both renderers in headless Chrome and in a headless build of WebKit, and lists what is still unmeasured there: Safari and the Mac app themselves, a window on a real screen, and a real slow device.
 - The outline (`TreeOutline`) with 10,000+ rows: it isn't virtualized, and on large trees it may be slower than the drawing.

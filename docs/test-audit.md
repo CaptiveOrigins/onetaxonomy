@@ -13,7 +13,7 @@ Scope: `apps/playground/bench.tsx` and `bench.html`, `scripts/bench-browser.mjs`
 ### Gaps left
 
 - **The benchmark page and script have no tests.** They are measuring tools that ship in no package. What they print was checked by hand: the summary lines against the tables of the run in the doc, and two full runs under an hour apart agreed on which sizes kept up, with median frame times within one display frame of each other. The summary's rules are small (on time means under 5% late frames in every motion; the motion named is the one with the most late frames), and a wrong one would show against the table beside it. Worth a test if the script grows.
-- **Nothing here is measured in WebKit, Firefox, a window on a real screen, or on a real slow device.** The doc says so above its numbers. A Safari run is on the owner's test list.
+- **Nothing here is measured in Safari, the Mac app's web view, Firefox, a window on a real screen, or on a real slow device.** The doc says so above its numbers. The WebKit section, added later the same day, is Playwright's headless build of the engine, run once by hand with a runner that isn't in this repo; the doc says how. The script's whole-millisecond rule (no decimal places, and a line saying so) was checked by hand against that section, and the Chrome section came out byte for byte the same when regenerated from its saved numbers. A Safari run is on the owner's test list.
 - **The README's advice to try `canvasThreshold={500}` on slow devices rests on Chrome's throttle alone.** It is worded as something to try, and the default wasn't changed.
 
 ### Left out as overkill
