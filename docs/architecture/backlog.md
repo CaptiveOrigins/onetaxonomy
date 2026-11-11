@@ -65,9 +65,9 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 ## M6 — Studio (macOS)
 
 - [x] Tauri 2 app, native dialogs, atomic saves, Settings, updater, and opening every importer's format (`apps/studio`)
-- [ ] SQLite persistence, backups, migrations
-- [ ] `.onetaxonomy` bundle (ZIP container, manifest, checksums, pinned snapshot refs, media, optional embedded dataset); damaged-file diagnostics
-- [ ] Offline end-to-end journey; upgrade/relink flow when sources change
+- [x] ~~SQLite persistence, backups, migrations~~ Not needed now (2026-11-11, [ADR 0011](adr/0011-bundle-not-sqlite.md), proposed): plain files and the bundle cover persistence, safe saves, format versions and backups; the ADR says what would bring SQLite back (as a cache beside the files)
+- [x] `.onetaxonomy` bundle (ZIP container, manifest, checksums, pinned snapshot refs, media, optional embedded dataset); damaged-file diagnostics (2026-11-11, [bundle-format.md](bundle-format.md)). The Mac app carries lessons and media through but doesn't show or add them yet
+- [ ] Offline end-to-end journey; upgrade/relink flow when sources change. Relink is done (2026-11-11): a bundle pinned to another version of the open dataset asks to keep the pinned one or relink, never silently. The app needs no network to open, browse or save; a full offline journey in the built app hasn't been walked through
 
 ## M7 — Payload plugin
 

@@ -3,7 +3,7 @@ import { parseDelimited, parseNewick, readChecklistTable, readDwca, readNexus, r
 
 /** Turning file contents into a dataset. No file access or app code here, so it can be tested alone. */
 
-export type FileKind = 'snapshot' | 'newick' | 'nexus' | 'phyloxml' | 'table' | 'dwca'
+export type FileKind = 'snapshot' | 'newick' | 'nexus' | 'phyloxml' | 'table' | 'dwca' | 'bundle'
 /** The tree formats, which ask the same questions when the file doesn't say (rooting, support methods). */
 export type TreeKind = Extract<FileKind, 'newick' | 'nexus' | 'phyloxml'>
 /** `seal` is a short, plain notice about the snapshot's checksum, shown where it can't be missed. Only snapshots have one. */
@@ -13,7 +13,7 @@ export const UNSEALED_NOTICE = "This snapshot isn't sealed, so changes to it sin
 export const MISMATCH_NOTICE = 'This file has changed since it was sealed: its checksum no longer matches.'
 export type Target = ViewTarget & { title: string }
 
-export const OPEN_EXTENSIONS = ['json', 'nwk', 'newick', 'tree', 'tre', 'treefile', 'nex', 'nexus', 'nxs', 'xml', 'phyloxml', 'csv', 'tsv', 'txt', 'zip']
+export const OPEN_EXTENSIONS = ['json', 'nwk', 'newick', 'tree', 'tre', 'treefile', 'nex', 'nexus', 'nxs', 'xml', 'phyloxml', 'csv', 'tsv', 'txt', 'zip', 'onetaxonomy']
 
 const baseName = (name: string) => name.split(/[\\/]/).pop() ?? name
 const stem = (name: string) => baseName(name).replace(/\.[^.]+$/, '')
@@ -34,6 +34,7 @@ export function kindOf(name: string, text?: string): FileKind | null {
   if (['nwk', 'newick', 'tree', 'tre', 'treefile'].includes(ext)) return text !== undefined && isNexus(text) ? 'nexus' : 'newick'
   if (['csv', 'tsv', 'txt'].includes(ext)) return 'table'
   if (ext === 'zip') return 'dwca'
+  if (ext === 'onetaxonomy') return 'bundle'
   return null
 }
 

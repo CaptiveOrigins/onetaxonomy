@@ -23,8 +23,11 @@ function utf8(s: string): Uint8Array {
   return Uint8Array.from(out)
 }
 
-export function sha256Hex(text: string): string {
-  const msg = utf8(text)
+/** SHA-256 of a string's UTF-8 bytes, as lowercase hex. */
+export const sha256Hex = (text: string): string => sha256Bytes(utf8(text))
+
+/** SHA-256 of raw bytes (a file as it is on disk), as lowercase hex. */
+export function sha256Bytes(msg: Uint8Array): string {
   const bitLen = msg.length * 8
   const padded = new Uint8Array(Math.ceil((msg.length + 9) / 64) * 64)
   padded.set(msg)
