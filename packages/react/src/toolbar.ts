@@ -1,3 +1,5 @@
+'use client'
+
 import { useEffect, useRef, type FocusEvent, type KeyboardEvent, type RefObject } from 'react'
 
 const ITEMS = 'button:not(:disabled):not([role="menuitem"]), select:not(:disabled), input:not(:disabled)'

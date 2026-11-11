@@ -1,3 +1,5 @@
+'use client'
+
 import type { Id } from '@captiveorigins/onetaxonomy-core'
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 

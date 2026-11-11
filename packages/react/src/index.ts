@@ -1,6 +1,7 @@
 export { TreeView, type TreeViewProps } from './TreeView.js'
 export { TreeOutline, type TreeOutlineProps } from './TreeOutline.js'
-export { Explorer, Legend, layoutFor, useTaxonomyView, type ExplorerProps, type ExplorerLabels, type UseTaxonomyView } from './Explorer.js'
+export { Explorer, Legend, useTaxonomyView, type ExplorerProps, type ExplorerLabels, type UseTaxonomyView } from './Explorer.js'
+export { layoutFor } from './layout.js'
 export { CANVAS_THRESHOLD, treeViewBox, type ViewBox } from './TreeView.js'
 export { CanvasTreeView, canvasNodeAt, canvasPlanOf, canvasPng, DEFAULT_CANVAS_SIZE } from './CanvasTreeView.js'
 export {
