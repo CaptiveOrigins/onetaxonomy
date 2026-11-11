@@ -46,7 +46,7 @@ describe('studio colors', () => {
 
   it('a chosen appearance sets the explorer colors too, with the library values', () => {
     // Without this, Light on a dark system drew the explorer's light text (#eef1f6) on a white page: 1.13:1.
-    const libLight = vars(block(libraryCss, '.ot-lesson {'), '--ot-')
+    const libLight = vars(block(libraryCss, '.ot-tip-links {'), '--ot-')
     const libDark = vars(block(libraryCss, '@media (prefers-color-scheme: dark)'), '--ot-')
     expect(vars(block(appCss, ":root[data-appearance='light'] :is("), '--ot-')).toEqual(libLight)
     expect(vars(block(appCss, ":root[data-appearance='dark'] :is("), '--ot-')).toEqual(libDark)

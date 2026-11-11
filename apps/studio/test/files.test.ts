@@ -13,7 +13,7 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
   remove: vi.fn(async (path: string) => { calls.push(`remove ${path}`); onDisk.delete(path) }),
 }))
 
-const { OPENED_FILE_REFUSAL, saveJson } = await import('../src/files')
+const { OPENED_FILE_REFUSAL, TREE_EXTENSIONS, pickTree, saveJson } = await import('../src/files')
 
 describe('saving', () => {
   beforeEach(() => { calls.length = 0; onDisk.clear() })
@@ -56,5 +56,25 @@ describe('saving', () => {
     expect(calls).toEqual([])
     expect(await saveJson('trees-rooted.json', '{}', { never: '/made-up/trees.json' })).toBe('/made-up/trees-rooted.json')
     expect(calls).toEqual(['write /made-up/trees-rooted.json.tmp', 'rename /made-up/trees-rooted.json.tmp -> /made-up/trees-rooted.json'])
+  })
+  it('refuses every file the dataset came from, trees added to it included', async () => {
+    const dialog = await import('@tauri-apps/plugin-dialog')
+    vi.mocked(dialog.save).mockResolvedValueOnce('/made-up/Added.NWK').mockResolvedValueOnce('/made-up/checklist.json')
+    const never = ['/made-up/checklist.json', '/made-up/added.nwk']
+    await expect(saveJson('x.json', '{}', { never })).rejects.toThrow(OPENED_FILE_REFUSAL)
+    await expect(saveJson('x.json', '{}', { never })).rejects.toThrow(OPENED_FILE_REFUSAL)
+    expect(calls).toEqual([])
+  })
+})
+
+describe('adding a tree', () => {
+  it('offers only tree files in the dialog', async () => {
+    const dialog = await import('@tauri-apps/plugin-dialog')
+    const fs = await import('@tauri-apps/plugin-fs')
+    vi.mocked(dialog.open).mockResolvedValueOnce('/made-up/t.nwk')
+    vi.mocked(fs.readTextFile).mockResolvedValueOnce('(a,b);')
+    expect(await pickTree()).toEqual({ path: '/made-up/t.nwk', text: '(a,b);' })
+    expect(TREE_EXTENSIONS).toEqual(['nwk', 'newick', 'tree', 'tre', 'treefile', 'nex', 'nexus', 'nxs', 'xml', 'phyloxml'])
+    expect(vi.mocked(dialog.open).mock.calls.at(-1)![0]!.filters![0]!.extensions).toEqual(TREE_EXTENSIONS)
   })
 })

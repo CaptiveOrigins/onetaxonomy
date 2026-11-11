@@ -4,7 +4,8 @@
  */
 .ot-root,
 .ot-explorer,
-.ot-lesson {
+.ot-lesson,
+.ot-tip-links {
   --ot-font: system-ui, -apple-system, 'Segoe UI', sans-serif;
   /* Brand family tokens (brand/README.md): Captive Origins brown ink, orange for selection and focus. */
   --ot-ink: #4c312c;
@@ -31,7 +32,8 @@
 @media (prefers-color-scheme: dark) {
   .ot-root,
   .ot-explorer,
-  .ot-lesson {
+  .ot-lesson,
+  .ot-tip-links {
     --ot-ink: #eda9ac;
     --ot-text: #eef1f6;
     --ot-muted: #a7b0c0;
@@ -73,14 +75,14 @@
 /* Controls: 32 px, radius 8, 1 px border (shared with OnePedigree). */
 .ot-toolbar { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
 .ot-toolbar-gap { width: 6px; }
-.ot-explorer button, .ot-lesson button, .ot-select {
+.ot-explorer button, .ot-lesson button, .ot-tip-links button, .ot-select {
   display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 10px; border-radius: 8px;
   border: 1px solid var(--ot-border); background: var(--ot-surface); color: inherit; font: inherit; font-size: 13px; cursor: pointer;
 }
 .ot-select select { font: inherit; border: 0; background: transparent; color: inherit; cursor: pointer; }
-.ot-explorer button:hover:not(:disabled), .ot-lesson button:hover:not(:disabled), .ot-select:hover { border-color: var(--ot-ink); }
-.ot-explorer button:disabled, .ot-lesson button:disabled { opacity: 0.45; cursor: default; }
-.ot-explorer button:focus-visible, .ot-lesson button:focus-visible, .ot-select:focus-within, .ot-canvas:focus-visible { outline: 2px solid var(--ot-focus); outline-offset: 2px; }
+.ot-explorer button:hover:not(:disabled), .ot-lesson button:hover:not(:disabled), .ot-tip-links button:hover:not(:disabled), .ot-select:hover { border-color: var(--ot-ink); }
+.ot-explorer button:disabled, .ot-lesson button:disabled, .ot-tip-links button:disabled { opacity: 0.45; cursor: default; }
+.ot-explorer button:focus-visible, .ot-lesson button:focus-visible, .ot-tip-links button:focus-visible, .ot-tip-links select:focus-visible, .ot-tip-links input:focus-visible, .ot-select:focus-within, .ot-canvas:focus-visible { outline: 2px solid var(--ot-focus); outline-offset: 2px; }
 .ot-panes { display: grid; grid-template-columns: minmax(0, 2fr) minmax(15rem, 1fr); gap: 12px; }
 @media (max-width: 48rem) { .ot-panes { grid-template-columns: 1fr; } }
 .ot-canvas { position: relative; overflow: hidden; touch-action: none; border: 1px solid var(--ot-border); border-radius: 12px; background: var(--ot-surface); cursor: grab; }
@@ -212,3 +214,15 @@
 .ot-compare-panes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; margin-block-start: 8px; }
 .ot-compare-panes h4 { margin: 0 0 4px; font-size: 13px; }
 .ot-compare-panes svg { width: 100%; height: auto; max-height: 28rem; }
+/* Linking tips to taxa (TipLinker). */
+.ot-tip-links { font-size: 14px; }
+.ot-tip-links-title:focus { outline: none; }
+.ot-tip-links-title:focus-visible { outline: 2px solid var(--ot-focus); outline-offset: 2px; }
+.ot-tip-links-table { width: 100%; border-collapse: collapse; margin: 0.5rem 0; }
+.ot-tip-links-table th, .ot-tip-links-table td { text-align: start; vertical-align: top; padding: 0.375rem 0.5rem; border-bottom: 1px solid var(--ot-border); }
+.ot-tip-links-table thead th { color: var(--ot-muted); font-weight: 600; }
+.ot-tip-links-table select { max-width: 22rem; min-height: 24px; }
+.ot-tip-links-choice { display: flex; flex-wrap: wrap; gap: 0.375rem; align-items: center; }
+.ot-tip-links-find { display: grid; gap: 0.25rem; margin-top: 0.375rem; }
+.ot-tip-links-find input { border: 1px solid var(--ot-field-border); border-radius: 6px; padding: 3px 6px; font: inherit; }
+.ot-tip-links-shared { border-inline-start: 3px solid var(--ot-warning); padding-inline-start: 0.5rem; }

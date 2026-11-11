@@ -4,7 +4,7 @@ import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import { MISMATCH_NOTICE, OPEN_EXTENSIONS, UNSEALED_NOTICE, delimiterOf, kindOf, newickQuestions, nexusQuestions, openNewick, openNexus, openPhyloXml, openSnapshot, openTable, openTree, phyloXmlQuestions, sealedJson, suggestColumns, tableHeader, targetsOf, withPhylogeny } from '../src/open'
+import { MISMATCH_NOTICE, OPEN_EXTENSIONS, UNSEALED_NOTICE, delimiterOf, kindOf, newickQuestions, nexusQuestions, openNewick, openNexus, openPhyloXml, openSnapshot, openTable, openTree, phyloXmlQuestions, sealedJson, suggestColumns, tableHeader, targetsOf, withPhylogeny, withTrees } from '../src/open'
 import { StatusBar } from '../src/StatusBar'
 import { NEXUS } from './fixtures'
 
@@ -163,5 +163,35 @@ describe('opening NEXUS and phyloXML', () => {
     expect(validateDataset(next).filter((d) => d.severity === 'error')).toEqual([])
     expect(verifySnapshot(JSON.parse(sealedJson(next)))).toBe(true)
     expect(() => withPhylogeny(next, rooted, NOW)).toThrow(/already has a tree with the id two:1-midpoint/)
+  })
+})
+
+describe('adding trees to an open dataset', () => {
+  const checklist = () => openTable('taxonID,scientificName,parentNameUsageID\n1,Alphus,\n2,Alphus primus,1\n3,Alphus secundus,1\n', '/made-up/alphus.csv', { taxonID: 'taxonID', name: 'scientificName', parentID: 'parentNameUsageID' }, ',', NOW).snapshot
+  it('adds the trees as a new snapshot, renaming a source or tree id already in use, and leaves the open one alone', () => {
+    const open = sealSnapshot(checklist())
+    const before = JSON.stringify(open)
+    const tree = openNewick('[&R] (Alphus_primus,Alphus_secundus);', '/made-up/alphus.nwk', {}, NOW).snapshot
+    expect(tree.sources[0]!.id).toBe(open.sources[0]!.id) // both files are called "alphus"
+    const next = withTrees(open, tree, '2026-11-11T00:00:00.000Z')
+    expect(JSON.stringify(open)).toBe(before)
+    expect(next.sources.map((x) => x.id)).toEqual(['alphus', 'alphus-2'])
+    expect(next.phylogenies.map((p) => [p.id, p.sources])).toEqual([['alphus', ['alphus-2']]])
+    expect(next.concepts).toBe(open.concepts)
+    expect(next.checksum).toBeUndefined()
+    expect(next.derivedFrom).toEqual({ snapshot: open.id, version: open.version, checksum: open.checksum })
+    expect(validateDataset(next).filter((d) => d.severity === 'error')).toEqual([])
+    // The same file again: its tree gets a new id rather than replacing the first.
+    const again = withTrees(next, tree, NOW)
+    expect(again.phylogenies.map((p) => p.id)).toEqual(['alphus', 'alphus-2'])
+    expect(again.sources.map((x) => x.id)).toEqual(['alphus', 'alphus-2', 'alphus-3'])
+    // Tips are never linked on the way in.
+    expect(again.phylogenies.flatMap((p) => p.nodes).some((n) => n.concepts?.length)).toBe(false)
+  })
+
+  it('refuses a file that brings taxa or no tree, instead of merging taxonomies', () => {
+    const open = checklist()
+    expect(() => withTrees(open, open, NOW)).toThrow(/holds taxa or a classification as well as trees/)
+    expect(() => withTrees(open, { ...open, names: [], concepts: [], classifications: [], phylogenies: [] }, NOW)).toThrow(/holds no tree/)
   })
 })
