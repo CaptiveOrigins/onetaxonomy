@@ -4,7 +4,11 @@ import { parseDelimited, parseNewick, readChecklistTable, readDwca, readSnapshot
 /** Turning file contents into a dataset. No file access or app code here, so it can be tested alone. */
 
 export type FileKind = 'snapshot' | 'newick' | 'table' | 'dwca'
-export type Opened = { snapshot: DatasetSnapshot; notices: string[] }
+/** `seal` is a short, plain notice about the snapshot's checksum, shown where it can't be missed. Only snapshots have one. */
+export type Opened = { snapshot: DatasetSnapshot; notices: string[]; seal?: string }
+
+export const UNSEALED_NOTICE = "This snapshot isn't sealed, so changes to it since it was made can't be detected."
+export const MISMATCH_NOTICE = 'This file has changed since it was sealed: its checksum no longer matches.'
 export type Target = ViewTarget & { title: string }
 
 export const OPEN_EXTENSIONS = ['json', 'nwk', 'newick', 'tree', 'tre', 'treefile', 'csv', 'tsv', 'txt', 'zip']
@@ -31,8 +35,10 @@ const dataset = (result: ImportResult, name: string, now: string): Opened => ({
 export function openSnapshot(text: string): Opened {
   const { snapshot, diagnostics, checksum } = readSnapshotJson(text)
   const notices = diagnostics.map((d) => `${d.severity}: ${d.message}`)
-  if (checksum === 'mismatch') notices.unshift('This file has changed since it was sealed: its checksum no longer matches.')
-  return { snapshot, notices }
+  if (checksum === 'mismatch') notices.unshift(MISMATCH_NOTICE)
+  // A sealed file whose checksum line was deleted reads as unsealed, so an unsealed snapshot is never opened silently.
+  const seal = checksum === 'mismatch' ? MISMATCH_NOTICE : checksum === 'unsealed' ? UNSEALED_NOTICE : undefined
+  return seal ? { snapshot, notices, seal } : { snapshot, notices }
 }
 
 /** What the file doesn't say about itself, so a person must. These are never guessed. */

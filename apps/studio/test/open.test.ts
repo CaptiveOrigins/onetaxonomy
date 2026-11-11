@@ -4,7 +4,8 @@ import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 
-import { delimiterOf, kindOf, newickQuestions, openNewick, openSnapshot, openTable, sealedJson, suggestColumns, tableHeader, targetsOf } from '../src/open'
+import { MISMATCH_NOTICE, UNSEALED_NOTICE, delimiterOf, kindOf, newickQuestions, openNewick, openSnapshot, openTable, sealedJson, suggestColumns, tableHeader, targetsOf } from '../src/open'
+import { StatusBar } from '../src/StatusBar'
 
 const NOW = '2026-11-04T00:00:00.000Z'
 
@@ -57,6 +58,30 @@ describe('opening files', () => {
     const edited = JSON.parse(sealed) as { id: string }
     edited.id = 'changed'
     expect(openSnapshot(JSON.stringify(edited)).notices[0]).toMatch(/checksum/)
+  })
+
+  it('says when a snapshot is unsealed, so a sealed file with its checksum line deleted never opens silently', () => {
+    const { snapshot } = openNewick('[&R] (a,b);', 'x.nwk', {}, NOW)
+    const sealed = sealedJson(snapshot)
+    expect(openSnapshot(sealed).seal).toBeUndefined()
+    const stripped = JSON.parse(sealed) as { checksum?: string }
+    delete stripped.checksum
+    expect(openSnapshot(JSON.stringify(stripped)).seal).toBe(UNSEALED_NOTICE)
+    const edited = JSON.parse(sealed) as { id: string }
+    edited.id = 'changed'
+    const mismatch = openSnapshot(JSON.stringify(edited))
+    expect(mismatch.seal).toBe(MISMATCH_NOTICE)
+    expect(mismatch.notices[0]).toBe(MISMATCH_NOTICE)
+  })
+
+  it('shows the seal notice inside the status region a screen reader announces, and nothing for a sealed file', () => {
+    const shown = renderToString(createElement(StatusBar, { status: 'Opened x.json.', seal: UNSEALED_NOTICE, notices: ['a note'] }))
+    expect(shown).toMatch(/^<div class="app-status" role="status">/)
+    expect(shown).toContain("This snapshot isn&#x27;t sealed, so changes to it since it was made can&#x27;t be detected.")
+    // Outside the collapsed list of notes, so it's seen without opening anything.
+    expect(shown.indexOf('app-seal')).toBeLessThan(shown.indexOf('<details>'))
+    const quiet = renderToString(createElement(StatusBar, { status: 'Opened x.json.', seal: '', notices: [] }))
+    expect(quiet).not.toContain('app-seal')
   })
 
   it('saves a sealed copy without changing the snapshot that is open', () => {
