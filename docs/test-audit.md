@@ -2,6 +2,24 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: browser benchmark, and moving a departed person's proposals
+
+Scope: `apps/playground/bench.tsx` and `bench.html`, `scripts/bench-browser.mjs`, `docs/benchmarks-browser.md`, and the "When someone leaves" paragraph of `packages/payload/README.md`. Plugin tests went from 142 to 143, all unit tests from 526 to 527.
+
+### Covered
+
+- **A host can move an accepted proposal's `author` and `decidedBy` to another account in its own database code without breaking what was sealed** (README, ADR 0012 point 15). `proposals.test.ts`, "keeps the sealed record whole when the site moves an accepted proposal's two links to another account in its own database code": through Payload the change is refused for both fields, trusted code included; after an `updateOne` on the adapter's own collection the proposal still carries its author's person id and matches its checksum, the version made from it has the same checksum, verifies and names both people by id, readers still see it with the name looked up from that id, and it can still be neither edited nor deleted. MongoDB only, as the rest of the plugin's tests.
+
+### Gaps left
+
+- **The benchmark page and script have no tests.** They are measuring tools that ship in no package. What they print was checked by hand: the summary lines against the tables of the run in the doc, and two full runs under an hour apart agreed on which sizes kept up, with median frame times within one display frame of each other. The summary's rules are small (on time means under 5% late frames in every motion; the motion named is the one with the most late frames), and a wrong one would show against the table beside it. Worth a test if the script grows.
+- **Nothing here is measured in WebKit, Firefox, a window on a real screen, or on a real slow device.** The doc says so above its numbers. A Safari run is on the owner's test list.
+- **The README's advice to try `canvasThreshold={500}` on slow devices rests on Chrome's throttle alone.** It is worded as something to try, and the default wasn't changed.
+
+### Left out as overkill
+
+- Testing that headless Chrome starts and is cleaned up. The script deletes its throwaway profile in a `finally`, and a run that failed to start says so and exits non-zero.
+
 ## 2026-11-11: people by id in proposals
 
 Scope: `packages/payload` (`src/proposals.ts`, `src/types.ts`) and `apps/payload-example`. The plugin promised that an accepted proposal sealed a name the host chose. It now promises that only an opaque person id is stored and sealed, and that a name is looked up when shown and never kept. This replaces the lines about handles in the two audits below ("example Payload site" and "Payload plugin part 4"). Plugin tests went from 139 to 142, all unit tests from 523 to 526, the example's smoke checks from 46 to 47.

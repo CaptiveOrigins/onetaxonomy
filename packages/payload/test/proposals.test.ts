@@ -666,6 +666,44 @@ describe('when someone leaves', () => {
       names.set(pid(ann), 'Ann Keeper')
     }
   })
+
+  it('keeps the sealed record whole when the site moves an accepted proposal\'s two links to another account in its own database code', async () => {
+    const [accepted] = (await payload.find({ collection: PROPOSALS as never, where: { and: [{ status: { equals: 'accepted' } }, { author: { equals: String(ann.id) } }] }, depth: 0, limit: 1 })).docs as Doc[]
+    expect(accepted).toBeTruthy()
+    const decider = String(accepted!.decidedBy)
+    const version = await snapshot(accepted!.acceptedInto)
+    // An account that stands in for people who have left. It has no person id of its own here.
+    const standIn = String((await makeUser(payload, 'reader', { tenant: tenantA })).id)
+
+    // Through Payload, even trusted code is refused, and nothing changes.
+    await expect(payload.update({ collection: PROPOSALS as never, id: accepted!.id, data: { author: standIn } as never })).rejects.toThrow(/author can't change/)
+    await expect(payload.update({ collection: PROPOSALS as never, id: accepted!.id, data: { decidedBy: standIn } as never })).rejects.toThrow(/accept and decline actions/)
+    expect(await stored(accepted!.id)).toMatchObject({ author: String(ann.id), decidedBy: decider })
+
+    // The database adapter's own collection: no Payload hook runs. This is the host's code, not the plugin's.
+    const raw = (payload.db as unknown as { collections: Record<string, { updateOne: (where: object, change: object) => Promise<unknown> }> }).collections[PROPOSALS]!
+    await raw.updateOne({ _id: accepted!.id }, { $set: { author: standIn, decidedBy: standIn } })
+    try {
+      const doc = await stored(accepted!.id)
+      expect(doc).toMatchObject({ status: 'accepted', author: standIn, decidedBy: standIn, checksum: accepted!.checksum, acceptedInto: accepted!.acceptedInto })
+      // What was sealed is untouched: the proposal still carries its author's person id and still matches its checksum.
+      expect((doc.proposal as Proposal).author).toBe('P-1004')
+      expect(proposalChecksum(doc.proposal as Proposal)).toBe(accepted!.checksum)
+      // So is the version made from it: same checksum, still verifies, still names both people by id.
+      const after = await snapshot(accepted!.acceptedInto)
+      expect(after.checksum).toBe(version.checksum)
+      expect(verifySnapshot(after.snapshot as DatasetSnapshot)).toBe(true)
+      expect(JSON.stringify(after.snapshot)).toContain('P-1004')
+      expect(JSON.stringify(after.snapshot)).toContain(ids.get(decider) as string)
+      // Readers still see it, with the name the site gives for that person id now.
+      expect(await readAs(accepted!.id, ben)).toMatchObject({ status: 'accepted', authorName: 'Ann Keeper' })
+      // It is as locked as before.
+      await expect(payload.update({ collection: PROPOSALS as never, id: accepted!.id, data: { proposal: draft({ title: 'Later thought' }) } as never })).rejects.toThrow(/can't change/)
+      await expect(payload.delete({ collection: PROPOSALS as never, id: accepted!.id })).rejects.toThrow(/it is kept/)
+    } finally {
+      await raw.updateOne({ _id: accepted!.id }, { $set: { author: String(ann.id), decidedBy: decider } })
+    }
+  })
 })
 
 describe('a withdrawn snapshot', () => {

@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "esbuild app.tsx --bundle --format=iife --minify --outfile=dist/app.js --jsx=automatic --define:process.env.NODE_ENV='\"production\"' && cp index.html dist/ && cp ../../packages/react/src/styles.css dist/"
+    "build": "esbuild app.tsx --bundle --format=iife --minify --outfile=dist/app.js --jsx=automatic --define:process.env.NODE_ENV='\"production\"' && esbuild bench.tsx --bundle --format=iife --minify --outfile=dist/bench.js --jsx=automatic --define:process.env.NODE_ENV='\"production\"' && cp index.html bench.html dist/ && cp ../../packages/react/src/styles.css dist/"
   },
   "dependencies": {
     "@captiveorigins/onetaxonomy-core": "workspace:^",

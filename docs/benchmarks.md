@@ -4,7 +4,7 @@ Made-up trees of 1,000, 10,000 and 50,000 tips (each tip "Taxon n", about a thir
 
 **What this measures:** CPU time in Node for the pure steps: projecting the view (with `projectView`'s 10,000-node limit lifted, so every node is drawn), laying it out, and the canvas renderer's level-of-detail plan (`prepareTree`, `planCanvas`) and hit-testing. Each figure is the median of 10 runs (5 for 50,000 tips) after two warm-up runs, in milliseconds, with the fastest run in brackets.
 
-**What it doesn't:** painting. This repo has no canvas for Node (no `node-canvas` dependency), so the draw was run against a context that only counts calls, to show how much would be drawn. Paint time and frame rates while panning or zooming need a real browser (WebKit in the Mac app, Safari, Chrome, Firefox) and have **not** been measured. Nothing here says the canvas is smooth at 1–2k visible nodes yet: the plan for one frame is cheap enough to allow it, and a browser run has to confirm it.
+**What it doesn't:** painting. This repo has no canvas for Node (no `node-canvas` dependency), so the draw was run against a context that only counts calls, to show how much would be drawn. Frame times while panning, zooming and scrolling in a browser are in [benchmarks-browser.md](benchmarks-browser.md), which also says which browsers were measured and which weren't.
 
 ## Mac14,13, 2026-11-11
 
@@ -37,8 +37,7 @@ Calls the ~1 px per tip plan makes on a 2D context (counted, not timed):
 
 Edges are batched into at most four paths (plain, weak, and each while dragging), so the stroke count stays small however many edges there are.
 
-## Not measured yet
+## Not measured here
 
-- Paint time and frame rate in a browser, at 1–2k visible nodes, at 1× and 2× pixel density. Needs a person with the Mac app or a browser open, or a headless browser run.
-- The SVG renderer at the threshold (1,000 drawn nodes), to check the threshold is in the right place. It was chosen by judgment: the explorer re-renders every SVG node on each pan step, and at 1,000 nodes that is 1,000 React elements per pointer move.
+- Anything in a browser. [benchmarks-browser.md](benchmarks-browser.md) has frame times for both renderers in headless Chrome, and lists what is still unmeasured there: WebKit (the Mac app and Safari), a window on a real screen, and a real slow device.
 - The outline (`TreeOutline`) with 10,000+ rows: it isn't virtualized, and on large trees it may be slower than the drawing.
