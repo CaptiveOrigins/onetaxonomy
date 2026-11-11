@@ -44,12 +44,20 @@ describe('contrast of the default themes (WCAG 1.4.3, 1.4.11)', () => {
       const text = ['--ot-text', '--ot-muted', '--ot-selected-text', '--ot-warning', '--ot-error']
       for (const fg of text) for (const bg of ['--ot-surface', '--ot-panel']) expect(contrast(v[fg]!, v[bg]!), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
       for (const fg of ['--ot-edge', '--ot-ink', '--ot-field-border']) for (const bg of ['--ot-surface', '--ot-panel']) expect(contrast(v[fg]!, v[bg]!), `${fg} on ${bg}`).toBeGreaterThanOrEqual(3)
-      expect(contrast(v['--ot-focus']!, v['--ot-surface']!), 'focus ring on surface').toBeGreaterThanOrEqual(3)
+      for (const bg of ['--ot-surface', '--ot-panel']) expect(contrast(v['--ot-focus']!, v[bg]!), `focus ring on ${bg}`).toBeGreaterThanOrEqual(3)
       // Lesson markers: their digits sit on the selection color.
       const badge = /\.ot-badge text \{ fill: (#[0-9a-f]{6})/.exec(css)![1]!
       expect(contrast(badge, v['--ot-selected']!)).toBeGreaterThanOrEqual(4.5)
     })
   }
+
+  it('draws the focus ring in the darker orange on light backgrounds and keeps the brand orange for selection (N154, 2026-11-11)', () => {
+    expect(themes.light['--ot-focus']).toBe('#a65f20')
+    expect(themes.dark['--ot-focus']).toBe('#e7a066')
+    expect(themes.light['--ot-selected']).toBe('#cf8137')
+    for (const bg of ['--ot-surface', '--ot-panel']) expect(contrast(themes.light['--ot-focus']!, themes.light[bg]!)).toBeGreaterThanOrEqual(4.6)
+    for (const rule of css.matchAll(/:focus(?:-visible|-within)[^{]*\{[^}]*outline: 2px solid ([^;]+);/g)) expect(rule[1]).toBe('var(--ot-focus)')
+  })
 
   it('uses no undefined color variable, and remove buttons are at least 24 px (WCAG 2.5.8)', () => {
     const defined = new Set([...css.matchAll(/(--ot-[a-z-]+):/g)].map((m) => m[1]))

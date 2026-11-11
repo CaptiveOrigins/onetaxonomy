@@ -2,6 +2,14 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: focus ring colour
+
+Scope: the focus-ring gap from the accessibility audit below, closed by owner decision N154 (2026-11-11, option A): "keep the brand orange everywhere else, but use the darker orange #a65f20 for focus rings on light backgrounds (4.6 to 1 or better). Dark mode keeps the lighter orange, which already passes." Only colour variables and focus rules changed; core, import, layout and education are unchanged. Tests went from 281 to 283: react 85 to 86 (`a11y.test.tsx`), studio 39 to 40 (`theme.test.ts`).
+
+- **Before and after (focus colour on the background it sits on):** light, explorer, outline, lesson and tip-links rings (`--ot-focus`): `#cf8137` 3.07:1 on the surface (`#ffffff`), 2.88:1 on the panel (`#fbf7f4`); now `#a65f20`, 4.91:1 and 4.61:1. Light, studio rings: `--accent` `#cf8137` 3.07:1 on the page and fields, 2.89:1 on the toolbar (`#fdf7f7`); now `--focus` `#a65f20`, 4.91:1 and 4.63:1. Dark, unchanged: `#e7a066` 8.36:1 on the explorer surface (`#1c1311`), 7.85:1 on its panel (`#241916`); 8.37:1 on the studio page, 7.82:1 on its panel, 7.11:1 on fields.
+- **Covered:** `a11y.test.tsx`: the contrast test now checks the focus ring on the panel as well as the surface (it checked only the surface, which is why 2.88:1 passed); a new test pins light `--ot-focus` at `#a65f20` (4.6:1 or better on surface and panel), dark at `#e7a066`, selection still `#cf8137`, and every outline focus rule on `var(--ot-focus)`. `theme.test.ts`: the studio's focus check now reads `--focus` on page, panel and field in light and dark (it read `--accent` on the page only); a new test pins `--focus` at `#a65f20` in light and `#e7a066` in both dark blocks, `--accent` still `#cf8137`, and both studio focus rules on `var(--focus)`. The existing check that a chosen appearance copies the library's values now covers the new `--ot-focus`.
+- **Gaps left:** not looked at in the built app or a browser; the ratios are computed from the CSS. The canvas renderer being added in another branch should take its focus colour from `--ot-focus`.
+
 ## 2026-11-11: possible tip matches, long trees, more shapes, drawing focus
 
 Scope: the gaps left by the linking and accessibility sections below. React gains `nearNameMatches` and paging in `TipLinker`, six more mark shapes, and ADR 0010 for drawing focus. Core, import and the Mac app are unchanged. Tests went from 267 to 281: react 71 to 85 (12 in the new `tipnear.test.tsx`, 2 in `a11y.test.tsx`). Everything ran in Node or jsdom: no screen reader, browser or built app.
@@ -64,7 +72,7 @@ Scope: the small and medium gaps from the accessibility audit below. The brand-o
 
 ### Gaps left
 
-- **The focus ring** is 2.88:1 on the panels: owner decision N154.
+- **The focus ring** is 2.88:1 on the panels: owner decision N154. Since fixed: see "2026-11-11: focus ring colour".
 - **Shapes repeat after six** highlights or trait states. Past that, color and the words in the inspector and legend tell them apart. (Addressed in "possible tip matches" above.)
 - **Only the first highlight on a node is drawn.** That hasn't changed: a node in two highlights shows one halo.
 - **The drawing's nodes still aren't reachable with Tab** (the outline is the way in; why is now ADR 0010), and live regions that mount with their first message (the clade check with a second taxon) still need a screen reader to confirm.
@@ -190,7 +198,7 @@ Scope: milestone M8's accessibility audit. A code-level check of the React compo
 
 ### Gaps left
 
-- **The brand-orange focus ring is 2.88:1 on the explorer panel** (`#cf8137` on `#fbf7f4`) and 2.89:1 on the studio toolbar (`#fdf7f7`), under 3:1. It's 3.07:1 on white and 7.8:1 or more in dark. `brand/README.md` names this exact color for focus and is kept identical across the One tools, so changing it is the owner's call: a deeper orange such as `#a65f20` for the ring, or panels close to white (`#fefcfb` gives 3.00:1).
+- **The brand-orange focus ring is 2.88:1 on the explorer panel** (`#cf8137` on `#fbf7f4`) and 2.89:1 on the studio toolbar (`#fdf7f7`), under 3:1. It's 3.07:1 on white and 7.8:1 or more in dark. `brand/README.md` names this exact color for focus and is kept identical across the One tools, so changing it is the owner's call: a deeper orange such as `#a65f20` for the ring, or panels close to white (`#fefcfb` gives 3.00:1). **Fixed 2026-11-11** (owner decision N154, option A): the ring is now `#a65f20` in light, 4.61:1 on the explorer panel and 4.63:1 on the studio toolbar; dark keeps `#e7a066`. See "2026-11-11: focus ring colour" above.
 - **Highlights and trait states are told apart by color in the drawing.** Each node's highlights and trait state are in words in the inspector, and the legend names each color, but the halos (35% opacity) and trait dots have no shape or pattern of their own, and trait colors come from the data unchecked. Fixing it means a shape or letter per highlight or state: a design change.
 - **Dragging has no single-pointer alternative for two actions (2.5.7).** Reordering siblings (Alt+Up/Down in the outline is keyboard only; "Flip children" only reverses) and panning (zoom and fit are buttons, panning isn't). Moving under a new parent has the "Move under" list. Small "move up/down" buttons in the inspector and pan buttons would close it.
 - **The drawing's nodes are `role="button"` inside an SVG with `role="img"`,** whose children screen readers ignore, and they can't be reached with Tab. The outline is the accessible way to the same nodes, by design. Making the drawing itself navigable is larger and overlaps the planned canvas renderer.

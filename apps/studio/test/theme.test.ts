@@ -40,9 +40,19 @@ describe('studio colors', () => {
     for (const v of [light, dark]) {
       for (const fg of ['--text', '--muted']) for (const bg of ['--bg', '--panel', '--field']) expect(contrast(v[fg]!, v[bg]!), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
       for (const bg of ['--bg', '--field']) expect(contrast(v['--field-border']!, v[bg]!), `field border on ${bg}`).toBeGreaterThanOrEqual(3)
-      expect(contrast(v['--accent']!, v['--bg']!), 'focus ring on the page').toBeGreaterThanOrEqual(3)
+      for (const bg of ['--bg', '--panel', '--field']) expect(contrast(v['--focus']!, v[bg]!), `focus ring on ${bg}`).toBeGreaterThanOrEqual(3)
       for (const bg of ['--bg', '--panel']) expect(contrast(v['--error']!, v[bg]!), `errors on ${bg}`).toBeGreaterThanOrEqual(4.5)
     }
+  })
+
+  it('draws focus rings in the darker orange in light, the lighter orange in dark, and keeps the brand orange as the accent (N154, 2026-11-11)', () => {
+    expect(light['--focus']).toBe('#a65f20')
+    expect(dark['--focus']).toBe('#e7a066')
+    expect(light['--accent']).toBe('#cf8137')
+    expect(vars(block(appCss, ':root:not('), '--')['--focus']).toBe('#e7a066')
+    const rings = [...appCss.matchAll(/:focus-visible \{ outline: 2px solid ([^;]+);/g)].map((m) => m[1])
+    expect(rings.length).toBeGreaterThan(0)
+    for (const ring of rings) expect(ring).toBe('var(--focus)')
   })
 
   it('a chosen appearance sets the explorer colors too, with the library values', () => {
