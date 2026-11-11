@@ -3,10 +3,17 @@ import type { Id, TraitSet } from '@captiveorigins/onetaxonomy-core'
 /**
  * Shapes that tell highlights and trait states apart without color (WCAG 1.4.1). The
  * drawing and the legend use the same shape for the same thing, so a reader who can't
- * tell the colors apart can still match them. After six they repeat.
+ * tell the colors apart can still match them. There are twelve, chosen to differ in
+ * outline at 10 to 15 px (no pentagon or octagon, which look like circles that small).
+ * After twelve they repeat, and the words in the legend and inspector tell them apart.
  */
-export type MarkShape = 'circle' | 'square' | 'diamond' | 'triangle' | 'triangle-down' | 'hexagon'
-export const MARK_SHAPES: readonly MarkShape[] = ['circle', 'square', 'diamond', 'triangle', 'triangle-down', 'hexagon']
+export type MarkShape =
+  | 'circle' | 'square' | 'diamond' | 'triangle' | 'triangle-down' | 'hexagon'
+  | 'star' | 'plus' | 'cross' | 'triangle-left' | 'triangle-right' | 'hourglass'
+export const MARK_SHAPES: readonly MarkShape[] = [
+  'circle', 'square', 'diamond', 'triangle', 'triangle-down', 'hexagon',
+  'star', 'plus', 'cross', 'triangle-left', 'triangle-right', 'hourglass',
+]
 
 export const shapeAt = (i: number): MarkShape => MARK_SHAPES[((i % MARK_SHAPES.length) + MARK_SHAPES.length) % MARK_SHAPES.length]!
 
@@ -31,6 +38,40 @@ export function shapePath(shape: MarkShape, r: number): string {
     case 'triangle-down': {
       const s = r * 1.3
       return poly([[0, s], [s * 0.95, -s * 0.7], [-s * 0.95, -s * 0.7]])
+    }
+    case 'triangle-left': {
+      const s = r * 1.3
+      return poly([[-s, 0], [s * 0.7, -s * 0.95], [s * 0.7, s * 0.95]])
+    }
+    case 'triangle-right': {
+      const s = r * 1.3
+      return poly([[s, 0], [-s * 0.7, -s * 0.95], [-s * 0.7, s * 0.95]])
+    }
+    case 'hourglass': {
+      const s = r * 1.05
+      return poly([[-s, -s], [s, -s], [0, 0], [s, s], [-s, s], [0, 0]])
+    }
+    case 'star': {
+      const outer = r * 1.4
+      const inner = outer * 0.45
+      return poly(Array.from({ length: 10 }, (_, i) => {
+        const a = -Math.PI / 2 + (Math.PI / 5) * i
+        const d = i % 2 ? inner : outer
+        return [d * Math.cos(a), d * Math.sin(a)] as [number, number]
+      }))
+    }
+    case 'plus': {
+      const s = r * 1.15
+      const w = s * 0.38
+      return poly([[-w, -s], [w, -s], [w, -w], [s, -w], [s, w], [w, w], [w, s], [-w, s], [-w, w], [-s, w], [-s, -w], [-w, -w]])
+    }
+    case 'cross': {
+      // The plus turned 45 degrees.
+      const s = r * 1.15
+      const w = s * 0.38
+      const c = Math.SQRT1_2
+      const turn = ([x, y]: [number, number]): [number, number] => [(x - y) * c, (x + y) * c]
+      return poly(([[-w, -s], [w, -s], [w, -w], [s, -w], [s, w], [w, w], [w, s], [-w, s], [-w, w], [-s, w], [-s, -w], [-w, -w]] as [number, number][]).map(turn))
     }
     case 'hexagon':
       return poly(Array.from({ length: 6 }, (_, i) => [r * 1.05 * Math.cos((Math.PI / 3) * i), r * 1.05 * Math.sin((Math.PI / 3) * i)] as [number, number]))

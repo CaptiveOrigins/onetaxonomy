@@ -7,7 +7,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createView, describeView, indexDataset, makeHighlight, projectView, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
 import { createLesson, sceneFromView } from '@captiveorigins/onetaxonomy-education'
-import { Explorer, Legend, LessonPlayer, MARK_SHAPES, shapePath, standaloneSvg, TreeOutline } from '../src'
+import { Explorer, Legend, LessonPlayer, MARK_SHAPES, shapePath, standaloneSvg, traitShapes, TreeOutline } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 import amniotesJson from '../../../fixtures/amniotes.json'
 
@@ -102,6 +102,16 @@ describe('tree outline keys (WCAG 2.1.1)', () => {
 })
 
 describe('explorer keyboard and status (WCAG 2.1.1, 2.4.7, 4.1.3)', () => {
+  it('keeps drawing nodes out of the Tab order: the canvas is one stop and the outline tree is the way to each taxon (ADR 0010)', () => {
+    const { container } = render(<Explorer dataset={cl} initialView={clView()} title="Checklist" />)
+    const nodes = [...container.querySelectorAll<SVGGElement>('svg.ot-root .ot-node')]
+    expect(nodes.length).toBeGreaterThan(1)
+    expect(nodes.every((n) => n.getAttribute('tabindex') === '-1')).toBe(true)
+    expect(container.querySelector('svg.ot-root')!.getAttribute('role')).toBe('img')
+    const items = screen.getAllByRole('treeitem')
+    expect(items.filter((i) => i.tabIndex === 0)).toHaveLength(1)
+  })
+
   it('documents and handles the drawing keys: arrows pan, + and − zoom, 0 fits, Escape clears', () => {
     const { container } = render(<Explorer dataset={cl} initialView={{ ...clView(), selected: ['fx:3'] }} title="Checklist" />)
     const canvas = screen.getByRole('group', { name: /arrow keys pan, \+ and − zoom, 0 fits, Escape clears the selection/ })
@@ -331,6 +341,8 @@ describe('reasons and targets', () => {
   })
 })
 
+const traitShapesFor = (n: number) => [...traitShapes({ id: 't', title: 'T', source: 's', states: Array.from({ length: n }, (_, i) => ({ id: `s${i}`, label: `S${i}` })), values: [] }).values()]
+
 describe('not by color alone in the drawing (WCAG 1.4.1)', () => {
   const traitSnapshot = (): DatasetSnapshot => ({
     ...(JSON.parse(JSON.stringify(amniotesJson)) as DatasetSnapshot),
@@ -338,9 +350,23 @@ describe('not by color alone in the drawing (WCAG 1.4.1)', () => {
     traits: [{ id: 'repro', title: 'Reproduction', source: 'fixture', states: [{ id: 'egg', label: 'Lays eggs', color: '#cc3333' }, { id: 'live', label: 'Live birth', color: '#cc3334' }], values: [{ concept: 'c:testudines', state: 'egg' }, { concept: 'c:mammalia', state: 'live' }] }],
   })
 
-  it('every shape is a closed path', () => {
+  it('every shape is a closed path, and there are twelve different ones', () => {
     for (const shape of MARK_SHAPES) expect(shapePath(shape, 5)).toMatch(/^M.*Z$/)
+    expect(MARK_SHAPES).toHaveLength(12)
     expect(new Set(MARK_SHAPES.map((s) => shapePath(s, 5))).size).toBe(MARK_SHAPES.length)
+  })
+
+  it('keeps shapes apart past six highlights and trait states, in the drawing and the legend alike', () => {
+    const v = createView(am, { id: 'v', title: 'A', target: { kind: 'phylogeny', id: 'archelosauria' } })
+    const tips = ['t-mammalia', 't-squamata', 't-rhyncho', 't-testudines', 't-crocodylia', 't-aves']
+    // Eight made-up highlights, all one color, each on its own node.
+    const hs = [...tips, 'archosauria', 'lepidosauria'].map((node, i) => ({ ...makeHighlight(am, v, { id: `h${i}`, label: `H${i}`, members: [node] }), color: '#cf8137' }))
+    const { container } = render(<Explorer dataset={am} initialView={{ ...v, highlights: hs }} title="A" />)
+    const halo = (id: string) => container.querySelector(`.ot-node[data-id="${id}"] .ot-node-halo`)?.getAttribute('data-shape')
+    expect([...tips, 'archosauria', 'lepidosauria'].map(halo)).toEqual(MARK_SHAPES.slice(0, 8))
+    const legend = [...container.querySelectorAll('.ot-legend li svg[data-shape]')].map((s) => s.getAttribute('data-shape'))
+    expect(legend).toEqual(MARK_SHAPES.slice(0, 8))
+    expect(traitShapesFor(14)).toEqual([...MARK_SHAPES, 'circle', 'square'])
   })
 
   it('draws each highlight in its own shape, and the legend shows the same shape beside its name', () => {
