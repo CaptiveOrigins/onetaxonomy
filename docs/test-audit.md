@@ -2,6 +2,33 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: linking tree tips to taxa
+
+Scope: the gap left in the section below ("Comparison in the Mac app always refuses files it imports itself"). React gains `TipLinker`, `proposeTipLinks` and `linkedPhylogeny`; the Mac app gains "Link tips to taxa…" and "Add tree…". Core and import are unchanged. Tests went from 228 to 248: react 44 to 58 (`tiplinks.test.tsx`, 14 new), studio 31 to 37 (2 in `open.test.ts`, 2 in `files.test.ts`, 2 in `app.test.tsx`; the theme test now finds the library's colors under the new `.ot-tip-links` scope). Everything ran in jsdom with Tauri mocked: no screen reader, browser or built app.
+
+### Covered
+
+- **Nothing is linked silently.** On opening, every tip is unlinked and listed, and the "make" button is disabled. Proposals are exact names, letter case aside, through core's `findByName`: an accepted name and a synonym are each one unique match, two taxa with one name are ambiguous, a misapplied name is proposed with "check before accepting", and internal nodes are never matched (`tiplinks.test.tsx`).
+- **Accept all is one explicit action that says how many.** Its button reads "Accept all exact unique matches (2)", it takes only accepted-name and synonym matches (not the misapplied or ambiguous ones), says "Accepted 2 exact unique matches." in the status region, never re-links a tip the person left unlinked or one that was already linked, and is disabled with "No exact unique matches to accept" when there are none.
+- **Accept, change, leave.** One proposal accepted with its row's button (named "Accept Zetus nonus for Zetus decimus", which starts with its visible text); a homonym chosen in the select, which lists every candidate with authorship, rank, source and id; a link removed ("Alphus primus left unlinked."). Each decision is announced in a status region that is mounted and empty before the first one.
+- **Keyboard.** Focus moves to the step's title when it opens. "Another taxon…" puts focus in a name field: Enter links the one taxon with that exact name, says when none has it, offers every taxon when several do (without choosing), and does nothing when the field is empty; Escape closes it. The table has a caption and column and row headers. In the Mac app, Cancel and confirming return focus to "Link tips to taxa…".
+- **The open snapshot is never changed.** `linkedPhylogeny` and `TipLinker` leave a sealed snapshot's JSON unchanged; the new record has a free id, only the changed tips' `concepts` (the model's explicit mapping), a `conceptLink` annotation saying whether the person confirmed a name match or chose the taxon, and the same edges. It validates, and an unknown concept or node is refused.
+- **Linking makes comparison possible, and its limit is shown.** The imported tree is refused by `comparePhylogenies`; the linked one compares. One taxon on two tips is flagged with the reason comparison would refuse it.
+- **Mac app, end to end.** A tree opened alone gets the plain reason no tip can match and how to fix it. With the fixture checklist open: Add tree… shows only tree files, adds the tree as a new snapshot and shows it; linking it makes "alpha (tips linked)" and shows it; a second tree likewise; "Compare with…" then gives Robinson-Foulds 4 on 4 shared tips. Saving over the added tree file is refused before anything is written; saving elsewhere writes a sealed file with all four trees, the imported ones still unlinked (`app.test.tsx`).
+- **Adding trees.** `withTrees` renames a source or tree id already in use (a checklist and a tree both named "alpha" is likely), keeps the trees' source references right, never links a tip, leaves the open snapshot unchanged, and refuses a file that brings taxa or a classification (taxonomies are never merged) or no tree (`open.test.ts`). `saveJson` refuses every file the dataset came from (`files.test.ts`).
+
+### Gaps left
+
+- **Only exact names are proposed.** Spelling variants, authorship in the label ("Alphus primus Fixture, 2026"), trinomials written differently, and labels with specimen codes ("Alphus_primus_AB123") match nothing and must be found by hand. Fuzzy or rule-based matching would be a separate, labelled method, and is a decision for the lead.
+- **Long trees.** Every tip is a table row with a select. Not timed beyond the fixtures; a tree with thousands of tips may want paging or a filter for unmatched rows.
+- **Not run for real:** VoiceOver reading the table, the selects' optgroups and the status region; the datalist suggestions in WebKit; the Tauri dialogs and writes in the built app.
+- **Add tree… needs the taxa first.** A tree opened alone can't be linked: the step says so. Opening a snapshot that holds both is the other way in.
+
+### Left out as overkill
+
+- Every label override: plain strings in one `labels` object, like the explorer's.
+- More `findByName` cases: core's own tests cover its case-folding and ambiguity.
+
 ## 2026-11-11: controls for comparison, rooting and support collapse
 
 Scope: the explorer and Mac app controls for the features in the previous section: the support threshold, "Compare with…", rerooting and midpoint rooting, and opening NEXUS and phyloXML in the Mac app. Core and import are unchanged. Tests went from 202 to 228: react 29 to 44 (`phylo.test.tsx`, 15 new), studio 20 to 31 (6 in `open.test.ts`, 1 in `files.test.ts`, 4 in the new `app.test.tsx`, which renders the whole window in jsdom with Tauri mocked). Core (101), import (42), layout (6) and education (4) are unchanged. Everything ran in jsdom: no screen reader, browser or built app.

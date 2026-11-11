@@ -1,11 +1,11 @@
 import { createView, indexDataset, parseView, serializeView, validateDataset, validateView, type DatasetSnapshot, type Phylogeny, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
 import type { ChecklistColumns } from '@captiveorigins/onetaxonomy-import'
-import { Explorer } from '@captiveorigins/onetaxonomy-react'
+import { Explorer, TipLinker } from '@captiveorigins/onetaxonomy-react'
 import { invoke } from '@tauri-apps/api/core'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
-import { pickDataset, pickView, saveJson, type PickedFile } from './files'
-import { COLUMN_KEYS, delimiterOf, kindOf, openDwca, openSnapshot, openTable, openTree, sealedJson, suggestColumns, tableHeader, targetsOf, treeQuestions, withPhylogeny, type ColumnKey, type Opened, type Target, type TreeKind } from './open'
+import { pickDataset, pickTree, pickView, saveJson, type PickedFile } from './files'
+import { COLUMN_KEYS, delimiterOf, kindOf, openDwca, openSnapshot, openTable, openTree, sealedJson, suggestColumns, tableHeader, targetsOf, treeQuestions, withPhylogeny, withTrees, type ColumnKey, type Opened, type Target, type TreeKind } from './open'
 import { StatusBar } from './StatusBar'
 import { checkForUpdates, IN_APP_UPDATES, loadSettings, saveSettings, type Settings } from './updates'
 
@@ -20,11 +20,16 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
 }
 
 type Pending =
-  | { kind: 'tree'; format: TreeKind; file: PickedFile; rooted: boolean; supportMethods: number }
+  | { kind: 'tree'; format: TreeKind; file: PickedFile; rooted: boolean; supportMethods: number; add?: boolean }
+  | { kind: 'links'; phylogeny: string }
   | { kind: 'table'; file: PickedFile; header: string[]; delimiter: string; columns: Partial<Record<ColumnKey, string>> }
 
 const baseName = (path: string) => path.split(/[\\/]/).pop() ?? path
 const message = (e: unknown) => (e instanceof Error ? e.message : String(e))
+const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`
+
+/** Said when the dataset has no taxa: the way to get some in the app. */
+const NO_CONCEPTS = 'This dataset has no taxa to link to, so no tip can be matched. Open the checklist or snapshot that has the taxa, then use Add tree… to bring this tree into it.'
 
 export function App() {
   const [snapshot, setSnapshot] = useState<DatasetSnapshot | null>(null)
@@ -41,7 +46,11 @@ export function App() {
   const currentView = useRef<TaxonomicView | null>(null)
   // The file on disk that was opened: saving over it is refused. `derived` is set once a rooted tree is added.
   const [openedPath, setOpenedPath] = useState('')
-  const [derived, setDerived] = useState(false)
+  // Tree files added with Add tree…: never written over either.
+  const [addedPaths, setAddedPaths] = useState<string[]>([])
+  // What the dataset on screen was made with, for the suggested file name: '' when it is the opened file as it was.
+  const [derived, setDerived] = useState<'' | 'rooted' | 'linked' | 'with-trees'>('')
+  const linkButton = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     void loadSettings().then((s) => {
@@ -76,7 +85,8 @@ export function App() {
     const problems = validateDataset(opened.snapshot).filter((d) => d.severity === 'error').length
     setSnapshot(opened.snapshot)
     setOpenedPath(path)
-    setDerived(false)
+    setAddedPaths([])
+    setDerived('')
     setFileName(baseName(path))
     setNotices(opened.notices)
     setSeal(opened.seal ?? '')
@@ -134,28 +144,73 @@ export function App() {
 
   const save = async (name: string, text: () => string, done: string) => {
     try {
-      const path = await saveJson(name, text(), openedPath ? { never: openedPath } : {})
+      const path = await saveJson(name, text(), openedPath ? { never: [openedPath, ...addedPaths] } : {})
       if (path) setStatus(`${done} ${baseName(path)}.`)
     } catch (e) {
       fail('save', e, 'Nothing was changed. Try another location.')
     }
   }
 
-  // A rooted copy joins the dataset as a new tree and is shown; the open file and its record stay as they were.
-  const addRooted = (record: Phylogeny) => {
-    if (!snapshot) return
+  // A rooted or linked copy joins the dataset as a new tree and is shown; the open file and its record stay as they were.
+  const addDerived = (record: Phylogeny, how: 'rooted' | 'linked', done: string) => {
+    if (!snapshot) return false
     try {
       const next = withPhylogeny(snapshot, record, new Date().toISOString())
       indexDataset(next)
       setSnapshot(next)
-      setDerived(true)
+      setDerived(how)
       setSeal('')
       setTargetKey(`phylogeny:${record.id}`)
       setLoadedView(null)
+      setPending(null)
       setViewKey((n) => n + 1)
-      setStatus(`Made a new tree, “${record.title}”, and showed it. ${baseName(openedPath)} is unchanged; Save snapshot… writes both trees to a new file.`)
+      setStatus(done)
+      return true
     } catch (e) {
-      fail('add the rooted tree', e, 'The tree shown is unchanged.')
+      fail(`add the ${how} tree`, e, 'The tree shown is unchanged.')
+      return false
+    }
+  }
+  const addRooted = (record: Phylogeny) =>
+    addDerived(record, 'rooted', `Made a new tree, “${record.title}”, and showed it. ${baseName(openedPath)} is unchanged; Save snapshot… writes both trees to a new file.`)
+  const addLinked = (record: Phylogeny, changed: number) => {
+    if (addDerived(record, 'linked', `Made a new tree, “${record.title}”, with ${plural(changed, 'tip link', 'tip links')} changed, and showed it. ${baseName(openedPath)} is unchanged; Save snapshot… writes it to a new file.`)) linkButton.current?.focus()
+  }
+
+  // Trees from another file join the open dataset, so their tips can be linked to its taxa. The open file is unchanged.
+  const addTrees = (opened: Opened, path: string) => {
+    if (!snapshot) return
+    try {
+      const next = withTrees(snapshot, opened.snapshot, new Date().toISOString())
+      indexDataset(next)
+      const added = next.phylogenies.slice(snapshot.phylogenies.length)
+      setSnapshot(next)
+      setDerived('with-trees')
+      setSeal('')
+      setAddedPaths((p) => [...p, path])
+      setNotices((n) => [...n, ...opened.notices])
+      setTargetKey(`phylogeny:${added[0]!.id}`)
+      setLoadedView(null)
+      setPending(null)
+      setViewKey((n) => n + 1)
+      setStatus(`Added ${plural(added.length, 'tree', 'trees')} from ${baseName(path)} and showed “${added[0]!.title}”. ${baseName(openedPath)} is unchanged. Link tips to taxa… links its tips to this dataset's taxa.`)
+    } catch (e) {
+      fail('add that tree', e, 'The open dataset is unchanged.')
+    }
+  }
+
+  const addTree = async () => {
+    if (!snapshot) return
+    try {
+      const file = await pickTree()
+      if (!file) return
+      const kind = kindOf(file.path, file.text)
+      if (kind !== 'newick' && kind !== 'nexus' && kind !== 'phyloxml') throw new Error('That is not a Newick, NEXUS or phyloXML file.')
+      const q = treeQuestions(kind, file.text)
+      if (q.rooted || q.supportMethods) setPending({ kind: 'tree', format: kind, file, ...q, add: true })
+      else addTrees(openTree(kind, file.text, file.path, {}, new Date().toISOString()), file.path)
+    } catch (e) {
+      fail('add that tree', e, 'The open dataset is unchanged.')
     }
   }
 
@@ -171,8 +226,9 @@ export function App() {
         <h1 className="app-title">{fileName || 'OneTaxonomy'}</h1>
         <button type="button" onClick={() => void open()}>Open…</button>
         <button type="button" disabled={!dataset} onClick={() => void openView()}>Open view…</button>
+        <button type="button" disabled={!snapshot} onClick={() => void addTree()}>Add tree…</button>
         <button type="button" disabled={!view} onClick={() => void save(`${fileName.replace(/\.[^.]+$/, '') || 'view'}.view.json`, () => serializeView(currentView.current ?? view!), 'Saved view to')}>Save view…</button>
-        <button type="button" disabled={!snapshot} onClick={() => void save(`${snapshot?.id ?? 'dataset'}${derived ? '-rooted' : ''}.snapshot.json`, () => sealedJson(snapshot!), 'Saved snapshot to')}>Save snapshot…</button>
+        <button type="button" disabled={!snapshot} onClick={() => void save(`${snapshot?.id ?? 'dataset'}${derived ? `-${derived}` : ''}.snapshot.json`, () => sealedJson(snapshot!), 'Saved snapshot to')}>Save snapshot…</button>
         {targets.length > 1 && (
           <label>
             Show{' '}
@@ -190,6 +246,9 @@ export function App() {
             </select>
           </label>
         )}
+        <button ref={linkButton} type="button" disabled={target?.kind !== 'phylogeny'} aria-expanded={pending?.kind === 'links'} onClick={() => target?.kind === 'phylogeny' && setPending({ kind: 'links', phylogeny: target.id })}>
+          Link tips to taxa…
+        </button>
         <span className="app-spacer" />
         <button type="button" disabled={!view} onClick={() => void invoke('print_window').catch((e) => fail('print', e, 'Try again.'))}>Print</button>
         <button type="button" aria-expanded={showSettings} onClick={() => setShowSettings((s) => !s)}>Settings</button>
@@ -204,12 +263,28 @@ export function App() {
             onCancel={() => setPending(null)}
             onOpen={(rooted, supportMethods) => {
               try {
-                show(openTree(pending.format, pending.file.text, pending.file.path, { ...(pending.rooted ? { rooted } : {}), supportMethods }, new Date().toISOString()), pending.file.path)
+                const opened = openTree(pending.format, pending.file.text, pending.file.path, { ...(pending.rooted ? { rooted } : {}), supportMethods }, new Date().toISOString())
+                if (pending.add) addTrees(opened, pending.file.path)
+                else show(opened, pending.file.path)
               } catch (e) {
                 fail('read that tree', e, `Check that it is valid ${FORMAT_NAMES[pending.format]}, then try again.`)
               }
             }}
           />
+        ) : pending?.kind === 'links' && dataset ? (
+          <div className="app-panel app-panel-wide">
+            <TipLinker
+              key={pending.phylogeny}
+              dataset={dataset}
+              phylogeny={pending.phylogeny}
+              labels={{ noConcepts: NO_CONCEPTS }}
+              onConfirm={addLinked}
+              onCancel={() => {
+                setPending(null)
+                linkButton.current?.focus()
+              }}
+            />
+          </div>
         ) : pending?.kind === 'table' ? (
           <TableForm
             pending={pending}
@@ -264,7 +339,7 @@ function TreeForm({ pending, onOpen, onCancel }: { pending: Extract<Pending, { k
         </label>
       )}
       <div className="app-row">
-        <button type="button" disabled={!ready} onClick={() => onOpen(rooted === 'yes', names)}>Open tree</button>
+        <button type="button" disabled={!ready} onClick={() => onOpen(rooted === 'yes', names)}>{pending.add ? 'Add tree' : 'Open tree'}</button>
         <button type="button" onClick={onCancel}>Cancel</button>
       </div>
     </section>

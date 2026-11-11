@@ -14,6 +14,15 @@ export async function pickDataset(): Promise<PickedFile | null> {
   return { path, text: await readTextFile(path) }
 }
 
+export const TREE_EXTENSIONS = OPEN_EXTENSIONS.filter((e) => ['newick', 'nexus', 'phyloxml'].includes(kindOf(`x.${e}`) ?? ''))
+
+/** A tree file to add to the open dataset. */
+export async function pickTree(): Promise<PickedFile | null> {
+  const path = await openDialog({ multiple: false, filters: [{ name: 'Newick, NEXUS and phyloXML trees', extensions: TREE_EXTENSIONS }] })
+  if (typeof path !== 'string') return null
+  return { path, text: await readTextFile(path) }
+}
+
 export async function pickView(): Promise<string | null> {
   const path = await openDialog({ multiple: false, filters: [{ name: 'OneTaxonomy view', extensions: ['json'] }] })
   return typeof path === 'string' ? readTextFile(path) : null
@@ -46,14 +55,15 @@ export async function writeFileSafely(path: string, text: string) {
 export const OPENED_FILE_REFUSAL = "That is the file you opened, and OneTaxonomy never writes over it."
 
 /**
- * Asks where to save, then saves safely. `never` is the path of the file that was opened:
- * choosing it is refused before anything is written, so an open file is never replaced.
+ * Asks where to save, then saves safely. `never` is the path of the file that was opened (or
+ * several: trees added to it count too): choosing one is refused before anything is written,
+ * so an open file is never replaced.
  */
-export async function saveJson(defaultPath: string, text: string, { never }: { never?: string } = {}): Promise<string | null> {
+export async function saveJson(defaultPath: string, text: string, { never }: { never?: string | string[] } = {}): Promise<string | null> {
   const path = await saveDialog({ defaultPath, filters: [{ name: 'JSON', extensions: ['json'] }] })
   if (!path) return null
   // macOS volumes usually ignore case, so the comparison does too: a false refusal is safer than an overwrite.
-  if (never && path.toLowerCase() === never.toLowerCase()) throw new Error(OPENED_FILE_REFUSAL)
+  if ([never ?? []].flat().some((p) => p && path.toLowerCase() === p.toLowerCase())) throw new Error(OPENED_FILE_REFUSAL)
   await writeFileSafely(path, text)
   return path
 }

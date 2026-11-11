@@ -25,12 +25,12 @@
  * otherwise Light on a dark system draws light text on a white page. Same values as the light and dark blocks in
  * @captiveorigins/onetaxonomy-react/styles.css (test/theme.test.ts keeps them equal).
  */
-:root[data-appearance='light'] :is(.ot-root, .ot-explorer, .ot-lesson) {
+:root[data-appearance='light'] :is(.ot-root, .ot-explorer, .ot-lesson, .ot-tip-links) {
   --ot-ink: #4c312c; --ot-text: #1d2330; --ot-muted: #5b6577; --ot-edge: #a08a83; --ot-node: var(--ot-ink);
   --ot-selected: #cf8137; --ot-selected-text: #a65f20; --ot-warning: #b45309; --ot-error: #b91c1c; --ot-field-border: #a08a83;
   --ot-surface: #ffffff; --ot-panel: #fbf7f4; --ot-border: #eaddd6; --ot-focus: #cf8137;
 }
-:root[data-appearance='dark'] :is(.ot-root, .ot-explorer, .ot-lesson) {
+:root[data-appearance='dark'] :is(.ot-root, .ot-explorer, .ot-lesson, .ot-tip-links) {
   --ot-ink: #eda9ac; --ot-text: #eef1f6; --ot-muted: #a7b0c0; --ot-edge: #8a7470; --ot-node: var(--ot-ink);
   --ot-selected: #e7a066; --ot-selected-text: #e7a066; --ot-warning: #fbbf24; --ot-error: #f87171; --ot-field-border: #8a7470;
   --ot-surface: #1c1311; --ot-panel: #241916; --ot-border: #3a2a26; --ot-focus: #e7a066;
@@ -53,6 +53,7 @@ button:disabled { opacity: 0.5; cursor: default; }
 .app-seal { margin: 4px 0; padding: 2px 8px; border-inline-start: 3px solid var(--accent); color: var(--text); }
 .app-main { flex: 1; min-height: 0; overflow: auto; }
 .app-panel { max-width: 34rem; margin: 2rem auto; padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }
+.app-panel-wide { max-width: 60rem; }
 .app-panel h2 { margin: 0 0 0.5rem; font-size: 16px; }
 .app-hint { font-size: 13px; color: var(--muted); }
 .app-field { display: grid; gap: 4px; margin-bottom: 10px; }

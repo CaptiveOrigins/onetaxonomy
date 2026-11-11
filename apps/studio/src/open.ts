@@ -125,6 +125,48 @@ export function withPhylogeny(s: DatasetSnapshot, record: Phylogeny, now: string
   }
 }
 
+const freeId = (base: string, taken: Set<string>) => {
+  if (!taken.has(base)) return base
+  let n = 2
+  while (taken.has(`${base}-${n}`)) n++
+  return `${base}-${n}`
+}
+
+/**
+ * The open dataset with the trees from another file added (a tree opened with Add tree…, so
+ * its tips can be linked to this dataset's taxa). A new, unsealed snapshot that says what it
+ * was made from; the open one is not touched. A source or tree id already in use gets a
+ * suffix ("-2"), and the trees' source references follow it. Names, concepts and
+ * classifications are never merged: a file that brings any is refused.
+ */
+export function withTrees(s: DatasetSnapshot, added: DatasetSnapshot, now: string): DatasetSnapshot {
+  if (added.concepts.length || added.names.length || added.classifications.length) throw new Error('That file holds taxa or a classification as well as trees; open it on its own instead')
+  if (!added.phylogenies.length) throw new Error('That file holds no tree')
+  const sourceIds = new Set(s.sources.map((x) => x.id))
+  const renamed = new Map<string, string>()
+  const sources = added.sources.map((x) => {
+    const id = freeId(x.id, sourceIds)
+    sourceIds.add(id)
+    renamed.set(x.id, id)
+    return { ...x, id }
+  })
+  const treeIds = new Set(s.phylogenies.map((p) => p.id))
+  const phylogenies = added.phylogenies.map((p) => {
+    const id = freeId(p.id, treeIds)
+    treeIds.add(id)
+    return { ...p, id, sources: p.sources.map((x) => renamed.get(x) ?? x) }
+  })
+  const { checksum, ...rest } = s
+  return {
+    ...rest,
+    version: `${s.version}+${phylogenies.map((p) => p.id).join('+')}`,
+    createdAt: now,
+    derivedFrom: { snapshot: s.id, version: s.version, ...(checksum ? { checksum } : {}) },
+    sources: [...s.sources, ...sources],
+    phylogenies: [...s.phylogenies, ...phylogenies],
+  }
+}
+
 export const delimiterOf = (name: string, text: string) => (name.toLowerCase().endsWith('.tsv') || (text.split('\n', 1)[0] ?? '').includes('\t') ? '\t' : ',')
 
 export const tableHeader = (text: string, delimiter: string): string[] => parseDelimited(text.split('\n', 1)[0] ?? '', { delimiter })[0] ?? []
