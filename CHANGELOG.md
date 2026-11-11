@@ -28,6 +28,18 @@
 - Import: NEXUS (`nexusAdapter`, `readNexus`: TREES blocks with TRANSLATE tables) and phyloXML (`phyloXmlAdapter`, `readPhyloXml`: clades, names, branch lengths, confidence, taxonomy) readers. Both carry the source's license and citation, warn about what they skip, and refuse malformed input with the line. `ImportWarning` gains a `line` field.
 - Accessibility audit against WCAG 2.2 AA (`docs/test-audit.md`, 2026-11-11). React: selected and dropped labels, the "Proposed by" badge, weak-support values, errors and lesson cautions now meet 4.5:1 contrast in light and dark, and text fields have 3:1 borders. The download menu takes focus and works with arrow keys and Escape. Refusals and failed exports are announced in a status region that is always there, and a failed PNG export now says so instead of failing silently. The outline reads † as "extinct" and says it allows several selections. The drawing's keys (arrows, + and −, 0, Escape) and the outline's keys are written in the drawing's label and the inspector's hint. Lesson modes take one Tab stop and move with arrow keys, and a caution starts with "Caution:" rather than relying on color. Exported SVGs were written with `xmlns` twice in tests, which isn't valid XML; they now have it once, with the title and description first. Mac app: Light or Dark chosen in Settings now applies to the explorer as well (before, Light on a dark Mac drew near-white text on white), the window has a level-one heading, and text fields have 3:1 borders. No screen reader was used.
 
+## Mac app 0.2.0
+
+The Mac app with the work listed under Unreleased above (the npm packages are released separately). In the app:
+
+- **Save as bundle… and open `.onetaxonomy` bundles:** your checklist, trees, views and lessons in one documented ZIP with checksums; damaged bundles are named problem by problem, never half-loaded; a different version of the open dataset asks whether to keep or relink (ADR 0011: plain files, no SQLite).
+- **Trees:** open NEXUS and phyloXML; add a tree to the open checklist; link its tips to taxa (exact matches proposed, near names offered separately, nothing linked without your yes); compare two trees; reroot on a tip, a clade or the midpoint as a new record; collapse weak branches with the count shown.
+- **Large trees** draw on a canvas above 1,000 nodes, with what's too small to draw counted on screen.
+- **Accessibility:** contrast fixes, keyboard paths without dragging, toolbars you move along with the arrows, focus moved to forms and errors announced, and a darker focus ring on light backgrounds (owner, 2026-11-11).
+- **Saving:** a failed save removes its temporary file or says it couldn't; an unsealed snapshot says so when opened.
+
+Not yet tried in the built app: saving and reopening a bundle, opening a damaged one, and a VoiceOver pass (owner tests). The app is unsigned: see the README for how to open it.
+
 ## Mac app 0.1.1
 
 Fixes saving in the Mac app. 0.1.0 wasn't given permission to rename its temporary file over the chosen one, so a save very likely failed and left a `.tmp` file beside it. That was missed because the app's tests run without Tauri's permission checks. Nobody has saved with a built 0.1.0 or 0.1.1 yet: please try a save after installing.
