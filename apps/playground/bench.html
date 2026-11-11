@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>OneTaxonomy renderer benchmark</title>
+    <link rel="stylesheet" href="styles.css" />
+    <style>
+      body { margin: 0; padding: 0; font-family: system-ui, sans-serif; }
+      @media (prefers-color-scheme: dark) { body { background: #0f1218; color: #eef1f6; } }
+      /* The drawing sits at the top left, 1000 CSS pixels square, so it is on screen in a 1100 by 1100 window. */
+      #stage { width: 1000px; height: 1000px; overflow: hidden; }
+      #stage svg { display: block; width: 1000px; height: 1000px; }
+      main { padding: 1rem 1.5rem 2rem; max-width: 70rem; }
+      h1 { font-size: 1.3rem; margin: 0 0 0.5rem; }
+      button { font: inherit; padding: 0.4rem 0.9rem; }
+      table { border-collapse: collapse; margin-top: 0.75rem; }
+      th, td { border: 1px solid color-mix(in srgb, currentColor 30%, transparent); padding: 0.3rem 0.6rem; text-align: right; }
+      th:first-child, td:first-child, th:nth-child(4), td:nth-child(4) { text-align: left; }
+    </style>
+  </head>
+  <body>
+    <div id="stage" aria-hidden="true"></div>
+    <main>
+      <h1>OneTaxonomy renderer benchmark</h1>
+      <p>Pans, zooms and scrolls made-up trees, drawn as SVG and on the canvas, and times each frame. It takes about four minutes. Keep this window in front and leave the mouse alone while it runs.</p>
+      <p><button id="run" type="button">Run</button> <span id="status" role="status"></span></p>
+      <div id="results"></div>
+    </main>
+    <script src="bench.js"></script>
+  </body>
+</html>
