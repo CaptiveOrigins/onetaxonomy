@@ -10,15 +10,17 @@
   --field: #ffffff;
   /* Text-field borders: 3:1 against the field and the page (WCAG 1.4.11). */
   --field-border: #968485;
+  /* Error text: 4.5:1 on the page and the panel. */
+  --error: #b91c1c;
 }
 @media (prefers-color-scheme: dark) {
   :root:not([data-appearance='light']) {
-    --bg: #12151b; --panel: #181c24; --text: #e8ecf2; --muted: #a3acbb; --border: #2c3340; --accent: #e7a066; --field: #1f2430; --field-border: #6b7383;
+    --bg: #12151b; --panel: #181c24; --text: #e8ecf2; --muted: #a3acbb; --border: #2c3340; --accent: #e7a066; --field: #1f2430; --field-border: #6b7383; --error: #f87171;
   }
 }
 :root[data-appearance='dark'] {
   color-scheme: dark;
-  --bg: #12151b; --panel: #181c24; --text: #e8ecf2; --muted: #a3acbb; --border: #2c3340; --accent: #e7a066; --field: #1f2430; --field-border: #6b7383;
+  --bg: #12151b; --panel: #181c24; --text: #e8ecf2; --muted: #a3acbb; --border: #2c3340; --accent: #e7a066; --field: #1f2430; --field-border: #6b7383; --error: #f87171;
 }
 /*
  * The explorer's own colors follow the system through a media query, so a chosen appearance has to set them too;
@@ -50,6 +52,10 @@ button:disabled { opacity: 0.5; cursor: default; }
 .app-status { padding: 4px 12px; min-height: 22px; font-size: 13px; color: var(--muted); border-bottom: 1px solid var(--border); }
 .app-status summary { cursor: pointer; text-decoration: underline; text-underline-offset: 2px; }
 .app-status ul { margin: 4px 0; padding-inline-start: 18px; max-height: 8rem; overflow-y: auto; }
+.app-error { margin: 0; padding: 4px 12px; font-size: 13px; color: var(--error); border-bottom: 1px solid var(--border); }
+.app-error:empty { padding: 0; border: 0; }
+.app-form-title:focus { outline: none; }
+.app-form-title:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .app-seal { margin: 4px 0; padding: 2px 8px; border-inline-start: 3px solid var(--accent); color: var(--text); }
 .app-main { flex: 1; min-height: 0; overflow: auto; }
 .app-panel { max-width: 34rem; margin: 2rem auto; padding: 1rem 1.25rem; border: 1px solid var(--border); border-radius: 10px; background: var(--panel); }

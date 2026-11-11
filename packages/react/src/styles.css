@@ -53,7 +53,7 @@
 .ot-root { width: 100%; height: 100%; overflow: visible; }
 .ot-edge { fill: none; stroke: var(--ot-edge); stroke-width: var(--ot-edge-width); }
 .ot-node-dot, .ot-node-collapsed { fill: var(--ot-node); }
-.ot-node-halo { opacity: 0.35; }
+.ot-node-halo { fill-opacity: 0.35; stroke-width: 1.5; }
 .ot-label { fill: var(--ot-text); font-size: 12px; }
 .ot-label[data-italic] { font-style: italic; }
 .ot-node[data-status='extinct'] .ot-node-dot { fill: none; stroke: var(--ot-node); }
@@ -64,7 +64,7 @@
 .ot-canvas { user-select: none; -webkit-user-select: none; }
 .ot-axis-line, .ot-axis-tick { stroke: var(--ot-muted); }
 /* Overlays (M5): only stated values are drawn. */
-.ot-trait { fill: var(--ot-muted); opacity: 0.85; }
+.ot-trait { fill: var(--ot-muted); fill-opacity: 0.85; stroke: var(--ot-node); stroke-width: 0.75; }
 .ot-node[data-trait='mixed'] .ot-trait { fill: none; stroke: var(--ot-muted); stroke-dasharray: 2 2; }
 .ot-support { fill: var(--ot-muted); font-size: 10px; }
 .ot-support[data-weak] { fill: var(--ot-warning); }
@@ -101,9 +101,11 @@
 .ot-outline-item:focus { outline: none; }
 .ot-outline-item:focus-visible > .ot-outline-row { outline: 2px solid var(--ot-focus); border-radius: 0.25rem; }
 .ot-outline-item[aria-selected='true'] > .ot-outline-row { font-weight: 600; color: var(--ot-selected-text); }
-.ot-outline-row { display: inline-flex; gap: 0.25rem; align-items: baseline; cursor: pointer; }
+.ot-outline-row { display: inline-flex; gap: 0.25rem; align-items: center; cursor: pointer; }
 .ot-outline-label[data-unnamed] { color: var(--ot-muted); font-style: italic; }
-.ot-outline-twisty { display: inline-block; width: 1rem; text-align: center; }
+/* Fold arrows are 24 px targets (WCAG 2.5.8); leaves keep the same width so names line up. */
+.ot-outline-twisty { display: inline-flex; align-items: center; justify-content: center; width: 24px; min-height: 24px; flex: none; }
+.ot-outline-twisty:not(:empty) { cursor: pointer; }
 .ot-outline-hidden, .ot-assessment, .ot-notice { color: var(--ot-muted); font-size: 0.875em; }
 .ot-inspector { font-size: 14px; box-shadow: 0 6px 24px rgba(0, 0, 0, 0.06); }
 .ot-inspector-title { margin: 0; font-size: 15px; }
@@ -130,6 +132,10 @@
 .ot-legend-traits { list-style: none; display: flex; flex-wrap: wrap; gap: 4px 14px; padding: 0; margin: 6px 0; font-size: 13px; }
 .ot-swatch[data-trait='mixed'] { background: transparent; border: 1px dashed var(--ot-muted); }
 .ot-swatch[data-trait='none'] { background: transparent; border: 1px solid var(--ot-border); }
+.ot-swatch-shape { flex: none; margin-inline-end: 0.375rem; vertical-align: -2px; overflow: visible; }
+.ot-swatch-shape path { fill: var(--ot-muted); stroke: var(--ot-node); stroke-width: 0.75; }
+.ot-swatch-shape[data-trait='mixed'] path { fill: none; stroke: var(--ot-muted); stroke-dasharray: 2 2; }
+.ot-swatch-shape[data-trait='none'] path { fill: none; stroke: var(--ot-border); }
 .ot-about { margin-top: 8px; font-size: 13px; color: var(--ot-muted); }
 .ot-about summary { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; color: var(--ot-text); }
 .ot-about h4 { margin: 8px 0 4px; font-size: 13px; color: var(--ot-text); }
@@ -146,7 +152,7 @@
 .ot-support-form { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; margin: 0; }
 .ot-support-form input[type='number'] { min-width: 0; width: 4.5rem; }
 .ot-select:has(input:disabled) { opacity: 0.6; }
-.ot-support-status, .ot-rooting { margin: 0 0 8px; }
+.ot-support-status, .ot-rooting, .ot-layout-reasons { margin: 0 0 8px; }
 .ot-support-status:empty { display: none; }
 .ot-compare-trees { margin-top: 8px; font-size: 14px; border: 1px solid var(--ot-border); border-radius: 10px; background: var(--ot-panel); padding: 8px 12px; }
 .ot-compare-trees summary { display: inline-flex; gap: 6px; align-items: center; cursor: pointer; color: var(--ot-text); }

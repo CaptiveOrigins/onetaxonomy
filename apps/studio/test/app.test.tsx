@@ -40,6 +40,7 @@ const { App } = await import('../src/App')
 const { NEXUS } = await import('./fixtures')
 
 const status = () => document.querySelector('.app-status') as HTMLElement
+const alert = () => screen.getByRole('alert')
 
 async function openFile(path: string, text: string) {
   vi.mocked(dialog.open).mockResolvedValueOnce(path)
@@ -88,7 +89,7 @@ describe('the Mac app with the new tree formats and controls', () => {
     // The open file is refused as a save target, before anything is written.
     vi.mocked(dialog.save).mockResolvedValueOnce('/made-up/two.nex')
     fireEvent.click(screen.getByRole('button', { name: 'Save snapshot…' }))
-    await waitFor(() => expect(status().textContent).toMatch(/^Could not save: That is the file you opened, and OneTaxonomy never writes over it\. Nothing was changed\./))
+    await waitFor(() => expect(alert().textContent).toMatch(/^Could not save: That is the file you opened, and OneTaxonomy never writes over it\. Nothing was changed\./))
     expect(calls).toEqual([])
 
     vi.mocked(dialog.save).mockResolvedValueOnce('/made-up/two-rooted.snapshot.json')
@@ -176,7 +177,7 @@ describe('linking tree tips to taxa in the Mac app', () => {
     // Neither file it came from may be written over.
     vi.mocked(dialog.save).mockResolvedValueOnce('/made-up/beta.nwk')
     fireEvent.click(screen.getByRole('button', { name: 'Save snapshot…' }))
-    await waitFor(() => expect(status().textContent).toMatch(/^Could not save: That is the file you opened/))
+    await waitFor(() => expect(alert().textContent).toMatch(/^Could not save: That is the file you opened/))
     expect(calls).toEqual([])
     vi.mocked(dialog.save).mockResolvedValueOnce('/made-up/checklist-linked.snapshot.json')
     fireEvent.click(screen.getByRole('button', { name: 'Save snapshot…' }))
@@ -189,5 +190,39 @@ describe('linking tree tips to taxa in the Mac app', () => {
     expect(tips('alpha')).toEqual([['Alphus primus', null], ['Betus tertia', null], ['Gammus quartus', null], ['Deltus sextus', null]])
     expect(tips('alpha-linked')).toEqual([['Alphus primus', ['fx:5']], ['Betus tertia', ['fx:9']], ['Gammus quartus', ['fx:12']], ['Deltus sextus', ['fx:17']]])
     expect(saved.classifications.map((c) => c.id)).toEqual(['fx:checklist'])
+  })
+})
+
+describe('focus and errors in the Mac app (accessibility audit gaps, 2026-11-11)', () => {
+  it('moves focus to each form it opens, and Cancel or Done returns it to the button that opened it', async () => {
+    render(<App />)
+    const header = () => document.querySelector('.app-header') as HTMLElement
+    fireEvent.click(within(header()).getByRole('button', { name: 'Settings' }))
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Settings' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+    expect(document.activeElement).toBe(within(header()).getByRole('button', { name: 'Settings' }))
+
+    await openFile('/made-up/unsaid.nwk', '((a,b),c);')
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'About unsaid.nwk' })))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(document.activeElement).toBe(within(header()).getByRole('button', { name: 'Open…' }))
+
+    await openFile('/made-up/list.csv', 'taxonID,scientificName\n1,Alphus\n')
+    await waitFor(() => expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Columns in list.csv' })))
+  })
+
+  it('sends errors to an alert region that is always there, and clears it on the next success', async () => {
+    render(<App />)
+    const region = alert()
+    expect(region.textContent).toBe('') // mounted before the first error, so that one is announced too
+    vi.mocked(dialog.open).mockResolvedValueOnce('/made-up/broken.nwk')
+    vi.mocked(fs.readTextFile).mockResolvedValueOnce('[&R] ((a,b);')
+    fireEvent.click(screen.getAllByRole('button', { name: 'Open…' })[0]!)
+    await waitFor(() => expect(region.textContent).toMatch(/^Could not open that file: /))
+    expect(status().textContent).toBe('')
+    await openFile('/made-up/fine.nwk', '[&R] ((a,b),c);')
+    await waitFor(() => expect(status().textContent).toMatch(/^Opened fine\.nwk\./))
+    expect(alert()).toBe(region)
+    expect(region.textContent).toBe('')
   })
 })

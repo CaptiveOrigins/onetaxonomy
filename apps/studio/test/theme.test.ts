@@ -41,6 +41,7 @@ describe('studio colors', () => {
       for (const fg of ['--text', '--muted']) for (const bg of ['--bg', '--panel', '--field']) expect(contrast(v[fg]!, v[bg]!), `${fg} on ${bg}`).toBeGreaterThanOrEqual(4.5)
       for (const bg of ['--bg', '--field']) expect(contrast(v['--field-border']!, v[bg]!), `field border on ${bg}`).toBeGreaterThanOrEqual(3)
       expect(contrast(v['--accent']!, v['--bg']!), 'focus ring on the page').toBeGreaterThanOrEqual(3)
+      for (const bg of ['--bg', '--panel']) expect(contrast(v['--error']!, v[bg]!), `errors on ${bg}`).toBeGreaterThanOrEqual(4.5)
     }
   })
 
@@ -60,6 +61,7 @@ describe('studio structure', () => {
     const html = renderToStaticMarkup(createElement(App))
     expect(html).toMatch(/^<header class="app-header"><h1 class="app-title">OneTaxonomy<\/h1>/)
     expect(html).toContain('<div class="app-status" role="status">')
+    expect(html).toContain('<p class="app-error" role="alert"></p>')
     expect(html).toContain('<main class="app-main"><section class="app-panel"><h2>Open a dataset</h2>')
   })
 })
