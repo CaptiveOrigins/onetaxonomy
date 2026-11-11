@@ -25,7 +25,8 @@
   --ot-surface: #ffffff;
   --ot-panel: #fbf7f4;
   --ot-border: #eaddd6;
-  --ot-focus: #cf8137;
+  /* Focus ring: the darker orange on light backgrounds (owner decision N154, 2026-11-11): 4.91:1 on surface, 4.61:1 on panel. */
+  --ot-focus: #a65f20;
   font-family: var(--ot-font);
   color: var(--ot-text);
 }
