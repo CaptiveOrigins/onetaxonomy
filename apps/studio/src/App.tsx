@@ -2,7 +2,7 @@ import { createView, indexDataset, parseView, serializeView, validateDataset, va
 import type { ChecklistColumns } from '@captiveorigins/onetaxonomy-import'
 import { Explorer, TipLinker } from '@captiveorigins/onetaxonomy-react'
 import { invoke } from '@tauri-apps/api/core'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 
 import { pickDataset, pickTree, pickView, saveJson, type PickedFile } from './files'
 import { COLUMN_KEYS, delimiterOf, kindOf, openDwca, openSnapshot, openTable, openTree, sealedJson, suggestColumns, tableHeader, targetsOf, treeQuestions, withPhylogeny, withTrees, type ColumnKey, type Opened, type Target, type TreeKind } from './open'
@@ -36,7 +36,13 @@ export function App() {
   const [fileName, setFileName] = useState('')
   const [notices, setNotices] = useState<string[]>([])
   const [seal, setSeal] = useState('')
-  const [status, setStatus] = useState('')
+  const [status, setStatusText] = useState('')
+  // Errors go to an alert region; a new status message clears the last error.
+  const [error, setError] = useState('')
+  const setStatus = (text: string) => {
+    setError('')
+    setStatusText(text)
+  }
   const [targetKey, setTargetKey] = useState('')
   const [pending, setPending] = useState<Pending | null>(null)
   const [settings, setSettings] = useState<Settings>({ autoUpdate: true, appearance: 'auto' })
@@ -51,6 +57,8 @@ export function App() {
   // What the dataset on screen was made with, for the suggested file name: '' when it is the opened file as it was.
   const [derived, setDerived] = useState<'' | 'rooted' | 'linked' | 'with-trees'>('')
   const linkButton = useRef<HTMLButtonElement>(null)
+  const openButton = useRef<HTMLButtonElement>(null)
+  const settingsButton = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
     void loadSettings().then((s) => {
@@ -97,7 +105,7 @@ export function App() {
     setStatus(targetsOf(opened.snapshot).length ? `Opened ${baseName(path)}.${problems ? ` ${problems} problems found; see the list below.` : ''}` : `${baseName(path)} has no classification or tree to show. Check that it's the right file, or map its columns differently.`)
   }
 
-  const fail = (what: string, e: unknown, next: string) => setStatus(`Could not ${what}: ${message(e)} ${next}`)
+  const fail = (what: string, e: unknown, next: string) => setError(`Could not ${what}: ${message(e)} ${next}`)
 
   const open = async () => {
     try {
@@ -130,7 +138,7 @@ export function App() {
       const issues = validateView(v, dataset)
       const errors = issues.filter((d) => d.severity === 'error')
       if (errors.length) {
-        setStatus(`Could not open that view: ${errors[0]!.message} Open the dataset it was made from, then try again.`)
+        setError(`Could not open that view: ${errors[0]!.message} Open the dataset it was made from, then try again.`)
         return
       }
       setLoadedView(v)
@@ -224,7 +232,7 @@ export function App() {
     <>
       <header className="app-header">
         <h1 className="app-title">{fileName || 'OneTaxonomy'}</h1>
-        <button type="button" onClick={() => void open()}>Open…</button>
+        <button ref={openButton} type="button" onClick={() => void open()}>Open…</button>
         <button type="button" disabled={!dataset} onClick={() => void openView()}>Open view…</button>
         <button type="button" disabled={!snapshot} onClick={() => void addTree()}>Add tree…</button>
         <button type="button" disabled={!view} onClick={() => void save(`${fileName.replace(/\.[^.]+$/, '') || 'view'}.view.json`, () => serializeView(currentView.current ?? view!), 'Saved view to')}>Save view…</button>
@@ -251,16 +259,22 @@ export function App() {
         </button>
         <span className="app-spacer" />
         <button type="button" disabled={!view} onClick={() => void invoke('print_window').catch((e) => fail('print', e, 'Try again.'))}>Print</button>
-        <button type="button" aria-expanded={showSettings} onClick={() => setShowSettings((s) => !s)}>Settings</button>
+        <button ref={settingsButton} type="button" aria-expanded={showSettings} onClick={() => setShowSettings((s) => !s)}>Settings</button>
       </header>
-      <StatusBar status={status} seal={seal} notices={notices} />
+      <StatusBar status={status} seal={seal} notices={notices} error={error} />
       <main className="app-main">
         {showSettings ? (
-          <SettingsPanel settings={settings} onChange={changeSettings} onCheck={() => void checkForUpdates(true).then((m) => m && setStatus(m))} onClose={() => setShowSettings(false)} />
+          <SettingsPanel settings={settings} onChange={changeSettings} onCheck={() => void checkForUpdates(true).then((m) => m && setStatus(m))} onClose={() => {
+            setShowSettings(false)
+            settingsButton.current?.focus()
+          }} />
         ) : pending?.kind === 'tree' ? (
           <TreeForm
             pending={pending}
-            onCancel={() => setPending(null)}
+            onCancel={() => {
+              setPending(null)
+              openButton.current?.focus()
+            }}
             onOpen={(rooted, supportMethods) => {
               try {
                 const opened = openTree(pending.format, pending.file.text, pending.file.path, { ...(pending.rooted ? { rooted } : {}), supportMethods }, new Date().toISOString())
@@ -288,7 +302,10 @@ export function App() {
         ) : pending?.kind === 'table' ? (
           <TableForm
             pending={pending}
-            onCancel={() => setPending(null)}
+            onCancel={() => {
+              setPending(null)
+              openButton.current?.focus()
+            }}
             onOpen={(columns) => {
               try {
                 show(openTable(pending.file.text, pending.file.path, columns, pending.delimiter, new Date().toISOString()), pending.file.path)
@@ -311,6 +328,17 @@ export function App() {
   )
 }
 
+/** A form's title, which takes focus when the form opens, so keyboard and screen-reader users start there. */
+function FormTitle({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLHeadingElement>(null)
+  useEffect(() => ref.current?.focus(), [])
+  return (
+    <h2 ref={ref} tabIndex={-1} className="app-form-title">
+      {children}
+    </h2>
+  )
+}
+
 const FORMAT_NAMES: Record<TreeKind, string> = { newick: 'Newick', nexus: 'NEXUS', phyloxml: 'phyloXML' }
 
 function TreeForm({ pending, onOpen, onCancel }: { pending: Extract<Pending, { kind: 'tree' }>; onOpen: (rooted: boolean, supportMethods: string[]) => void; onCancel: () => void }) {
@@ -320,7 +348,7 @@ function TreeForm({ pending, onOpen, onCancel }: { pending: Extract<Pending, { k
   const ready = (!pending.rooted || rooted !== '') && (!pending.supportMethods || names.length === pending.supportMethods)
   return (
     <section className="app-panel">
-      <h2>About {baseName(pending.file.path)}</h2>
+      <FormTitle>About {baseName(pending.file.path)}</FormTitle>
       <p className="app-hint">The file doesn't say, so OneTaxonomy won't guess.</p>
       {pending.rooted && (
         <label className="app-field">
@@ -351,7 +379,7 @@ function TableForm({ pending, onOpen, onCancel }: { pending: Extract<Pending, { 
   const { taxonID, name } = columns
   return (
     <section className="app-panel">
-      <h2>Columns in {baseName(pending.file.path)}</h2>
+      <FormTitle>Columns in {baseName(pending.file.path)}</FormTitle>
       <p className="app-hint">Check these choices. Matches come from the column names alone.</p>
       {COLUMN_KEYS.map((k) => (
         <label className="app-field" key={k}>
@@ -373,7 +401,7 @@ function TableForm({ pending, onOpen, onCancel }: { pending: Extract<Pending, { 
 export function SettingsPanel({ settings, onChange, onCheck, onClose }: { settings: Settings; onChange: (patch: Partial<Settings>) => void; onCheck: () => void; onClose: () => void }) {
   return (
     <section className="app-panel">
-      <h2>Settings</h2>
+      <FormTitle>Settings</FormTitle>
       <label className="app-field">
         Appearance
         <select value={settings.appearance} onChange={(e) => onChange({ appearance: e.target.value as Settings['appearance'] })}>

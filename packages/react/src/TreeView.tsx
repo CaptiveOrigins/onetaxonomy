@@ -2,11 +2,15 @@ import type { Highlight, Id, NodeOverlay, Projection } from '@captiveorigins/one
 import { edgePath, type TreeLayout } from '@captiveorigins/onetaxonomy-layout'
 import { useId, type KeyboardEvent, type MouseEvent } from 'react'
 
+import { shapeAt, shapePath, type MarkShape } from './shapes.js'
+
 export type TreeViewProps = {
   projection: Projection
   layout: TreeLayout
-  /** Highlights from the view (colors and clade/group kind). */
+  /** Highlights from the view (colors and clade/group kind). Each is drawn in its own shape too, by its place in this list. */
   highlights?: Highlight[]
+  /** A shape per trait state, so states differ by more than color (`traitShapes(set)`). Default: circles. */
+  traitShapes?: ReadonlyMap<Id, MarkShape>
   /** Accessible title of the drawing. */
   title: string
   /** Space around the drawing, in layout units. Default 16. */
@@ -63,6 +67,7 @@ export function TreeView(props: TreeViewProps) {
   const box = props.viewBox ?? treeViewBox(layout, { padding, ...(props.labelWidth !== undefined ? { labelWidth: props.labelWidth } : {}) })
   const node = new Map(projection.nodes.map((n) => [n.id, n]))
   const color = new Map(highlights.map((h) => [h.id, h.color]))
+  const shape = new Map(highlights.map((h, i) => [h.id, shapeAt(i)]))
   const hidden = props.hiddenLabel ?? DEFAULT_HIDDEN
   const moving = (id: Id) => Boolean(props.drag?.ids.has(id))
   const offset = props.drag ? `translate(${props.drag.dx} ${props.drag.dy})` : undefined
@@ -113,7 +118,8 @@ export function TreeView(props: TreeViewProps) {
         {layout.nodes.map((ln) => {
           const n = node.get(ln.id)
           if (!n) return null
-          const hl = n.highlights.map((h) => color.get(h)).find(Boolean)
+          const first = n.highlights.find((h) => color.get(h))
+          const hl = first ? color.get(first) : undefined
           const angle = ln.angle ?? 0
           const flip = radialLayout && Math.cos(angle) < 0
           const labelTransform = radialLayout ? `rotate(${(-angle * 180) / Math.PI + (flip ? 180 : 0)})` : undefined
@@ -146,8 +152,11 @@ export function TreeView(props: TreeViewProps) {
                   }
                 : {})}
             >
-              {hl && <circle className="ot-node-halo" r={7} style={{ fill: hl }} />}
-              {mark?.trait && <circle className="ot-trait" r={5.5} style={'color' in mark.trait && mark.trait.color ? { fill: mark.trait.color } : undefined} />}
+              {hl && <path className="ot-node-halo" data-shape={shape.get(first!)} d={shapePath(shape.get(first!)!, 7.5)} style={{ fill: hl, stroke: hl }} />}
+              {mark?.trait && (() => {
+                const s = mark.trait.state === 'mixed' ? 'circle' : (props.traitShapes?.get(mark.trait.state) ?? 'circle')
+                return <path className="ot-trait" data-shape={s} d={shapePath(s, 5.5)} style={'color' in mark.trait && mark.trait.color ? { fill: mark.trait.color } : undefined} />
+              })()}
               {props.badges?.has(ln.id) && (
                 <g className="ot-badge" transform="translate(-12 -12)" aria-hidden="true">
                   <circle r={7} />

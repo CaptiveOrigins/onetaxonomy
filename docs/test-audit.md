@@ -2,6 +2,33 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: accessibility gaps closed
+
+Scope: the small and medium gaps from the accessibility audit below. The brand-orange focus ring is left as it is: that's the owner's decision (N154). Core and import are unchanged. Tests went from 248 to 263: react 58 to 71 (13 new in `a11y.test.tsx`), studio 37 to 39 (2 in `app.test.tsx`; `theme.test.ts` now checks the error color and the alert region). Everything ran in jsdom with Tauri mocked.
+
+### Fixed, with tests
+
+- **Reordering without dragging (2.5.7).** Move up and Move down in the inspector reorder a taxon among its siblings, one undo step each, like Alt+Up and Alt+Down. They're disabled at the ends and absent for a root or an only child.
+- **Panning without dragging (2.5.7).** Pan left, right, up and down in the drawing controls move the view a tenth of its size, like the arrow keys. Each has a visible tooltip with its name, and Fit brings the view back.
+- **The toolbar pattern.** Both `role="toolbar"` elements (the explorer's and the drawing controls) are one Tab stop. Left and Right move and wrap, Home and End jump, and disabled controls are skipped. The control last used keeps the stop, and if it becomes disabled (Undo, once undone) the first enabled one takes it. In the number field the arrows stay with the field. In a text field they move focus only from its start or end (no such field is in a toolbar yet, so that branch isn't tested).
+- **Why a layout is unavailable** is visible text under the toolbar, one sentence per reason ("phylogram and time: A classification has no branch lengths or ages…"), and the layout select's `aria-describedby` points at it.
+- **Fold arrows are 24 px** wide and at least 24 px tall (2.5.8). Leaves keep the same width so names line up. That widens each level of the outline by 8 px.
+- **Highlights and trait states by shape (1.4.1).** Each highlight's halo, and each trait state's mark, has a shape by its place in the list: circle, square, diamond, triangle, upside-down triangle, hexagon. The legend shows the same shape beside each name. Halos now have a full-color outline, and trait marks a thin ink outline, so pale colors from the data still show an edge. Mixed states stay a dashed outline. The test uses two states one hex digit apart, which only the shape tells apart.
+- **The Mac app moves focus to the forms it opens.** That covers tree questions, column choices, Settings, and linking tips (since the previous section). Cancel and Done return focus to the button that opened the form.
+- **The Mac app's errors go to an alert region** (`role="alert"`). It is mounted empty before the first error, is separate from the status line, and is cleared by the next success. The error color is 4.5:1 or more on the page and the panel in light and dark.
+
+### Gaps left
+
+- **The focus ring** is 2.88:1 on the panels: owner decision N154.
+- **Shapes repeat after six** highlights or trait states. Past that, color and the words in the inspector and legend tell them apart.
+- **Only the first highlight on a node is drawn.** That hasn't changed: a node in two highlights shows one halo.
+- **The drawing's nodes still aren't reachable with Tab** (the outline is the way in), and live regions that mount with their first message (the clade check with a second taxon) still need a screen reader to confirm.
+- **Not run for real:** VoiceOver, keyboard use in WebKit and the built app, and how the shapes look at print size.
+
+### Left out as overkill
+
+- Testing every toolbar control in turn: the pattern is one function over whatever controls are present, and the tests cover moving, wrapping, skipping disabled controls, selects and the number field.
+
 ## 2026-11-11: linking tree tips to taxa
 
 Scope: the gap left in the section below ("Comparison in the Mac app always refuses files it imports itself"). React gains `TipLinker`, `proposeTipLinks` and `linkedPhylogeny`; the Mac app gains "Link tips to taxa…" and "Add tree…". Core and import are unchanged. Tests went from 228 to 248: react 44 to 58 (`tiplinks.test.tsx`, 14 new), studio 31 to 37 (2 in `open.test.ts`, 2 in `files.test.ts`, 2 in `app.test.tsx`; the theme test now finds the library's colors under the new `.ot-tip-links` scope). Everything ran in jsdom with Tauri mocked: no screen reader, browser or built app.

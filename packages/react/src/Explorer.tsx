@@ -30,12 +30,14 @@ import {
   type ViewOverlays,
 } from '@captiveorigins/onetaxonomy-core'
 import { radial, rectangular, type TreeLayout } from '@captiveorigins/onetaxonomy-layout'
-import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type WheelEvent } from 'react'
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type WheelEvent } from 'react'
 
 import { dropOrder, drawnSubtree, dropTarget } from './drag.js'
 import { citationLine, disclosureLines, downloadBlob, standaloneSvg, svgToPng } from './export.js'
 import { Icon } from './icons.js'
 import { ComparePanel, PHYLO_LABELS, rootedRecord, SupportControl, supportSummary, type PhyloLabels } from './Phylo.js'
+import { shapeAt, ShapeSwatch, traitShapes, type MarkShape } from './shapes.js'
+import { useRovingToolbar } from './toolbar.js'
 import { TreeOutline } from './TreeOutline.js'
 import { treeViewBox, TreeView, type ViewBox } from './TreeView.js'
 
@@ -105,7 +107,8 @@ export type ExplorerLabels = PhyloLabels & Record<
   | 'overlays' | 'support' | 'extinction' | 'trait' | 'noTrait' | 'noStatedValue' | 'mixed' | 'weakSupport'
   | 'selection' | 'checkClade' | 'addHighlight' | 'highlightName' | 'checkAgainst' | 'clearSelection' | 'remove' | 'multiHint'
   | 'downloadSvg' | 'downloadPng' | 'downloadView' | 'about' | 'sources' | 'references' | 'synonyms' | 'commonNames' | 'age' | 'branchLength' | 'unmapped' | 'traits'
-  | 'keyboardHint' | 'extinct' | 'exportFailed',
+  | 'keyboardHint' | 'extinct' | 'exportFailed'
+  | 'moveUp' | 'moveDown' | 'panLeft' | 'panRight' | 'panUp' | 'panDown' | 'layoutUnavailable' | 'and',
   string
 >
 
@@ -134,7 +137,7 @@ const LABELS: ExplorerLabels = {
   fit: 'Fit to view',
   download: 'Download',
   print: 'Print',
-  canvas: 'Tree drawing: drag to pan, Ctrl or ⌘ + scroll to zoom, drag a taxon to reorder it among its siblings, double-click to fold. With the keyboard: arrow keys pan, + and − zoom, 0 fits, Escape clears the selection',
+  canvas: 'Tree drawing: drag to pan, Ctrl or ⌘ + scroll to zoom, drag a taxon to reorder it among its siblings, double-click to fold. The pan buttons and Move up and Move down in Details do the same without dragging. With the keyboard: arrow keys pan, + and − zoom, 0 fits, Escape clears the selection',
   controls: 'Drawing controls',
   propose: 'Propose changes',
   proposalTitle: 'Name of this proposal',
@@ -155,7 +158,7 @@ const LABELS: ExplorerLabels = {
   proposalLost: 'Loses',
   proposalCompare: 'Compare with the accepted arrangement',
   proposalDefaultTitle: 'My proposal',
-  dragHint: 'Drag a taxon up or down to reorder it among its siblings; double-click a branch to fold it.',
+  dragHint: 'Drag a taxon up or down to reorder it among its siblings, or use Move up and Move down here; double-click a branch to fold it.',
   overlays: 'Overlays',
   support: 'Support values',
   extinction: 'Extinct and fossils',
@@ -187,6 +190,14 @@ const LABELS: ExplorerLabels = {
   keyboardHint: 'In the outline: Up and Down move, Right and Left open and close, Home and End jump, typing finds a name, Space selects (Shift+Space adds), Enter opens a branch, Alt+Up and Alt+Down reorder.',
   extinct: 'extinct',
   exportFailed: 'Could not export the drawing:',
+  moveUp: 'Move up',
+  moveDown: 'Move down',
+  panLeft: 'Pan left',
+  panRight: 'Pan right',
+  panUp: 'Pan up',
+  panDown: 'Pan down',
+  layoutUnavailable: 'Not available here:',
+  and: 'and',
 }
 
 /** Prints only this drawing: everything else on the page is hidden while printing. */
@@ -261,6 +272,21 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
     () => (phylogeny ? [...dataset.snapshot.phylogenies, ...compareWith.filter((p) => !dataset.snapshot.phylogenies.some((q) => q.id === p.id))].filter((p) => p.id !== phylogeny.id) : []),
     [dataset, compareWith, phylogeny],
   )
+  const toolbar = useRef<HTMLDivElement>(null)
+  const floating = useRef<HTMLDivElement>(null)
+  const toolbarKeys = useRovingToolbar(toolbar)
+  const floatingKeys = useRovingToolbar(floating)
+  const layoutReasonId = useId()
+  // Why each unavailable layout is unavailable, said once per reason and shown, not only in an option's tooltip.
+  const layoutReasons = useMemo(() => {
+    const by = new Map<string, LayoutKind[]>()
+    for (const k of LAYOUTS) {
+      const problem = layoutProblem(dataset, view.target, k)
+      if (problem) by.set(problem, [...(by.get(problem) ?? []), k])
+    }
+    return [...by]
+  }, [dataset, view.target])
+  const highlightShape = (id: Id): MarkShape => shapeAt(Math.max(0, view.highlights.findIndex((h) => h.id === id)))
   const [rootError, setRootError] = useState<string | null>(null)
   const root = (node: Id | null) => {
     if (!phylogeny || !onRooted) return
@@ -428,7 +454,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
 
   return (
     <div className="ot-explorer">
-      <div className="ot-toolbar" role="toolbar" aria-label={title}>
+      <div ref={toolbar} className="ot-toolbar" role="toolbar" aria-label={title} onKeyDown={toolbarKeys.onKeyDown} onFocus={toolbarKeys.onFocus}>
         <button type="button" onClick={t.undo} disabled={!t.canUndo}>
           <Icon name="undo" />
           {labels.undo}
@@ -456,7 +482,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
         <label className="ot-select">
           <Icon name="layout" />
           <span>{labels.layout}</span>
-          <select value={view.layout.kind} onChange={(e) => dispatch({ type: 'setLayout', layout: e.target.value as LayoutKind })}>
+          <select value={view.layout.kind} aria-describedby={layoutReasons.length ? layoutReasonId : undefined} onChange={(e) => dispatch({ type: 'setLayout', layout: e.target.value as LayoutKind })}>
             {LAYOUTS.map((k) => {
               const problem = layoutProblem(dataset, view.target, k)
               return (
@@ -521,6 +547,11 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
           </label>
         )}
       </div>
+      {layoutReasons.length > 0 && (
+        <p id={layoutReasonId} className="ot-notice ot-layout-reasons">
+          {labels.layoutUnavailable} {layoutReasons.map(([reason, kinds]) => `${kinds.join(` ${labels.and} `)}: ${reason}.`).join(' ')}
+        </p>
+      )}
       {/* Always present, so a screen reader announces a refusal or a failed export when the text appears. */}
       <p className="ot-error" role="status">
         {t.error ?? rootError ?? exportError ?? ''}
@@ -554,7 +585,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
           onWheel={onWheel}
           onKeyDown={onKeyDown}
         >
-          <div className="ot-floating" role="toolbar" aria-label={labels.controls}>
+          <div ref={floating} className="ot-floating" role="toolbar" aria-label={labels.controls} onKeyDown={floatingKeys.onKeyDown} onFocus={floatingKeys.onFocus}>
             <button type="button" onClick={() => zoom(0.8)} aria-label={labels.zoomIn} data-tip={labels.zoomIn}>
               <Icon name="zoomIn" />
             </button>
@@ -563,6 +594,19 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
             </button>
             <button type="button" onClick={() => setBox(null)} aria-label={labels.fit} data-tip={labels.fit}>
               <Icon name="fit" />
+            </button>
+            {/* Panning without dragging (WCAG 2.5.7): a tenth of the view per press, like the arrow keys. */}
+            <button type="button" onClick={() => pan(-0.1, 0)} aria-label={labels.panLeft} data-tip={labels.panLeft}>
+              <Icon name="previous" />
+            </button>
+            <button type="button" onClick={() => pan(0.1, 0)} aria-label={labels.panRight} data-tip={labels.panRight}>
+              <Icon name="next" />
+            </button>
+            <button type="button" onClick={() => pan(0, -0.1)} aria-label={labels.panUp} data-tip={labels.panUp}>
+              <Icon name="up" />
+            </button>
+            <button type="button" onClick={() => pan(0, 0.1)} aria-label={labels.panDown} data-tip={labels.panDown}>
+              <Icon name="down" />
             </button>
             <div className="ot-menu">
               <button ref={menuButton} type="button" onClick={() => setMenu((m) => !m)} aria-label={labels.download} data-tip={labels.download} aria-expanded={menu} aria-haspopup="menu">
@@ -589,7 +633,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
               <Icon name="print" />
             </button>
           </div>
-          <TreeView projection={projection} layout={layout} highlights={view.highlights} title={title} interactive hiddenLabel={hidden} viewBox={shown} drag={drag} dropTarget={landing ?? null} overlays={marks} />
+          <TreeView projection={projection} layout={layout} highlights={view.highlights} traitShapes={traitShapes(traits.find((tr) => tr.id === overlays.trait))} title={title} interactive hiddenLabel={hidden} viewBox={shown} drag={drag} dropTarget={landing ?? null} overlays={marks} />
           {proposal && (
             <p className="ot-proposed-badge" role="note">
               {labels.proposalBy} {proposal.author}: {proposal.title}
@@ -667,8 +711,25 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
                 </dl>
                 {details && <NodeFacts details={details} labels={labels} />}
                 {node.hiddenDescendants > 0 && <p>{hidden(node.hiddenDescendants)}</p>}
-                <HighlightList highlights={view.highlights.filter((h) => node.highlights.includes(h.id))} labels={labels} />
+                <HighlightList highlights={view.highlights.filter((h) => node.highlights.includes(h.id))} shapeOf={highlightShape} labels={labels} />
                 <div className="ot-inspector-actions">
+                  {node.parent && (() => {
+                    // Reordering without dragging (WCAG 2.5.7), the same as Alt+Up and Alt+Down in the outline.
+                    const siblings = allChildren(node.parent)
+                    const at = siblings.indexOf(node.id)
+                    return siblings.length > 1 ? (
+                      <>
+                        <button type="button" disabled={at <= 0} onClick={() => move(node.id, -1)}>
+                          <Icon name="up" />
+                          {labels.moveUp}
+                        </button>
+                        <button type="button" disabled={at < 0 || at >= siblings.length - 1} onClick={() => move(node.id, 1)}>
+                          <Icon name="down" />
+                          {labels.moveDown}
+                        </button>
+                      </>
+                    ) : null
+                  })()}
                   {!node.isTip && (
                     <button type="button" onClick={() => dispatch({ type: 'rotate', node: node.id })}>
                       <Icon name="flip" />
@@ -853,13 +914,13 @@ function NodeFacts({ details, labels }: { details: NonNullable<ReturnType<typeof
 const viewChildren = (dataset: DatasetIndex, view: TaxonomicView, id: Id): readonly Id[] =>
   (view.target.kind === 'classification' ? dataset.classification(view.target.id) : dataset.phylogeny(view.target.id)).children.get(id) ?? []
 
-function HighlightList({ highlights, labels, onRemove }: { highlights: Highlight[]; labels: Pick<ExplorerLabels, 'clade' | 'group'> & Partial<Pick<ExplorerLabels, 'remove'>>; onRemove?: (id: Id) => void }) {
+function HighlightList({ highlights, labels, onRemove, shapeOf }: { highlights: Highlight[]; labels: Pick<ExplorerLabels, 'clade' | 'group'> & Partial<Pick<ExplorerLabels, 'remove'>>; onRemove?: (id: Id) => void; shapeOf: (id: Id) => MarkShape }) {
   if (!highlights.length) return null
   return (
     <ul className="ot-highlights">
       {highlights.map((h) => (
         <li key={h.id} data-kind={h.kind}>
-          <span className="ot-swatch" style={h.color ? { background: h.color } : undefined} aria-hidden="true" />
+          <ShapeSwatch shape={shapeOf(h.id)} color={h.color} />
           {h.label} · {h.kind === 'clade' ? labels.clade : labels.group}
           {h.assessment?.hypothesis && (
             <span className="ot-assessment">
@@ -899,21 +960,21 @@ export function Legend({
   return (
     <div className="ot-legend">
       <p className="ot-notice">{layout.notice}</p>
-      <HighlightList highlights={highlights} labels={labels} {...(onRemoveHighlight ? { onRemove: onRemoveHighlight } : {})} />
+      <HighlightList highlights={highlights} shapeOf={(id) => shapeAt(Math.max(0, highlights.findIndex((h) => h.id === id)))} labels={labels} {...(onRemoveHighlight ? { onRemove: onRemoveHighlight } : {})} />
       {trait && (
         <ul className="ot-legend-traits" aria-label={trait.title}>
-          {trait.states.map((s) => (
-            <li key={s.id}>
-              <span className="ot-swatch" data-trait={s.id} style={s.color ? { background: s.color } : undefined} aria-hidden="true" />
+          {trait.states.map((s, i) => (
+            <li key={s.id} data-trait={s.id}>
+              <ShapeSwatch shape={shapeAt(i)} color={s.color} />
               {s.label}
             </li>
           ))}
-          <li>
-            <span className="ot-swatch" data-trait="mixed" aria-hidden="true" />
+          <li data-trait="mixed">
+            <ShapeSwatch shape="circle" kind="mixed" />
             {labels.mixed}
           </li>
-          <li>
-            <span className="ot-swatch" data-trait="none" aria-hidden="true" />
+          <li data-trait="none">
+            <ShapeSwatch shape="circle" kind="none" />
             {labels.noStatedValue}
           </li>
         </ul>

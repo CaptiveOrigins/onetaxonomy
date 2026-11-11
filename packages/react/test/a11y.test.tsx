@@ -5,9 +5,9 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createView, describeView, indexDataset, projectView, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { createView, describeView, indexDataset, makeHighlight, projectView, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
 import { createLesson, sceneFromView } from '@captiveorigins/onetaxonomy-education'
-import { Explorer, LessonPlayer, standaloneSvg, TreeOutline } from '../src'
+import { Explorer, Legend, LessonPlayer, MARK_SHAPES, shapePath, standaloneSvg, TreeOutline } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 import amniotesJson from '../../../fixtures/amniotes.json'
 
@@ -197,5 +197,184 @@ describe('exports and lessons', () => {
     expect(screen.getByRole('radio', { name: 'Explore' }).getAttribute('aria-checked')).toBe('true')
     expect(document.activeElement).toBe(screen.getByRole('radio', { name: 'Explore' }))
     expect(screen.getAllByRole('radio').map((r) => r.tabIndex)).toEqual([-1, 0])
+  })
+})
+
+// Gaps closed after the audit (K481, 2026-11-11): single-pointer alternatives, the toolbar pattern, visible reasons,
+// target size and shapes alongside color.
+describe('without dragging (WCAG 2.5.7)', () => {
+  const order = () => screen.getAllByRole('treeitem').map((i) => i.querySelector('.ot-outline-label')!.textContent)
+  it('Move up and Move down in the inspector reorder siblings, and are disabled at the ends', () => {
+    const changes: string[][] = []
+    const v = { ...clView(), collapsed: ['fx:14', 'fx:22', 'fx:10', 'fx:8'], selected: ['fx:5'] }
+    render(<Explorer dataset={cl} initialView={v} title="Checklist" onViewChange={(x) => changes.push(x.order['fx:4'] ?? [])} />)
+    const up = screen.getByRole('button', { name: 'Move up' }) as HTMLButtonElement
+    const down = screen.getByRole('button', { name: 'Move down' }) as HTMLButtonElement
+    expect(up.disabled).toBe(true) // Alphus primus is first under Alphus
+    expect(down.disabled).toBe(false)
+    const before = order()
+    expect(before.indexOf('Alphus primus')).toBeLessThan(before.indexOf('Alphus secundus'))
+    fireEvent.click(down)
+    expect(changes.at(-1)).toEqual(['fx:6', 'fx:5'])
+    expect(order().indexOf('Alphus primus')).toBeGreaterThan(order().indexOf('Alphus secundus'))
+    expect((screen.getByRole('button', { name: 'Move down' }) as HTMLButtonElement).disabled).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Move up' }))
+    expect(changes.at(-1)).toEqual(['fx:5', 'fx:6'])
+    // One undo step per press, like Alt+Up and Alt+Down.
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+    expect(order().indexOf('Alphus primus')).toBeGreaterThan(order().indexOf('Alphus secundus'))
+  })
+
+  it('has no move buttons for a root or an only child', () => {
+    render(<Explorer dataset={cl} initialView={{ ...clView(), selected: ['fx:1'] }} title="Checklist" />)
+    expect(screen.queryByRole('button', { name: 'Move up' })).toBeNull()
+    cleanup()
+    render(<Explorer dataset={cl} initialView={{ ...clView(), selected: ['fx:7'] }} title="Checklist" />) // the only subspecies
+    expect(screen.queryByRole('button', { name: 'Move down' })).toBeNull()
+  })
+
+  it('pan buttons move the view a tenth of its size each way, and Fit brings it back', () => {
+    const { container } = render(<Explorer dataset={cl} initialView={clView()} title="Checklist" />)
+    const box = () => container.querySelector('svg.ot-root')!.getAttribute('viewBox')!.split(' ').map(Number) as [number, number, number, number]
+    const [x, y, w, h] = box()
+    fireEvent.click(screen.getByRole('button', { name: 'Pan right' }))
+    expect(box()[0]).toBeCloseTo(x + w / 10)
+    fireEvent.click(screen.getByRole('button', { name: 'Pan down' }))
+    expect(box()[1]).toBeCloseTo(y + h / 10)
+    fireEvent.click(screen.getByRole('button', { name: 'Pan left' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Pan up' }))
+    expect(box()[0]).toBeCloseTo(x)
+    expect(box()[1]).toBeCloseTo(y)
+    fireEvent.click(screen.getByRole('button', { name: 'Pan left' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Fit to view' }))
+    expect(box()).toEqual([x, y, w, h])
+    // Each icon-only button has a visible tooltip with its name.
+    for (const name of ['Pan left', 'Pan right', 'Pan up', 'Pan down']) expect(screen.getByRole('button', { name }).getAttribute('data-tip')).toBe(name)
+  })
+})
+
+describe('toolbars (WAI-ARIA toolbar pattern)', () => {
+  const stops = (bar: HTMLElement) => [...bar.querySelectorAll<HTMLElement>('button, select, input')].filter((el) => el.tabIndex === 0 && !(el as HTMLButtonElement).disabled)
+  it('is one Tab stop; Left and Right move and wrap, Home and End jump, disabled controls are skipped', () => {
+    render(<Explorer dataset={cl} initialView={clView()} title="Checklist" />)
+    const bar = screen.getByRole('toolbar', { name: 'Checklist' })
+    expect(stops(bar).map((el) => el.textContent)).toEqual(['Propose changes']) // Undo and Redo are disabled
+    const key = (k: string) => fireEvent.keyDown(document.activeElement!, { key: k })
+    stops(bar)[0]!.focus()
+    key('ArrowRight')
+    expect(document.activeElement!.textContent).toBe('Expand all')
+    key('ArrowLeft')
+    key('ArrowLeft') // wraps to the last enabled control
+    const last = document.activeElement as HTMLElement
+    key('Home')
+    expect(document.activeElement!.textContent).toBe('Propose changes')
+    key('End')
+    expect(document.activeElement).toBe(last)
+    // The control last used keeps the Tab stop.
+    expect(stops(bar)).toEqual([last])
+    // Selects are stops in the row too.
+    within(bar).getByRole('combobox', { name: /Layout/ }).focus()
+    key('ArrowRight')
+    expect(document.activeElement).toBe(within(bar).getByRole('combobox', { name: /Show/ }))
+  })
+
+  it('gives the Tab stop to the first enabled control when the remembered one becomes disabled', () => {
+    render(<Explorer dataset={cl} initialView={clView()} title="Checklist" />)
+    const bar = screen.getByRole('toolbar', { name: 'Checklist' })
+    fireEvent.click(within(bar).getByRole('button', { name: 'Collapse all' }))
+    const undo = within(bar).getByRole('button', { name: 'Undo' })
+    undo.focus()
+    expect(stops(bar)).toEqual([undo])
+    fireEvent.click(undo)
+    expect((undo as HTMLButtonElement).disabled).toBe(true)
+    expect(stops(bar).map((el) => el.textContent)).toEqual(['Redo'])
+  })
+
+  it('leaves the arrows to the number field, so typing a threshold still works', () => {
+    render(<Explorer dataset={am} initialView={createView(am, { id: 'v', title: 'A', target: { kind: 'phylogeny', id: 'archelosauria' } })} title="A" />)
+    const field = screen.getByRole('spinbutton', { name: 'Collapse support below' })
+    field.focus()
+    fireEvent.keyDown(field, { key: 'ArrowRight' })
+    fireEvent.keyDown(field, { key: 'Home' })
+    expect(document.activeElement).toBe(field)
+  })
+
+  it('the drawing controls are a toolbar too', () => {
+    render(<Explorer dataset={cl} initialView={clView()} title="Checklist" />)
+    const bar = screen.getByRole('toolbar', { name: 'Drawing controls' })
+    const zoomIn = within(bar).getByRole('button', { name: 'Zoom in' })
+    expect(stops(bar)).toEqual([zoomIn])
+    zoomIn.focus()
+    fireEvent.keyDown(zoomIn, { key: 'ArrowRight' })
+    expect(document.activeElement).toBe(within(bar).getByRole('button', { name: 'Zoom out' }))
+    fireEvent.keyDown(document.activeElement!, { key: 'End' })
+    expect(document.activeElement).toBe(within(bar).getByRole('button', { name: 'Print' }))
+  })
+})
+
+describe('reasons and targets', () => {
+  it('says in visible text why a layout is unavailable, and the layout select points at it', () => {
+    render(<Explorer dataset={cl} initialView={clView()} title="Checklist" />)
+    const select = screen.getByRole('combobox', { name: /Layout/ })
+    const reason = document.getElementById(select.getAttribute('aria-describedby')!)!
+    expect(reason.textContent).toBe('Not available here: phylogram and time: A classification has no branch lengths or ages: use rectangular, radial or sunburst.')
+    expect(reason.checkVisibility?.() ?? true).toBe(true)
+    expect(reason.closest('[role="toolbar"]')).toBeNull()
+    cleanup()
+    // Amniotes has no branch lengths and isn't dated: two reasons, one sentence each.
+    render(<Explorer dataset={am} initialView={createView(am, { id: 'v', title: 'A', target: { kind: 'phylogeny', id: 'archelosauria' } })} title="A" />)
+    expect(document.querySelector('.ot-layout-reasons')!.textContent).toBe('Not available here: phylogram: This hypothesis has no branch lengths with a stated unit: a phylogram would invent them. time: This hypothesis is not time-calibrated: a time scale would invent dates.')
+  })
+
+  it('fold arrows in the outline are 24 px targets (WCAG 2.5.8)', () => {
+    expect(css).toMatch(/\.ot-outline-twisty \{ display: inline-flex; align-items: center; justify-content: center; width: 24px; min-height: 24px;/)
+  })
+})
+
+describe('not by color alone in the drawing (WCAG 1.4.1)', () => {
+  const traitSnapshot = (): DatasetSnapshot => ({
+    ...(JSON.parse(JSON.stringify(amniotesJson)) as DatasetSnapshot),
+    // Two made-up states in nearly the same color, so only the shape tells them apart.
+    traits: [{ id: 'repro', title: 'Reproduction', source: 'fixture', states: [{ id: 'egg', label: 'Lays eggs', color: '#cc3333' }, { id: 'live', label: 'Live birth', color: '#cc3334' }], values: [{ concept: 'c:testudines', state: 'egg' }, { concept: 'c:mammalia', state: 'live' }] }],
+  })
+
+  it('every shape is a closed path', () => {
+    for (const shape of MARK_SHAPES) expect(shapePath(shape, 5)).toMatch(/^M.*Z$/)
+    expect(new Set(MARK_SHAPES.map((s) => shapePath(s, 5))).size).toBe(MARK_SHAPES.length)
+  })
+
+  it('draws each highlight in its own shape, and the legend shows the same shape beside its name', () => {
+    const v = createView(am, { id: 'v', title: 'A', target: { kind: 'phylogeny', id: 'archelosauria' } })
+    const a = { ...makeHighlight(am, v, { id: 'a', label: 'Archosaurs', members: ['t-crocodylia', 't-aves'] }), color: '#cf8137' }
+    const b = { ...makeHighlight(am, v, { id: 'b', label: 'Turtles', members: ['t-testudines'] }), color: '#cf8138' }
+    const { container } = render(<Explorer dataset={am} initialView={{ ...v, highlights: [a, b] }} title="A" />)
+    const halo = (id: string) => container.querySelector(`.ot-node[data-id="${id}"] .ot-node-halo`)!.getAttribute('data-shape')
+    expect([halo('t-crocodylia'), halo('t-aves'), halo('t-testudines')]).toEqual(['circle', 'circle', 'square'])
+    const legend = container.querySelector('.ot-legend')!
+    const entry = (name: string) => [...legend.querySelectorAll('li')].find((li) => li.textContent!.startsWith(name))!.querySelector('svg')!
+    expect(entry('Archosaurs').getAttribute('data-shape')).toBe('circle')
+    expect(entry('Turtles').getAttribute('data-shape')).toBe('square')
+    expect(entry('Turtles').getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('draws each trait state in its own shape, matching the legend; mixed stays a dashed outline', () => {
+    const d = indexDataset(traitSnapshot())
+    const v = { ...createView(d, { id: 'v', title: 'A', target: { kind: 'classification', id: 'traditional' } }), overlays: { trait: 'repro' } }
+    const { container } = render(<Explorer dataset={d} initialView={v} title="A" />)
+    const mark = (id: string) => container.querySelector(`.ot-node[data-id="${id}"] .ot-trait`)!.getAttribute('data-shape')
+    expect(mark('c:testudines')).toBe('circle')
+    expect(mark('c:mammalia')).toBe('square')
+    const list = screen.getByRole('list', { name: 'Reproduction' })
+    const shapeOf = (state: string) => list.querySelector(`li[data-trait="${state}"] svg`)!.getAttribute('data-shape')
+    expect([shapeOf('egg'), shapeOf('live'), shapeOf('mixed'), shapeOf('none')]).toEqual(['circle', 'square', 'circle', 'circle'])
+    expect(list.querySelector('li[data-trait="mixed"] svg')!.getAttribute('data-trait')).toBe('mixed')
+    expect(css).toMatch(/\.ot-swatch-shape\[data-trait='mixed'\] path \{ fill: none; stroke: var\(--ot-muted\); stroke-dasharray: 2 2; \}/)
+  })
+
+  it('the Legend on its own numbers shapes by the highlights it is given', () => {
+    const v = createView(am, { id: 'v', title: 'A', target: { kind: 'phylogeny', id: 'archelosauria' } })
+    const hs = ['a', 'b', 'c'].map((id, i) => ({ ...makeHighlight(am, v, { id, label: id.toUpperCase(), members: ['t-aves'] }), color: `#00000${i}` }))
+    const { container } = render(<Legend layout={{ notice: '' } as never} highlights={hs} />)
+    expect([...container.querySelectorAll('svg')].map((s) => s.getAttribute('data-shape'))).toEqual(['circle', 'square', 'diamond'])
   })
 })
