@@ -60,7 +60,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 - [x] Core: proposals, derived hierarchies, checks, `compareHierarchies`, view actions, disclosure in every export
 - [x] Explorer: start a proposal, drag onto a new parent or pick from a list, revert and undo, accepted vs proposed for a taxon, side-by-side compare
-- [ ] Plugin (M7): proposals per user, shareable; a curator can accept one into a new staged version, never silently
+- [ ] Plugin (M7): proposals per user, shareable; a curator can accept one into a new staged version, never silently (not started; staged snapshot versions, which acceptance will create, exist since part 1, 2026-11-11)
 
 ## M6 — Studio (macOS)
 
@@ -71,11 +71,11 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 ## M7 — Payload plugin
 
-- [ ] `@captiveorigins/payload-plugin-onetaxonomy` with configurable slugs, locale, permissions, optional tenant scope, source adapters
-- [ ] Admin views: import progress, conflicts, curation preview, tree authoring, profiles, publishing, lessons
-- [ ] Bounded API: search, ancestors/descendants, MRCA, coverage, projected views, exports; access checks; cross-tenant denial tests
-- [ ] Resumable, idempotent import jobs
-- [ ] `apps/payload-example`
+- [ ] `@captiveorigins/payload-plugin-onetaxonomy` with configurable slugs, locale, permissions, optional tenant scope, source adapters (part 1, 2026-11-11, [ADR 0012](adr/0012-payload-plugin.md): slugs, locale for common-name search, read and manage callbacks that fail closed, tenant scope, sealed snapshots and pinned views with staged/published/withdrawn states; source adapters wait for import jobs)
+- [ ] Admin views: import progress, conflicts, curation preview, tree authoring, profiles, publishing, lessons (not started; part 1 uses Payload's default edit views)
+- [ ] Bounded API: search, ancestors/descendants, MRCA, coverage, projected views, exports; access checks; cross-tenant denial tests (part 1, 2026-11-11: search, ancestors, descendants and MRCA with access checks, limits, 404 for anything unreadable and cross-tenant denial tests; coverage, projected views and exports to come)
+- [ ] Resumable, idempotent import jobs (not started; the snapshot collection already refuses the same id and version twice)
+- [ ] `apps/payload-example` (not started)
 
 ## M8 — Science and performance polish
 

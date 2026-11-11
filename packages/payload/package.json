@@ -1,0 +1,62 @@
+{
+  "name": "@captiveorigins/payload-plugin-onetaxonomy",
+  "version": "0.1.0-alpha.3",
+  "description": "OneTaxonomy for Payload: sealed taxonomy snapshots verified by checksum, published views pinned to them, and a bounded, permission-checked API for name search, ancestors, descendants and MRCA, with optional tenant scope.",
+  "keywords": [
+    "payload",
+    "payload-plugin",
+    "payloadcms",
+    "taxonomy",
+    "phylogeny",
+    "classification",
+    "mrca",
+    "biodiversity"
+  ],
+  "homepage": "https://github.com/CaptiveOrigins/onetaxonomy#readme",
+  "bugs": {
+    "url": "https://github.com/CaptiveOrigins/onetaxonomy/issues"
+  },
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/CaptiveOrigins/onetaxonomy.git",
+    "directory": "packages/payload"
+  },
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsup src/index.ts --format esm --dts --clean --target es2022 --external payload",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "prepack": "pnpm run build"
+  },
+  "dependencies": {
+    "@captiveorigins/onetaxonomy-core": "workspace:^"
+  },
+  "peerDependencies": {
+    "payload": "^3.80.0"
+  },
+  "devDependencies": {
+    "@payloadcms/db-mongodb": "3.93.0",
+    "@types/node": "^24.19.2",
+    "graphql": "^16.15.0",
+    "mongodb-memory-server": "^11.3.0",
+    "payload": "^3.93.0"
+  }
+}
