@@ -1,6 +1,7 @@
 import type { Highlight, Id, NodeOverlay, ProjectedNode, Projection } from '@captiveorigins/onetaxonomy-core'
 import type { LayoutEdge, LayoutNode, TreeLayout } from '@captiveorigins/onetaxonomy-layout'
 
+import { FOLDED, innerLabelAt, leafLabelX } from './labelPlace.js'
 import { shapeAt, shapePolygon, type MarkShape } from './shapes.js'
 
 /**
@@ -38,6 +39,8 @@ export const LOD_DEFAULTS = {
 const SIZE = { label: 12, support: 10, axis: 11, leafDot: 3, innerDot: 2.5, halo: 7.5, trait: 5.5, badge: 7, labelReach: 220 }
 /** Smallest sizes on screen for marks that carry meaning, in CSS pixels. */
 const MIN_PX = { halo: 5, trait: 4, collapsed: 6, badge: 6, dot: 0.75 }
+/** The width in pixels of the triangle that marks a folded branch, at `k` pixels per layout unit. */
+const foldedPx = (k: number) => Math.max(MIN_PX.collapsed, FOLDED.width * k)
 /** Text is measured by estimate (0.6 em per character), so the plan is the same in Node and in every browser. */
 const CHAR_EM = 0.6
 
@@ -390,16 +393,23 @@ export function planCanvas(t: PreparedTree, o: PlanOptions): CanvasPlan {
       const bold = n.selected || node.dropTarget
       const italic = isItalicRank(n.rank)
       let label: PlannedLabel
+      // A folded branch's triangle is never drawn under MIN_PX.collapsed wide, so its name starts past that.
+      const leafStart = n.collapsed ? foldedPx(k) + FOLDED.gap * k : leafLabelX(false) * k
       if (radialLayout) {
         const angle = p.angle ?? 0
         const flip = Math.cos(angle) < 0
         const rot = -angle + (flip ? Math.PI : 0)
-        // The label's start, 8 units out along the rotated x axis, 4 down along its y axis.
-        const ax = x + Math.cos(rot) * (flip ? -8 : 8) * k - Math.sin(rot) * 4 * k
-        const ay = y + Math.sin(rot) * (flip ? -8 : 8) * k + Math.cos(rot) * 4 * k
+        // The label's start, out along the rotated x axis (past the triangle of a folded branch), 4 down along its y axis.
+        const out = flip ? -8 * k : leafStart
+        const ax = x + Math.cos(rot) * out - Math.sin(rot) * 4 * k
+        const ay = y + Math.sin(rot) * out + Math.cos(rot) * 4 * k
         label = makeLabel(text, ax, ay, rot, flip ? 'end' : 'start', px, italic, bold)
       } else {
-        label = p.leaf ? makeLabel(text, x + 8 * k, y + 4 * k, 0, 'start', px, italic, bold) : makeLabel(text, x + 4 * k, y - 6 * k, 0, 'start', px, italic, bold)
+        // An inner node's name is placed clear of the branches to its children, where the SVG puts it.
+        const rows: number[] = []
+        if (!p.leaf) for (let j = i + 1; j < t.end[i]!; j = t.end[j]!) rows.push(t.pos[j]!.y - p.y)
+        const spot = p.leaf ? undefined : innerLabelAt(rows)
+        label = makeLabel(text, x + (spot ? spot.x * k : leafStart), y + (spot ? spot.y : 4) * k, 0, 'start', px, italic, bold)
       }
       const priority = n.selected ? 0 : node.dropTarget || first || n.collapsed ? 1 : p.leaf ? 3 : 4
       candidates.push({ node, label, priority, order: i, i })
@@ -688,7 +698,7 @@ export function drawPlan(ctx: Context2D, plan: CanvasPlan, colors: CanvasColors,
       ctx.lineWidth = 1
       ctx.stroke()
     } else if (n.collapsed) {
-      const s = Math.max(MIN_PX.collapsed, 12 * k)
+      const s = foldedPx(k)
       ctx.beginPath()
       ctx.moveTo(n.x, n.y)
       ctx.lineTo(n.x + s, n.y - s / 2)

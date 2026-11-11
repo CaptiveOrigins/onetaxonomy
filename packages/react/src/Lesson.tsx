@@ -5,7 +5,8 @@ import { sceneAt, sceneFromView, type Annotation, type Camera, type LessonDeck }
 import type { TreeLayout } from '@captiveorigins/onetaxonomy-layout'
 import { useMemo, useState, type KeyboardEvent } from 'react'
 
-import { Explorer, layoutFor } from './Explorer.js'
+import { Explorer } from './Explorer.js'
+import { layoutFor } from './layout.js'
 import { Icon } from './icons.js'
 import { treeViewBox, TreeView, type ViewBox } from './TreeView.js'
 

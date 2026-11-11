@@ -2,6 +2,62 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: where names go in the drawing
+
+Scope: a defect found while looking at the example site's pages. In rectangular layouts an inner node's name was drawn 6 units above the node, and a child's branch one row apart ran through it ("Reptilia" in the amniotes classes view). A folded branch's name started on top of its triangle. Both are fixed in `packages/react/src/labelPlace.ts`, used by the SVG and the canvas. React tests went from 119 to 132.
+
+### Covered
+
+- **The rule itself** (`label-place.test.tsx`): the node's own row when no child's branch leaves there, above when one does, below when the row and the space above are both taken, and, across nine arrangements of children at the default row spacing, no name crossed by a branch. When rows are closer than a name is tall, the place with the most room is chosen, the same one every time.
+- **The case that was wrong** is pinned from the fixture: Reptilia midway between two of its four children's rows, with the old place shown to be struck through.
+- **SVG:** no inner node's name in the classes view is crossed by a branch to one of its children, and a leaf's name is where it was.
+- **Canvas and SVG agree:** Reptilia's name at two zooms, and every inner node of the checklist fixture.
+- **Folded branches:** in SVG the name starts at or past the triangle's far edge plus 4 units, with the edge read from the drawn path; an open leaf's name still starts 8 units out. On canvas the name clears the triangle at three zooms, including 0.25 pixels a unit, where the triangle is held at 6 px.
+- **Nothing else moved:** the whole-markup snapshots in `svg-unchanged.test.tsx` differ from the first ones in four `<text>` tags (three inner names, one folded name) and nowhere else; the test's comment says which.
+
+### Gaps left
+
+- Looked at in headless Chrome as SVG only, in light. The canvas placement is tested through its plan, not by looking at painted pixels.
+- A long name can still cross a branch further down the tree: only the node's own children are looked at. No test, because it isn't fixed.
+- Radial drawings: a folded branch's triangle points right whatever the branch's angle. Its name is tested in rectangular layouts only.
+
+### Left out as overkill
+
+- Every combination of row spacing and child count: the rule is three places and one comparison, and each branch of it is tested.
+
+## 2026-11-11: example Payload site
+
+Scope: `apps/payload-example` (new) and the React package's client-module change that it needed. The example is a real Payload 3.93 site behind Next.js 16 with a throwaway in-memory MongoDB, on this machine only. Its test is `scripts/smoke.mjs` (`pnpm smoke`, 46 checks): it builds the site, starts it on a free port with its own database and password, and sends requests over HTTP with sign-in cookies and the headers a browser sends. It passed on `next dev` and on the built site. CI runs it after the unit tests. The React change has `packages/react/test/client-modules.test.ts` (4 new; react 115 to 119, all unit tests 506 to 510).
+
+What the example promises is in its README. This closes "a real site" from the audit below: a web server, Next.js, cookies and Payload's CSRF rule.
+
+### Covered
+
+- **A visitor reads only what is published:** the home page lists the two published views; each view page answers 200 with one SVG tree, its outline, the illustrative-data line and its sources; a view that doesn't exist is 404. Through REST and GraphQL a visitor sees the one published snapshot and not the staged one, can search it and read a view's projection.
+- **A visitor changes nothing:** storing a snapshot and making a proposal are 403; accounts and proposals can't be listed.
+- **Sign-in:** each account signs in and gets an `HttpOnly` cookie; a wrong password is 401; the cookie is the person it was given to.
+- **Cookies count only from this site:** a read with the cookie marked as coming from another site, or with no word on where it came from, is anonymous; a proposal posted with the member's cookie and another site's `Origin` is 403.
+- **Roles:** a member's PATCH of their own role leaves them a member; a member lists only their own account; `/api/access` opens the admin to the curator and not to the member or a visitor; the admin's sign-in page loads, the admin loads for the curator, and the member is redirected to its "unauthorized" page.
+- **Staged work is the curator's:** the curator lists both snapshots; a visitor and the member get 404 for the staged one and its export.
+- **Proposals carry a handle and no email address:** a member's proposal is stored private under their handle whatever author the body names, and the stored document holds no email address; it is 404 to the curator while private and to a visitor once shared; a second member, added by the curator, reads the shared proposal by handle without the author's email address.
+- **Accepting:** the author and another member get 404; the curator's preview says it can be accepted; accepting makes version 2, staged; its export verifies against its checksum, names the proposer and the curator by handle, holds no email address, and is 404 to a visitor, who still lists one snapshot. Neither the author nor the curator can delete the accepted proposal, and it is still there.
+- **Server Components** (`client-modules.test.ts`): the files that call client hooks say `'use client'`, the list of client files is pinned, and `layoutFor` and the server-safe exports come from files that don't.
+
+### Gaps left
+
+- **A person in the admin:** the smoke test loads the admin's pages and reads their status; nobody has clicked through creating, publishing or deciding there. No browser ran the pages' JavaScript in a test.
+- **How the pages look:** looked at once in headless Chrome (light, dark, 520 px wide); no picture is compared in a test. No screen reader was used, and no phone.
+- **A member's sign-up or password reset:** the example has no email, so neither exists.
+- **Publishing version 2 and the page changing:** the test stops at the staged version. The plugin's own tests cover publishing.
+- **Your own database:** `DATABASE_URI` and the "first account is the curator" rule were not run by the smoke test, which always uses its own in-memory database. Postgres and SQLite, as before.
+- **CI on Linux:** the smoke test has run on a Mac. Its first CI run is the pull request that adds it.
+- **A canvas-size tree from a Server Component.**
+
+### Left out as overkill
+
+- Repeating the plugin's 139 tests against the site: the smoke test takes one pass per kind of reader and per kind of refusal, and the plugin's tests hold the rest.
+- Unit tests for the seed and the page components: the smoke test reads their output through the running site.
+
 ## 2026-11-11: Payload plugin over HTTP
 
 Scope: `packages/payload`, tests only. Parts 1 to 4 each left "HTTP routing" as a gap: their tests call the endpoint handlers and the Local API directly, with the user handed in. `test/http.test.ts` (12 new; payload 127 to 139, all tests 494 to 506) sends real `Request`s through Payload's own REST router, `handleEndpoints`, and signs in through `/api/users/login`, so the user comes from a token the way it does for a browser. Same real Payload 3.93 and in-memory MongoDB, two tenants, no web server and no network. No plugin code changed: every test passed against the code as it was, once the test's own expectations matched the documented behaviour.

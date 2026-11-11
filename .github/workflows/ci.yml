@@ -5,9 +5,14 @@ on:
   pull_request:
 permissions:
   contents: read
+# One run per branch or pull request: a newer push cancels the run before it.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
       - name: Leak check (emails and build output; private terms are only checked locally)
@@ -22,6 +27,10 @@ jobs:
       - run: pnpm build
       - run: pnpm typecheck
       - run: pnpm test
+      # Builds the example Payload site, starts it with a throwaway in-memory database on the runner, and checks it
+      # over HTTP with sign-in cookies. About a minute.
+      - name: Example site smoke test
+        run: pnpm --filter @captiveorigins/onetaxonomy-payload-example smoke
       # The OneOrigin brand copy (brand/oneorigin/) must match brand/oneorigin.lock, and the CSS built from it must be current.
       # The source is OnePhylogeny's docs/oneorigin/; the check warns, without failing, when it has moved ahead of the copy.
       - name: OneOrigin brand check
