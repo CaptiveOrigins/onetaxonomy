@@ -4,6 +4,7 @@ import { useId, type KeyboardEvent, type MouseEvent } from 'react'
 
 import { CanvasTreeView } from './CanvasTreeView.js'
 import { CANVAS_THRESHOLD, chooseRenderer, isItalicRank, nodeText, type LodCounts, type Renderer, type ViewBox } from './canvasPlan.js'
+import { innerLabelAt, leafLabelX } from './labelPlace.js'
 import { shapeAt, shapePath, type MarkShape } from './shapes.js'
 
 export type TreeViewProps = {
@@ -98,6 +99,19 @@ function SvgTreeView(props: TreeViewProps) {
   const moving = (id: Id) => Boolean(props.drag?.ids.has(id))
   const offset = props.drag ? `translate(${props.drag.dx} ${props.drag.dy})` : undefined
   const marks = props.overlays
+  // How far above or below each inner node its children's rows are: its name is placed clear of their branches.
+  const rowOf = new Map(layout.nodes.map((n) => [n.id, n.y]))
+  const childRows = new Map<Id, number[]>()
+  if (!radialLayout) {
+    for (const e of layout.edges) {
+      const from = rowOf.get(e.parent)
+      const to = rowOf.get(e.child)
+      if (from === undefined || to === undefined) continue
+      const rows = childRows.get(e.parent)
+      if (rows) rows.push(to - from)
+      else childRows.set(e.parent, [to - from])
+    }
+  }
 
   return (
     <svg
@@ -151,6 +165,7 @@ function SvgTreeView(props: TreeViewProps) {
           const labelTransform = radialLayout ? `rotate(${(-angle * 180) / Math.PI + (flip ? 180 : 0)})` : undefined
           const mark = marks?.get(ln.id)
           const text = nodeText(n, mark, hidden)
+          const inner = ln.leaf ? undefined : innerLabelAt(childRows.get(ln.id) ?? [])
           return (
             <g
               key={ln.id}
@@ -196,7 +211,7 @@ function SvgTreeView(props: TreeViewProps) {
               )}
               {n.collapsed ? <path className="ot-node-collapsed" d="M0 0 L12 -6 L12 6 Z" /> : <circle className="ot-node-dot" r={ln.leaf ? 3 : 2.5} />}
               {(ln.leaf || !radialLayout) && text && (
-                <text className="ot-label" x={ln.leaf ? (flip ? -8 : 8) : 4} y={ln.leaf ? 4 : -6} textAnchor={ln.leaf && flip ? 'end' : 'start'} transform={ln.leaf ? labelTransform : undefined} data-italic={isItalicRank(n.rank) ? '' : undefined}>
+                <text className="ot-label" x={inner ? inner.x : flip ? -8 : leafLabelX(n.collapsed)} y={inner ? inner.y : 4} textAnchor={ln.leaf && flip ? 'end' : 'start'} transform={ln.leaf ? labelTransform : undefined} data-italic={isItalicRank(n.rank) ? '' : undefined}>
                   {text}
                 </text>
               )}

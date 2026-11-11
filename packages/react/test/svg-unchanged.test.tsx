@@ -11,6 +11,12 @@ import amniotesJson from '../../../fixtures/amniotes.json'
  * The SVG drawing below the canvas threshold must stay exactly what it was before the
  * canvas renderer existed. The snapshots were written from the code before that change
  * (2026-11-11) and pin the whole markup: nodes, labels, halos, marks, drag and drop.
+ *
+ * One change since, on purpose (2026-11-11): where a name starts. Four `<text>` tags differ
+ * from the first snapshots and nothing else does. Three inner nodes' names (amniota, fx:14,
+ * fx:16) moved from 6 units above the node, where a child's branch could run through them,
+ * to the node's own row; and a folded branch's name (fx:2) starts 16 units out, past its
+ * triangle, instead of 8. `label-place.test.tsx` tests the rule.
  */
 const cl = indexDataset(checklistJson as DatasetSnapshot)
 const traitData = (): DatasetSnapshot => ({

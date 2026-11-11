@@ -2,6 +2,29 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: where names go in the drawing
+
+Scope: a defect found while looking at the example site's pages. In rectangular layouts an inner node's name was drawn 6 units above the node, and a child's branch one row apart ran through it ("Reptilia" in the amniotes classes view). A folded branch's name started on top of its triangle. Both are fixed in `packages/react/src/labelPlace.ts`, used by the SVG and the canvas. React tests went from 119 to 132.
+
+### Covered
+
+- **The rule itself** (`label-place.test.tsx`): the node's own row when no child's branch leaves there, above when one does, below when the row and the space above are both taken, and, across nine arrangements of children at the default row spacing, no name crossed by a branch. When rows are closer than a name is tall, the place with the most room is chosen, the same one every time.
+- **The case that was wrong** is pinned from the fixture: Reptilia midway between two of its four children's rows, with the old place shown to be struck through.
+- **SVG:** no inner node's name in the classes view is crossed by a branch to one of its children, and a leaf's name is where it was.
+- **Canvas and SVG agree:** Reptilia's name at two zooms, and every inner node of the checklist fixture.
+- **Folded branches:** in SVG the name starts at or past the triangle's far edge plus 4 units, with the edge read from the drawn path; an open leaf's name still starts 8 units out. On canvas the name clears the triangle at three zooms, including 0.25 pixels a unit, where the triangle is held at 6 px.
+- **Nothing else moved:** the whole-markup snapshots in `svg-unchanged.test.tsx` differ from the first ones in four `<text>` tags (three inner names, one folded name) and nowhere else; the test's comment says which.
+
+### Gaps left
+
+- Looked at in headless Chrome as SVG only, in light. The canvas placement is tested through its plan, not by looking at painted pixels.
+- A long name can still cross a branch further down the tree: only the node's own children are looked at. No test, because it isn't fixed.
+- Radial drawings: a folded branch's triangle points right whatever the branch's angle. Its name is tested in rectangular layouts only.
+
+### Left out as overkill
+
+- Every combination of row spacing and child count: the rule is three places and one comparison, and each branch of it is tested.
+
 ## 2026-11-11: example Payload site
 
 Scope: `apps/payload-example` (new) and the React package's client-module change that it needed. The example is a real Payload 3.93 site behind Next.js 16 with a throwaway in-memory MongoDB, on this machine only. Its test is `scripts/smoke.mjs` (`pnpm smoke`, 46 checks): it builds the site, starts it on a free port with its own database and password, and sends requests over HTTP with sign-in cookies and the headers a browser sends. It passed on `next dev` and on the built site. CI runs it after the unit tests. The React change has `packages/react/test/client-modules.test.ts` (4 new; react 115 to 119, all unit tests 506 to 510).

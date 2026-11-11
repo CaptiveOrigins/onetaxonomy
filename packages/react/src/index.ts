@@ -15,5 +15,6 @@ export { cameraBox, LessonPlayer, type LessonLabels, type LessonMode, type Lesso
 export { ComparePanel, PHYLO_LABELS, rootedRecord, SupportControl, supportSummary, tipsUnder, type PhyloLabels } from './Phylo.js'
 export { linkedPhylogeny, proposeTipLinks, TIP_LINK_LABELS, TipLinker, type TipCandidate, type TipLinkerProps, type TipLinkLabels, type TipLinks, type TipMatch } from './TipLinks.js'
 export { isOneEdit, nearNameMatches, normaliseName, ONE_EDIT_MIN_LENGTH, withoutSpecimenCode, type NearMatch, type NearRule } from './nearNames.js'
+export { innerLabelAt, leafLabelX } from './labelPlace.js'
 export { MARK_SHAPES, shapeAt, shapePath, shapePolygon, ShapeSwatch, traitShapes, type MarkShape } from './shapes.js'
 export { useRovingToolbar } from './toolbar.js'
