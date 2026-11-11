@@ -15,15 +15,15 @@ import { createAccess, idOf, manageAccess, readAccess, tenantOf } from './access
 import type { ResolvedOptions } from './types.js'
 import { forgetViewSource, viewSourceOf } from './views-api.js'
 
-const fail = (message: string): never => {
+export const fail = (message: string): never => {
   throw new APIError(message, 400, undefined, true)
 }
 
-const same = (a: unknown, b: unknown) => canonicalJson(a ?? null) === canonicalJson(b ?? null)
+export const same = (a: unknown, b: unknown) => canonicalJson(a ?? null) === canonicalJson(b ?? null)
 const stamp = (v: unknown) => (v === null || v === undefined || v === '' ? '' : v instanceof Date ? v.toISOString() : String(v))
 
 /** Payload's JSON field takes objects; a REST client may send the text. */
-const asObject = (v: unknown, what: string): Record<string, unknown> => {
+export const asObject = (v: unknown, what: string): Record<string, unknown> => {
   if (typeof v === 'string') {
     try {
       v = JSON.parse(v)
@@ -41,7 +41,7 @@ const SNAPSHOT_CONTENT = ['snapshot', 'snapshotId', 'version', 'checksum', 'labe
 const PUBLICATION = ['publishedBy', 'publishedAt']
 
 /** Fills a new record's tenant from the requester when it names none (the create access refuses another tenant). */
-const fillTenant = (opts: ResolvedOptions): CollectionBeforeValidateHook => async ({ data, operation, req }) => {
+export const fillTenant = (opts: ResolvedOptions): CollectionBeforeValidateHook => async ({ data, operation, req }) => {
   if (!opts.tenant || operation !== 'create' || !data || idOf(data[opts.tenant.field]) !== undefined) return data
   const t = await tenantOf(opts, req)
   if (t.ok) data[opts.tenant.field] = t.tenant
@@ -64,7 +64,7 @@ function moveStatus(data: Record<string, unknown>, originalDoc: Record<string, u
   for (const f of PUBLICATION) if (f in data && stamp(data[f]) !== stamp(originalDoc[f])) fail(`Who published a ${what}, and when, are set by publishing.`)
 }
 
-const tenantLocked = (opts: ResolvedOptions, data: Record<string, unknown>, originalDoc: Record<string, unknown>, what: string) => {
+export const tenantLocked = (opts: ResolvedOptions, data: Record<string, unknown>, originalDoc: Record<string, unknown>, what: string) => {
   if (opts.tenant && opts.tenant.field in data && idOf(data[opts.tenant.field]) !== idOf(originalDoc[opts.tenant.field])) fail(`A ${what} stays in the tenant it was made for.`)
 }
 
@@ -157,7 +157,7 @@ const viewBeforeChange = (opts: ResolvedOptions): CollectionBeforeChangeHook => 
   return data
 }
 
-const tenantField = (opts: ResolvedOptions): Field[] =>
+export const tenantField = (opts: ResolvedOptions): Field[] =>
   opts.tenant ? [{ name: opts.tenant.field, type: 'relationship', relationTo: opts.tenant.collection as never, required: true, index: true, admin: { position: 'sidebar', description: 'Set when the record is made. It can\'t change.' } } as Field] : []
 
 const publicationFields: Field[] = [

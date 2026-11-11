@@ -23,7 +23,7 @@ The TypeScript types in [`packages/core/src/model.ts`](../../packages/core/src/m
 | `TaxonProfile` | Optional facts about a concept | `summary`, `status`, `geography`, `morphology`, `ecology`, `media[]` (with license/credit), `citations`, `extensions` (consumer-namespaced) |
 | `TraitSet` | Observed character states from one cited source | `title`, `source`, `states[] { id, label, color? }`, `values[] { concept, state, note? }` (one value per concept; never inferred: unstated concepts stay uncolored) |
 
-`DatasetSnapshot.derivedFrom` records the snapshot (id, version, checksum) and selection a subset was extracted from. A JSON Schema for snapshots ships in `@captiveorigins/onetaxonomy-core/schema/snapshot.schema.json` for non-TypeScript consumers.
+`DatasetSnapshot.derivedFrom` records the snapshot (id, version, checksum) another one was made from, and how: the `selection` a subset was extracted with, or the `proposal` a curator accepted (`id`, `title`, `author`, `acceptedBy`, the `classification` version it was drawn over and the concepts `moved`). `acceptIntoSnapshot` makes that second kind: a new version in which the classification's version becomes `<its version>+<proposal id>`, each moved placement's provenance names the source record `proposal:<id>`, and that record says who proposed and who accepted. The two names are inside the checksum, so they can't be taken out of a sealed snapshot later. Proposals on a phylogeny are refused. A JSON Schema for snapshots ships in `@captiveorigins/onetaxonomy-core/schema/snapshot.schema.json` for non-TypeScript consumers.
 
 ## Curation (M3)
 

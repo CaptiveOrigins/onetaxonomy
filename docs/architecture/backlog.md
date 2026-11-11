@@ -60,7 +60,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 - [x] Core: proposals, derived hierarchies, checks, `compareHierarchies`, view actions, disclosure in every export
 - [x] Explorer: start a proposal, drag onto a new parent or pick from a list, revert and undo, accepted vs proposed for a taxon, side-by-side compare
-- [ ] Plugin (M7): proposals per user, shareable; a curator can accept one into a new staged version, never silently (not started; staged snapshot versions, which acceptance will create, exist since part 1, 2026-11-11)
+- [x] Plugin (M7): proposals per user, shareable; a curator can accept one into a new staged version, never silently (part 4, 2026-11-11, [ADR 0012](adr/0012-payload-plugin.md), point 15: a `taxonomy-proposals` collection, private until shared, accepted through core's `acceptIntoSnapshot` into a staged version that names the proposal, its author and the curator, or declined with a note; proposals on a phylogeny are never accepted. Stored and decided through Payload's APIs and three endpoints; there is no interface for it yet, and it was tested on an in-memory MongoDB, not in a real site or on Postgres or SQLite)
 
 ## M6 — Studio (macOS)
 
@@ -71,7 +71,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 ## M7 — Payload plugin
 
-- [ ] `@captiveorigins/payload-plugin-onetaxonomy` with configurable slugs, locale, permissions, optional tenant scope, source adapters (part 1, 2026-11-11, [ADR 0012](adr/0012-payload-plugin.md): slugs, locale for common-name search, read and manage callbacks that fail closed, tenant scope, sealed snapshots and pinned views with staged/published/withdrawn states; part 2, 2026-11-11: the six import adapters run in import jobs, configured per job. Not ticked: admin views, proposals and the example app remain)
+- [ ] `@captiveorigins/payload-plugin-onetaxonomy` with configurable slugs, locale, permissions, optional tenant scope, source adapters (part 1, 2026-11-11, [ADR 0012](adr/0012-payload-plugin.md): slugs, locale for common-name search, read and manage callbacks that fail closed, tenant scope, sealed snapshots and pinned views with staged/published/withdrawn states; part 2, 2026-11-11: the six import adapters run in import jobs, configured per job; part 4, 2026-11-11: proposals, with a third callback, `access.propose`. Not ticked: admin views and the example app remain)
 - [ ] Admin views: import progress, conflicts, curation preview, tree authoring, profiles, publishing, lessons (not started; part 1 uses Payload's default edit views)
 - [ ] Bounded API: search, ancestors/descendants, MRCA, coverage, projected views, exports; access checks; cross-tenant denial tests (part 1, 2026-11-11: search, ancestors, descendants and MRCA with access checks, limits, 404 for anything unreadable and cross-tenant denial tests; part 2, 2026-11-11: coverage, projected views with their disclosure, and snapshot and view exports, under the same rules and tests. Not ticked: not yet run through Payload's HTTP routing in a real site)
 - [x] Resumable, idempotent import jobs (part 2, 2026-11-11: a `taxonomy-imports` collection, not Payload's jobs queue (ADR 0012, point 12); staged sealed snapshots, "already imported" on a re-run, failures store nothing, interrupted jobs restart from the file; part 3, 2026-11-11: a job is claimed by one conditional update, so runs started together can't both proceed; tested on an in-memory MongoDB, not in a real site or on Postgres or SQLite)

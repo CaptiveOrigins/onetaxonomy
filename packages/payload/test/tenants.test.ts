@@ -127,6 +127,12 @@ describe('tenant scope', () => {
     }
   })
 
+  it('answers a view\'s source to its own tenant\'s reader, and nothing to another tenant\'s', async () => {
+    const view = (await payload.find({ collection: VIEWS as never, user: readerA, overrideAccess: false, depth: 0 })).docs[0] as unknown as { id: string | number; source: Record<string, unknown> }
+    expect(view.source).toMatchObject({ doc: String(snapA), id: 'fixture-amniotes', status: 'published', withdrawn: false })
+    for (const user of [readerB, managerB, noTenant, throwsTenant]) await expect(payload.findByID({ collection: VIEWS as never, id: view.id, user, overrideAccess: false })).rejects.toThrow()
+  })
+
   it('keeps import jobs and the snapshots they make in the maker\'s tenant', async () => {
     const settings = { snapshot: { id: 'tenant-trees', version: '1', createdAt: '2026-11-11T00:00:00.000Z' }, source: { id: 'tenant-trees', title: 'Illustrative trees', illustrative: true }, options: { id: 'tenant-tree', version: '1' } }
     const job = (await create(IMPORTS, { format: 'newick', url: 'https://data.example.org/trees.nwk', settings }, managerA)) as Record<string, unknown>

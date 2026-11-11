@@ -10,8 +10,8 @@ export type TenantId = string | number
 export type AccessCallback = (args: { req: PayloadRequest; tenant: TenantId | null }) => boolean | Promise<boolean>
 
 export type OneTaxonomyPluginOptions = {
-  /** Slugs of the collections this plugin adds. Defaults `taxonomy-snapshots`, `taxonomy-views` and `taxonomy-imports`. */
-  slugs?: { snapshots?: string; views?: string; imports?: string }
+  /** Slugs of the collections this plugin adds. Defaults `taxonomy-snapshots`, `taxonomy-views`, `taxonomy-imports` and `taxonomy-proposals`. */
+  slugs?: { snapshots?: string; views?: string; imports?: string; proposals?: string }
   access?: {
     /** Who may read published snapshots and views, and use the read API. Default: signed-in users. */
     read?: AccessCallback
@@ -20,6 +20,11 @@ export type OneTaxonomyPluginOptions = {
      * Default: nobody, so only trusted server code using the Local API with `overrideAccess` can.
      */
     manage?: AccessCallback
+    /**
+     * Who may make proposals (with the `proposals` option). They must be signed in and pass `read` as well.
+     * Default: every signed-in user who may read.
+     */
+    propose?: AccessCallback
   }
   /**
    * Keeps each tenant's snapshots and views apart. The plugin adds a required relationship to `collection` on both
@@ -47,8 +52,28 @@ export type OneTaxonomyPluginOptions = {
    * `uploads`, or a URL through the host's own `fetch`.
    */
   imports?: ImportOptions
+  /**
+   * Proposals (`taxonomy-proposals`): a signed-in person's own idea of where taxa belong, drawn over a snapshot,
+   * private until they share it. A manager can accept a proposal on a classification into a new staged snapshot
+   * version, or decline it. Off unless given (`true` for the defaults).
+   */
+  proposals?: ProposalOptions | boolean
   /** Admin group the collections appear under. Default `Taxonomy`. */
   admin?: { group?: string }
+}
+
+export type ProposalOptions = {
+  /**
+   * The name a person's proposals and decisions carry. An accepted proposal's author and the curator who accepted it
+   * are sealed into the new snapshot under these names and can't be taken out later, so give a name people are happy
+   * to have published: a public handle, not an email address. Default `User <id>`. A throw, or anything but a
+   * non-empty string, stops the action.
+   */
+  nameOf?: (args: { req: PayloadRequest }) => string | Promise<string>
+  /** Most moves one proposal may hold. Default 500. */
+  maxMoves?: number
+  /** Most proposals one person may keep at a time, not counting accepted ones. Default 200. */
+  maxPerUser?: number
 }
 
 /** Where import jobs get their input. Give `uploads`, `fetch` or both. */
@@ -76,13 +101,14 @@ export type ImportOptions = {
 }
 
 export type ResolvedOptions = {
-  slugs: { snapshots: string; views: string; imports: string }
-  access: { read: AccessCallback; manage: AccessCallback }
+  slugs: { snapshots: string; views: string; imports: string; proposals: string }
+  access: { read: AccessCallback; manage: AccessCallback; propose: AccessCallback }
   tenant: { collection: string; field: string; resolve: NonNullable<OneTaxonomyPluginOptions['tenant']>['resolve'] } | null
   locale: { default: string | null }
   limits: { maxResults: number; maxDepth: number; maxMrcaNodes: number; maxNodes: number; maxCoverageIds: number }
   admin: { group: string }
   imports: { uploads: ImportOptions['uploads'] | null; fetch: ImportOptions['fetch'] | null; maxBytes: number; staleAfterMs: number; runOnCreate: boolean } | null
+  proposals: { nameOf: NonNullable<ProposalOptions['nameOf']>; maxMoves: number; maxPerUser: number } | null
 }
 
 export const CUSTOM_KEY = 'onetaxonomy'
@@ -90,8 +116,8 @@ export const CUSTOM_KEY = 'onetaxonomy'
 export function resolveOptions(o: OneTaxonomyPluginOptions = {}): ResolvedOptions {
   const positive = (v: number | undefined, fallback: number) => (v !== undefined && Number.isInteger(v) && v > 0 ? v : fallback)
   return {
-    slugs: { snapshots: o.slugs?.snapshots ?? 'taxonomy-snapshots', views: o.slugs?.views ?? 'taxonomy-views', imports: o.slugs?.imports ?? 'taxonomy-imports' },
-    access: { read: o.access?.read ?? (({ req }) => Boolean(req.user)), manage: o.access?.manage ?? (() => false) },
+    slugs: { snapshots: o.slugs?.snapshots ?? 'taxonomy-snapshots', views: o.slugs?.views ?? 'taxonomy-views', imports: o.slugs?.imports ?? 'taxonomy-imports', proposals: o.slugs?.proposals ?? 'taxonomy-proposals' },
+    access: { read: o.access?.read ?? (({ req }) => Boolean(req.user)), manage: o.access?.manage ?? (() => false), propose: o.access?.propose ?? (({ req }) => Boolean(req.user)) },
     tenant: o.tenant ? { collection: o.tenant.collection, field: o.tenant.field ?? 'tenant', resolve: o.tenant.resolve } : null,
     locale: { default: o.locale?.default ?? null },
     limits: {
@@ -109,6 +135,13 @@ export function resolveOptions(o: OneTaxonomyPluginOptions = {}): ResolvedOption
           maxBytes: positive(o.imports.maxBytes, 15 * 1024 * 1024),
           staleAfterMs: positive(o.imports.staleAfterMinutes, 15) * 60_000,
           runOnCreate: o.imports.runOnCreate !== false,
+        }
+      : null,
+    proposals: o.proposals
+      ? {
+          nameOf: (o.proposals === true ? undefined : o.proposals.nameOf) ?? (({ req }) => `User ${String(req.user?.id ?? '')}`),
+          maxMoves: positive(o.proposals === true ? undefined : o.proposals.maxMoves, 500),
+          maxPerUser: positive(o.proposals === true ? undefined : o.proposals.maxPerUser, 200),
         }
       : null,
   }

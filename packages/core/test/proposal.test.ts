@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  applyToClassification, applyToPhylogeny, applyViewAction, compareHierarchies, createHistory, createView, describeView, dispatch, indexClassification, indexDataset, indexPhylogeny, parseView, projectView,
-  ProposalError, sealSnapshot, serializeView, snapshotChecksum, undo, validateView, ViewActionError, type Phylogeny, type Proposal, type TaxonomicView,
+  acceptIntoSnapshot, applyToClassification, applyToPhylogeny, applyViewAction, compareHierarchies, createHistory, createView, describeView, dispatch, indexClassification, indexDataset, indexPhylogeny, parseView, projectView,
+  hasErrors, ProposalError, proposalSourceId, sealSnapshot, serializeView, snapshotChecksum, undo, validateDataset, validateView, verifySnapshot, ViewActionError, type DatasetSnapshot, type Phylogeny, type Proposal, type TaxonomicView,
 } from '../src'
 import { amniotes, clone } from './helpers'
 
@@ -135,5 +135,79 @@ describe('Proposed mode in a view', () => {
     expect(projectView(data, back).nodes.find((n) => n.id === 'c:aves')!.moved).toBe(true)
     const stale = { ...back, proposal: { ...back.proposal!, base: { ...back.proposal!.base, version: '9' } } }
     expect(validateView(stale, data).map((d) => d.code)).toContain('proposal')
+  })
+})
+
+describe('accepting a proposal into a new snapshot version', () => {
+  const accept = { version: '2', createdAt: '2026-11-11T00:00:00Z', acceptedBy: 'C. Curator' }
+  const p = proposal('classification', [{ ...birdsIntoReptiles, note: 'Birds nest inside reptiles' }], { notes: 'See the 2026 review' })
+
+  it('makes a new version that says whose proposal it was, and leaves the base untouched', () => {
+    const before = snapshotChecksum(snapshot)
+    const next = acceptIntoSnapshot(snapshot, p, { ...accept, note: 'Agreed at the review' })
+    expect(snapshotChecksum(snapshot)).toBe(before)
+    expect(next.checksum).toBeUndefined()
+    expect(next).toMatchObject({ id: snapshot.id, version: '2', createdAt: accept.createdAt })
+    expect(next.derivedFrom).toEqual({
+      snapshot: snapshot.id, version: '1', checksum: snapshot.checksum,
+      proposal: { id: 'p1', title: 'Birds are reptiles', author: 'A. Keeper', acceptedBy: 'C. Curator', classification: { id: cls.id, version: '1' }, moved: ['c:aves'] },
+    })
+    const c = next.classifications[0]!
+    expect(c).toMatchObject({ id: cls.id, title: cls.title, version: '1+p1' })
+    expect(c).not.toHaveProperty('proposed')
+    expect(c.sources).toEqual([...cls.sources, proposalSourceId('p1')])
+    expect(c.placements.find((x) => x.concept === 'c:aves')).toEqual({ concept: 'c:aves', parent: 'c:reptilia', provenance: { source: 'proposal:p1', retrievedAt: accept.createdAt, note: 'Moved from the root: Birds nest inside reptiles' } })
+    // Placements that didn't move keep what their source said.
+    expect(c.placements.filter((x) => x.concept !== 'c:aves')).toEqual(cls.placements.filter((x) => x.concept !== 'c:aves'))
+    const source = next.sources.find((x) => x.id === 'proposal:p1')!
+    expect(source.title).toBe('Accepted proposal: Birds are reptiles')
+    for (const said of ['Proposed by A. Keeper', 'Accepted by C. Curator', 'made from version 1', '1 placement moved', 'See the 2026 review', 'Agreed at the review']) expect(source.provenance).toContain(said)
+    expect(next.phylogenies).toEqual(snapshot.phylogenies)
+    // It seals, verifies and validates like any other snapshot, and isn't frozen with its base.
+    const sealed = sealSnapshot(next)
+    expect(verifySnapshot(sealed as DatasetSnapshot)).toBe(true)
+    expect(sealed.checksum).not.toBe(snapshot.checksum)
+    expect(hasErrors(validateDataset(sealed as DatasetSnapshot))).toBe(false)
+    expect(Object.isFrozen(next)).toBe(false)
+  })
+
+  it('is the same snapshot every time for the same proposal, version and date', () => {
+    expect(snapshotChecksum(acceptIntoSnapshot(snapshot, p, accept))).toBe(snapshotChecksum(acceptIntoSnapshot(snapshot, clone(p), { ...accept })))
+  })
+
+  it('refuses a phylogeny, with the reason', () => {
+    expect(() => acceptIntoSnapshot(snapshot, proposal('phylogeny', [{ node: 't-testudines', from: 'archelosauria', to: 'amniota' }]), accept)).toThrow(/published hypothesis/)
+  })
+
+  it('refuses what would be silent, stale or untraceable', () => {
+    const bad = (prop: Proposal, o: Partial<typeof accept> = {}, base: DatasetSnapshot = snapshot as DatasetSnapshot) => () => acceptIntoSnapshot(base, prop, { ...accept, ...o })
+    expect(bad(p, { version: '1' })).toThrow(/new version/)
+    expect(bad(p, { version: ' ' })).toThrow(/needs a name/)
+    expect(bad(p, { acceptedBy: '' })).toThrow(/who accepted/)
+    expect(bad(p, { createdAt: 'yesterday' })).toThrow(/date/)
+    expect(bad({ ...p, author: ' ' })).toThrow(/author/)
+    expect(bad({ ...p, moves: [] })).toThrow(/moves nothing/)
+    expect(bad({ ...p, base: { ...p.base, id: 'nope' } })).toThrow(/no classification/)
+    expect(bad({ ...p, base: { ...p.base, version: '0' } })).toThrow(/based on version/)
+    expect(bad({ ...p, moves: [{ node: 'c:aves', from: 'c:mammalia', to: 'c:reptilia' }] })).toThrow(/no longer under/)
+    expect(bad({ ...p, moves: [{ node: 'c:reptilia', from: null, to: 'c:squamata' }] })).toThrow(/own descendant/)
+    // An unsealed base, and one changed after it was sealed.
+    expect(bad(p, {}, clone(amniotes))).toThrow(/sealed/)
+    const changed = clone(snapshot) as DatasetSnapshot
+    changed.concepts[0]!.rank = 'changed'
+    expect(bad(p, {}, changed)).toThrow(/checksum/)
+  })
+
+  it('accepts a second proposal only over the new version, and never the same one twice', () => {
+    const v2 = sealSnapshot(acceptIntoSnapshot(snapshot, p, accept)) as DatasetSnapshot
+    const again = { version: '3', createdAt: accept.createdAt, acceptedBy: 'C. Curator' }
+    expect(() => acceptIntoSnapshot(v2, p, again)).toThrow(/already accepted/)
+    // Another proposal still drawn over version 1 of the classification, which v2 no longer holds.
+    expect(() => acceptIntoSnapshot(v2, { ...p, id: 'late' }, again)).toThrow(/based on version/)
+    const second = proposal('classification', [{ node: 'c:aves', from: 'c:reptilia', to: null }], { id: 'p2', base: { kind: 'classification', id: cls.id, version: '1+p1' } })
+    const v3 = acceptIntoSnapshot(v2, second, again)
+    expect(v3.classifications[0]!.version).toBe('1+p1+p2')
+    expect(v3.derivedFrom).toMatchObject({ version: '2', checksum: v2.checksum, proposal: { id: 'p2' } })
+    expect(v3.sources.map((x) => x.id)).toEqual([...snapshot.sources.map((x) => x.id), 'proposal:p1', 'proposal:p2'])
   })
 })

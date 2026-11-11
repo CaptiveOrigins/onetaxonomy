@@ -7,8 +7,11 @@ import amniotes from '../../../fixtures/amniotes.json'
 import checklist from '../../../fixtures/checklist.json'
 import structures from '../../../fixtures/structures.json'
 
-/** A real Payload on an in-memory MongoDB replica set (transactions on, indexes built). No network: the binary is cached. */
-export async function startPayload(config: Omit<Config, 'db' | 'secret'>) {
+/**
+ * A real Payload on an in-memory MongoDB replica set (transactions on, indexes built). No network: the binary is cached.
+ * `transactions: false` runs it the way a database without transactions would.
+ */
+export async function startPayload(config: Omit<Config, 'db' | 'secret'>, { transactions = true }: { transactions?: boolean } = {}) {
   const mongo = await MongoMemoryReplSet.create({ replSet: { count: 1, storageEngine: 'wiredTiger' } })
   const payload = await getPayload({
     config: await buildConfig({
@@ -16,7 +19,7 @@ export async function startPayload(config: Omit<Config, 'db' | 'secret'>) {
       secret: 'test-secret-not-for-production',
       telemetry: false,
       typescript: { autoGenerate: false },
-      db: mongooseAdapter({ url: mongo.getUri('onetaxonomy'), ensureIndexes: true }),
+      db: mongooseAdapter({ url: mongo.getUri('onetaxonomy'), ensureIndexes: true, ...(transactions ? {} : { transactionOptions: false as const }) }),
     }),
   })
   return {
@@ -34,7 +37,7 @@ export const usersCollection = (withTenant = false): CollectionConfig => ({
   slug: 'users',
   auth: true,
   fields: [
-    { name: 'role', type: 'select', options: ['manager', 'reader', 'thrower'], defaultValue: 'reader' },
+    { name: 'role', type: 'select', options: ['manager', 'reader', 'thrower', 'viewer'], defaultValue: 'reader' },
     ...(withTenant ? [{ name: 'tenant', type: 'relationship', relationTo: 'tenants' } as CollectionConfig['fields'][number]] : []),
   ],
 })
@@ -59,8 +62,8 @@ export async function makeUser(payload: Payload, role: string, extra: Record<str
   return (await payload.create({ collection: 'users', data: { email: `user${n}@example.com`, password: 'a-long-test-password', role, ...extra } as never })) as unknown as TypedUser
 }
 
-/** Calls a collection endpoint the way the REST API would, as `user` (null = anonymous). */
-export async function callEndpoint(payload: Payload, collection: string, path: string, id: string, query: Record<string, string | number> = {}, user: TypedUser | null = null) {
+/** Calls a collection endpoint the way the REST API would, as `user` (null = anonymous). `body` is a POST body: JSON, or text sent as it is. */
+export async function callEndpoint(payload: Payload, collection: string, path: string, id: string, query: Record<string, string | number> = {}, user: TypedUser | null = null, body?: unknown) {
   const endpoint = (payload.collections[collection as never]!.config.endpoints || []).find((e) => e.path === path)
   if (!endpoint) throw new Error(`No endpoint ${collection}${path}`)
   const req = await createLocalReq({ user: (user ?? undefined) as never }, payload)
@@ -68,6 +71,7 @@ export async function callEndpoint(payload: Payload, collection: string, path: s
   const qs = new URLSearchParams(Object.entries(query).map(([k, v]) => [k, String(v)]))
   ;(req as { url: string }).url = `http://localhost/api/${collection}${path.replace(':id', id)}?${qs}`
   req.routeParams = { id }
+  ;(req as { text?: () => Promise<string> }).text = async () => (body === undefined ? '' : typeof body === 'string' ? body : JSON.stringify(body))
   const res = (await endpoint.handler(req)) as Response
   return { status: res.status, body: (await res.json()) as any }
 }
