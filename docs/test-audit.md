@@ -35,6 +35,67 @@ Scope: the new `packages/payload` (`@captiveorigins/payload-plugin-onetaxonomy`,
 - Payload's own field validation (required fields, select options) and its relationship checks.
 - Every status transition pair: the allowed ones and three refused ones (published to staged, withdrawn to published, and starting published) are tested.
 
+## 2026-11-11: Studio bundle
+
+Scope: M6's `.onetaxonomy` bundle and relink flow, and the SQLite decision (ADR 0011, proposed: not needed now). Import gains `bundle.ts` (`writeBundle`, `readBundle`) and a ZIP writer in `zip.ts` (`writeZip`, `crc32`); core gains `sha256Bytes`; the Mac app gains `bundle.ts` (`planBundleOpen`, `keepPinned`, `relinkToAvailable`, `planBundleSave`, `bundleBytes`), `saveBundle` in `files.ts`, the Save as bundle and relink forms in `App.tsx`, and `fs:allow-write-file` in its capability file. Tests went from 299 to 348: core 105 to 106, import 42 to 63 (21 in the new `bundle.test.ts`), studio 40 to 67 (17 in the new `bundle.test.ts`, 5 in `files.test.ts`, 5 in `app.test.tsx`). Tauri was mocked throughout: dialogs and the file system are fakes that record calls, so no real disk, built app or screen reader was involved. The one outside check is the system `unzip -t` and `unzip -p` on a written bundle.
+
+### Promises and the tests that hold them
+
+- **Round trip.** A bundle with a snapshot, a view, a lesson and a binary media file reads back equal, with the manifest naming each file and role (import `bundle.test.ts`). In the Mac app, a bundle saved from an open checklist reads back with the right pin, and opening it shows the dataset and its view (`app.test.tsx`); a bundle built by `planBundleSave` opens again with the same dataset, view and lesson (studio `bundle.test.ts`).
+- **Readable without the app.** The manifest is the first entry; every file's SHA-256 matches the manifest; the embedded snapshot is byte-for-byte what Save snapshot… writes; CRC-32 matches the standard check value; `unzip -t` reports no errors and `unzip -p` prints a view that parses to the original (skipped where `/usr/bin/unzip` is absent).
+- **Each diagnostic, failing closed.** One test per code: not a ZIP (and a bundle cut short), no manifest, bad JSON in the manifest and in a view (with the manifest's checksum updated so only the JSON fails), not a bundle, unknown format version (message names both versions), a manifest missing its pins, a missing file, a checksum mismatch at the same size, a size mismatch, several problems listed together, an embedded snapshot edited after sealing (with the manifest updated to match), an embedded snapshot that isn't the pinned one, a view pinned to an unlisted version, and a path that climbs out of `media/`. Each returns `ok: false` with no bundle. Files the manifest doesn't list are left out with a note.
+- **Never half a bundle.** A damaged bundle is refused with every problem in one message, and the Mac app keeps what was open (its title is unchanged, the alert names the file and the problem). A bundle whose view doesn't fit its own embedded dataset is refused whole. A bundle without its dataset, when that dataset isn't open, is refused with what to open first. More than one pinned dataset is refused with the reason.
+- **Writing refuses what wouldn't read.** `writeBundle` throws on a view made with an unpinned snapshot, an unsafe media path, or no snapshot; duplicate ids get distinct file names.
+- **Relink, never silently.** Same dataset open: no question. An unsealed copy with the same contents counts as the same. Another version open: the app asks, with the difference in words (by version, or by checksum when the version is the same); focus goes to the question's title. Keep uses the embedded copy; Relink moves every view and lesson to the open version and says so in the notes; Cancel changes nothing and says so. Relink is refused whole when a view doesn't fit the open version (a hidden node that release 2 lacks), and Keep still works after. Keep is disabled when the bundle has no embedded copy, and `aria-describedby` points at the reason.
+- **Nothing written on cancel.** Cancel in the Save as bundle form and Cancel in the save dialog both leave the call log empty, and focus returns to Save as bundle…. Cancelling the relink question writes nothing.
+- **Safe saves for bytes.** A bundle is written to `.tmp` with `writeFile` and renamed; a failed rename removes the `.tmp` and reports the original error; choosing the opened bundle (any letter case) is refused before writing; the dialog offers only `.onetaxonomy`.
+- **Save form honesty.** It states what goes in (views, lessons, media, the dataset's id and version); views or lessons made with another version are listed as relinked before saving; anything that doesn't fit blocks the save. An unsealed dataset is pinned by the checksum it gets when sealed, which isn't called a relink. The manifest records the app's real version from `package.json`.
+- **Permission the built app needs.** A test reads `src-tauri/capabilities/default.json` and requires `fs:allow-write-file` beside the text write, read, rename, remove and exists permissions (0.1.0 shipped without rename because tests don't run Tauri's checks).
+- **`sha256Bytes`** matches `node:crypto` on 300 binary bytes and `sha256Hex` on text.
+
+### Gaps left
+
+- **Not tried in the built app.** The real Tauri file system, the save dialog's `.onetaxonomy` filter and the new permission haven't been exercised in a build. Owner or a build run: save a bundle, open it, open a damaged copy.
+- **No screen reader.** The forms reuse the existing pattern (focus to the title, buttons, a labelled checkbox, `aria-describedby` for the disabled Keep), checked in jsdom only.
+- **Lessons and media are carried, not shown.** The Mac app has no lesson player or media view; their round trip is tested, their display isn't part of this work.
+- **Large datasets.** Only the fixtures (a few KB) were bundled. Hashing a large snapshot with the plain-TypeScript SHA-256 and holding the bundle in memory are untimed; ADR 0011 names this as the first thing to measure.
+- **Offline journey.** Nothing in the bundle path uses the network, but the whole journey offline in the built app hasn't been walked through, so the backlog line stays open.
+- **Deflated bundles** written by other tools are accepted by the reader (it reads Darwin Core Archives the same way), but no deflated bundle is in the tests.
+
+### Left out as overkill
+
+- ZIP header fields beyond what readers use (version made by, external attributes): `unzip -t` covers the archive as a whole.
+- Each `bad-manifest` field separately: one missing-pins case covers the path, and the checks share one function.
+## 2026-11-11: canvas renderer and benchmarks
+
+Scope: M8's canvas renderer and benchmarks. React gains `CanvasTreeView`, chosen by `TreeView` above 1,000 drawn nodes, with its level of detail in a pure module (`canvasPlan.ts`: `prepareTree`, `planCanvas`, `hitTest`, `drawPlan`, `describeLod`), and `scripts/bench-canvas.mjs` writes `docs/benchmarks.md`. `shapes.tsx` now builds its SVG paths from `shapePolygon`, which the canvas uses too. Core, import, layout, education and the Mac app are unchanged. Tests went from 281 to 297: react 85 to 101 (14 in the new `canvas.test.tsx`, 2 in the new `svg-unchanged.test.tsx`). Everything ran in Node or jsdom, where a canvas can't paint: the drawing was checked by recording the calls made on a stand-in 2D context. No browser, screen reader or built app.
+
+### Covered
+
+- **The switch.** `chooseRenderer` gives SVG at 999 drawn nodes and canvas at 1,001, with the threshold at 1,000; `renderer="svg"` and `"canvas"` win over the count, `canvasThreshold` moves it, and folding a branch counts (a 1,001-node tree with one branch folded is SVG) (`canvas.test.tsx`).
+- **The SVG is unchanged below the threshold.** Three snapshots written from the code before this change pin the whole markup: the checklist with a branch folded ("+n not shown"), and the amniotes radial and rectangular with two highlights, trait marks, a badge, a drag offset, a drop target and a selection. They still match after `TreeView` and `shapes.tsx` were refactored, and `renderer="svg"` gives the same markup as the default (`svg-unchanged.test.tsx`, `canvas.test.tsx`).
+- **Accessible name and description.** The canvas is `role="img"`, named by the title, and described by the same sentence as the SVG's `desc` (the classification or phylogeny notice and "1199 of 1199 shown.") plus the level-of-detail note, which is also visible text. Nothing in the drawing has a `tabindex` (ADR 0010), and the explorer keeps its outline (`role="tree"`).
+- **Which labels show.** At 1 px per unit (12 px text) every tip in view is named; at 0.7 (8.4 px) only the selection is, at 9 px and bold, and every other name is counted as left out, with the note "… names and values are too small or crowded to show. Zoom in to see them." Three tips 8 units apart with 12-unit text: the middle name overlaps the first and is left out and counted. Radial: all 8 names show on a small tree; on 800 tips, every name shown has its neighbours at least 0.9 of the text height away, and the rest are counted.
+- **Wedges and disclosure.** On 5,000 tips at the fit zoom, subtrees under a pixel become wedges; the wedges' counts add up to the merged total, and drawn + merged + out of view equals every drawn node, so nothing goes missing uncounted. The note gives both numbers and, in the explorer, points to the outline. Zoomed in (1–2k nodes in view), nothing is merged. Radial layouts merge along the outer circle with the same accounting. The selection and the drop target are never merged.
+- **Highlights keep shape and colour.** Close up, a node in the first highlight has its colour and a circle, one in the second a square, as `shapeAt` gives the SVG; zoomed out, wedges holding them carry the same colour and shape. The drawing of a square uses the same corners as the SVG path (`shapePolygon`), and the highlight colour is filled.
+- **High density.** With a device pixel ratio of 2 the explorer's canvas is 1600 × 1200 for an 800 × 600 drawing, and `drawPlan` starts with a 2× transform.
+- **Hit-testing and selection.** `hitTest` finds a node by its dot and by its name, a wedge by its centre, and nothing on empty canvas. In the explorer, zooming in with + and clicking a drawn tip on the canvas selects it: the inspector shows its name and the outline marks it selected; a click on empty canvas changes nothing.
+- **Exports don't fail silently.** SVG download on a canvas tree writes the reason in the status region ("…Download PNG instead, or fold branches until the tree is drawn as SVG.").
+
+### Gaps left
+
+- **No paint was timed and nothing ran in a browser.** `docs/benchmarks.md` has Node timings for projection, layout, the plan and hit-testing on 1k, 10k and 50k made-up tips (planning one frame: at most 11 ms, the radial whole tree at 50,000 tips; under 2 ms for rectangular). Paint time, frame rate while panning, and how 2× density looks need WebKit or another browser. The machine was busy with other work during the run (load average about 21 on 12 cores), so the numbers are rough. Owner or a browser run: smoothness at 1–2k visible nodes, the threshold's placement, and a look at wedges, labels and dark mode.
+- **PNG download on a canvas tree** uses `canvas.toBlob`, which jsdom doesn't have: not tested. Print shows the canvas as an image with the disclosure; not tested either.
+- **The threshold is a judgment.** 1,000 drawn nodes wasn't measured against the SVG in a browser.
+- **The outline isn't virtualized.** With 10,000+ rows it may be slower than the drawing; `projectView` still stops at 10,000 nodes by default and says so.
+- **Text width is estimated** (0.6 em per character) so the plan is the same everywhere; long names in wide fonts can overlap slightly at the edges of the rule.
+- **The note's wording** is English in `describeLod`; the explorer's `labels` don't cover it yet (a host can pass `lodNote` to `TreeView`, not to `Explorer`).
+- **Dragging on the canvas** (reorder and Proposed-mode moves) goes through the same code as the SVG, offsetting the dragged subtree in the plan, but no test drags on the canvas.
+
+### Left out as overkill
+
+- Drawing every overlay through the recorder (support text, trait marks, badges, the axis): they use the same plan fields and drawing calls as the highlights, which are tested, and the SVG keeps its own tests for them.
+- Repeating the explorer's toolbar, outline and inspector tests on a canvas tree: they don't depend on the renderer.
 ## 2026-11-11: focus ring colour
 
 Scope: the focus-ring gap from the accessibility audit below, closed by owner decision N154 (2026-11-11, option A): "keep the brand orange everywhere else, but use the darker orange #a65f20 for focus rings on light backgrounds (4.6 to 1 or better). Dark mode keeps the lighter orange, which already passes." Only colour variables and focus rules changed; core, import, layout and education are unchanged. Tests went from 281 to 283: react 85 to 86 (`a11y.test.tsx`), studio 39 to 40 (`theme.test.ts`).

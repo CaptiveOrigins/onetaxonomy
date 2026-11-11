@@ -65,9 +65,9 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 ## M6 — Studio (macOS)
 
 - [x] Tauri 2 app, native dialogs, atomic saves, Settings, updater, and opening every importer's format (`apps/studio`)
-- [ ] SQLite persistence, backups, migrations
-- [ ] `.onetaxonomy` bundle (ZIP container, manifest, checksums, pinned snapshot refs, media, optional embedded dataset); damaged-file diagnostics
-- [ ] Offline end-to-end journey; upgrade/relink flow when sources change
+- [x] ~~SQLite persistence, backups, migrations~~ Not needed now (2026-11-11, [ADR 0011](adr/0011-bundle-not-sqlite.md), proposed): plain files and the bundle cover persistence, safe saves, format versions and backups; the ADR says what would bring SQLite back (as a cache beside the files)
+- [x] `.onetaxonomy` bundle (ZIP container, manifest, checksums, pinned snapshot refs, media, optional embedded dataset); damaged-file diagnostics (2026-11-11, [bundle-format.md](bundle-format.md)). The Mac app carries lessons and media through but doesn't show or add them yet
+- [ ] Offline end-to-end journey; upgrade/relink flow when sources change. Relink is done (2026-11-11): a bundle pinned to another version of the open dataset asks to keep the pinned one or relink, never silently. The app needs no network to open, browse or save; a full offline journey in the built app hasn't been walked through
 
 ## M7 — Payload plugin
 
@@ -82,8 +82,8 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] Phylogeny comparison (`comparePhylogenies`), explicit rooting tools (`rerootPhylogeny`, `midpointRoot`), support-threshold collapsing (`collapseBelowSupport` view action) (2026-11-11; core only, no explorer or Mac app controls yet)
 - [ ] Deep-time rendering where calibrated; trait overlays; documented discrete-character parsimony (labelled *inferred*)
 - [x] Nexus and phyloXML adapters (2026-11-11; the Mac app doesn't open them yet)
-- [ ] Canvas renderer with level of detail (1–2k visible nodes smoothly)
-- [ ] Benchmarks: 10k+ taxa datasets, 1–2k visible nodes; documented devices/browsers
+- [ ] Canvas renderer with level of detail (1–2k visible nodes smoothly). Built 2026-11-11: `TreeView` switches to a canvas above 1,000 drawn nodes, with level of detail, disclosure and hit-testing; planning one frame takes under 11 ms in Node at 50,000 tips (`docs/benchmarks.md`). Not ticked: paint time and smoothness haven't been measured in a browser.
+- [ ] Benchmarks: 10k+ taxa datasets, 1–2k visible nodes; documented devices/browsers. Started 2026-11-11: `scripts/bench-canvas.mjs` times projection, layout and the canvas plan on 1k, 10k and 50k made-up tips in Node and writes `docs/benchmarks.md` with the machine. Not ticked: no browser has been measured.
 - [x] Accessibility audit (code-level, WCAG 2.2 AA, 2026-11-11: `docs/test-audit.md`; small fixes made, gaps listed there; no screen reader or real browser run yet)
 
 ## Phase 2 (not started by design)

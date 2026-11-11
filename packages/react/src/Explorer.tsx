@@ -32,6 +32,8 @@ import {
 import { radial, rectangular, type TreeLayout } from '@captiveorigins/onetaxonomy-layout'
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type WheelEvent } from 'react'
 
+import { canvasNodeAt, canvasPlanOf, canvasPng } from './CanvasTreeView.js'
+import { describeLod, type LodCounts } from './canvasPlan.js'
 import { dropOrder, drawnSubtree, dropTarget } from './drag.js'
 import { citationLine, disclosureLines, downloadBlob, standaloneSvg, svgToPng } from './export.js'
 import { Icon } from './icons.js'
@@ -107,7 +109,7 @@ export type ExplorerLabels = PhyloLabels & Record<
   | 'overlays' | 'support' | 'extinction' | 'trait' | 'noTrait' | 'noStatedValue' | 'mixed' | 'weakSupport'
   | 'selection' | 'checkClade' | 'addHighlight' | 'highlightName' | 'checkAgainst' | 'clearSelection' | 'remove' | 'multiHint'
   | 'downloadSvg' | 'downloadPng' | 'downloadView' | 'about' | 'sources' | 'references' | 'synonyms' | 'commonNames' | 'age' | 'branchLength' | 'unmapped' | 'traits'
-  | 'keyboardHint' | 'extinct' | 'exportFailed'
+  | 'keyboardHint' | 'extinct' | 'exportFailed' | 'svgOnCanvas'
   | 'moveUp' | 'moveDown' | 'panLeft' | 'panRight' | 'panUp' | 'panDown' | 'layoutUnavailable' | 'and',
   string
 >
@@ -192,6 +194,7 @@ const LABELS: ExplorerLabels = {
   keyboardHint: 'In the outline: Up and Down move, Right and Left open and close, Home and End jump, typing finds a name, Space selects (Shift+Space adds), Enter opens a branch, Alt+Up and Alt+Down reorder.',
   extinct: 'extinct',
   exportFailed: 'Could not export the drawing:',
+  svgOnCanvas: 'This tree is drawn on a canvas because it is large, and SVG download needs the SVG drawing. Download PNG instead, or fold branches until the tree is drawn as SVG.',
   moveUp: 'Move up',
   moveDown: 'Move down',
   panLeft: 'Pan left',
@@ -315,7 +318,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   const landing = proposal && drag ? dropTarget(layout, drag.id, drag.ids, drag) : null
 
   const scale = () => {
-    const r = canvas.current?.querySelector('svg.ot-root')?.getBoundingClientRect()
+    const r = canvas.current?.querySelector('.ot-root')?.getBoundingClientRect()
     if (!r || !r.width || !r.height) return 1
     return Math.max(shown.width / r.width, shown.height / r.height)
   }
@@ -341,7 +344,8 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   const onPointerDown = (e: PointerEvent<HTMLDivElement>) => {
     const target = e.target as Element
     if (target.closest('button, a, select, .ot-floating')) return
-    const nodeId = target.closest('.ot-node')?.getAttribute('data-id') ?? null
+    // An SVG node, or the node under the pointer on the canvas renderer (hit-tested).
+    const nodeId = target.closest('.ot-node')?.getAttribute('data-id') ?? canvasNodeAt(target, e.clientX, e.clientY)
     pointer.current = { x: e.clientX, y: e.clientY, box: shown, node: nodeId, moved: false, additive: e.shiftKey || e.ctrlKey || e.metaKey }
     e.currentTarget.setPointerCapture?.(e.pointerId)
   }
@@ -375,8 +379,8 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
     }
     if (!p.moved && p.node) choose(p.node, p.additive)
   }
-  const onDoubleClick = (e: { target: EventTarget }) => {
-    const id = (e.target as Element).closest('.ot-node')?.getAttribute('data-id')
+  const onDoubleClick = (e: { target: EventTarget; clientX: number; clientY: number }) => {
+    const id = (e.target as Element).closest('.ot-node')?.getAttribute('data-id') ?? canvasNodeAt(e.target, e.clientX, e.clientY)
     const n = id ? projection.nodes.find((x) => x.id === id) : undefined
     if (n && !n.isTip) dispatch({ type: 'toggle', node: n.id })
   }
@@ -396,6 +400,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
       pan(e.key === 'ArrowLeft' ? -0.1 : e.key === 'ArrowRight' ? 0.1 : 0, e.key === 'ArrowUp' ? -0.1 : e.key === 'ArrowDown' ? 0.1 : 0)
     } else if (e.key === 'Escape') dispatch({ type: 'select', nodes: [] })
   }
+  const lodNote = useCallback((c: LodCounts) => describeLod(c, { outline: true }), [])
   const exported = () => {
     const svg = canvas.current?.querySelector('svg.ot-root') as SVGSVGElement | null
     return svg ? standaloneSvg(svg, disclosure, { sourcesLabel: labels.sources }) : null
@@ -436,6 +441,14 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
     setExportError(null)
     try {
       if (kind === 'view') return downloadBlob(new Blob([serializeView(view)], { type: 'application/json' }), `${view.id}.onetaxonomy-view.json`)
+      const onCanvas = canvas.current?.querySelector<HTMLCanvasElement>('canvas.ot-tree-canvas')
+      if (onCanvas) {
+        // Large trees: PNG comes from the canvas, with the disclosure and what the zoom leaves out.
+        if (kind === 'svg') return setExportError(`${labels.exportFailed} ${labels.svgOnCanvas}`)
+        const plan = canvasPlanOf(onCanvas)
+        const lod = plan ? lodNote(plan.counts) : ''
+        return downloadBlob(await canvasPng(onCanvas, [...disclosureLines(disclosure, labels.sources), ...(lod ? [lod] : [])]), `${view.id}.png`)
+      }
       const text = exported()
       if (!text) return
       if (kind === 'svg') return downloadBlob(new Blob([text], { type: 'image/svg+xml' }), `${view.id}.svg`)
@@ -628,7 +641,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
               <Icon name="print" />
             </button>
           </div>
-          <TreeView projection={projection} layout={layout} highlights={view.highlights} traitShapes={traitShapes(traits.find((tr) => tr.id === overlays.trait))} title={title} interactive hiddenLabel={hidden} viewBox={shown} drag={drag} dropTarget={landing ?? null} overlays={marks} />
+          <TreeView projection={projection} layout={layout} highlights={view.highlights} traitShapes={traitShapes(traits.find((tr) => tr.id === overlays.trait))} title={title} interactive hiddenLabel={hidden} viewBox={shown} drag={drag} dropTarget={landing ?? null} overlays={marks} lodNote={lodNote} />
           {proposal && (
             <p className="ot-proposed-badge" role="note">
               {labels.proposalBy} {proposal.author}: {proposal.title}

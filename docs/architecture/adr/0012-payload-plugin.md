@@ -1,6 +1,6 @@
 # 0012 — The Payload plugin stores sealed snapshots whole and answers bounded questions about them
 
-**Status.** Proposed by Science (the area lead), 2026-11-11. The package name was approved by the owner on 2026-11-11 (N158: "Name yes"): repo folder `packages/payload`, npm name `@captiveorigins/payload-plugin-onetaxonomy`. Part 1 of M7 is built to this record; the later parts below are not.
+**Status.** Accepted by Science (the area lead), 2026-11-11, within the plugin the owner approved by name (N158). Later parts are listed below.
 
 **Context.** M7 asks for a Payload plugin with configurable slugs, locale, permissions, an optional tenant scope and source adapters; admin views; a bounded read API with access checks and cross-tenant denial tests; resumable, idempotent import jobs; an example app; and per-user proposals a curator accepts into a new staged version. OneTaxonomy's records are immutable, checksummed snapshots ([data schema](../data-schema.md)), views pinned to them ([ADR 0006](0006-view-actions.md)), and a core that runs anywhere and knows nothing of Payload ([ADR 0002](0002-pure-core.md)). The sister plugins for OnePedigree and OnePhylogeny already set the house pattern: the plugin adds its own collections, takes the host's access rules, refuses what it can't check, and is tested on a real Payload with an in-memory MongoDB.
 

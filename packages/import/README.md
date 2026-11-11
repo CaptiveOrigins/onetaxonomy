@@ -81,3 +81,17 @@ Policies: `explicit`, `allAvailableDescendants`, `depth`, `rank`, `representativ
 ## Community presets
 
 A preset (`format: 'onetaxonomy-preset'`) shares curation, not data: pinned snapshot references (id, version, checksum), selections and style hints by concept id. `validatePreset(json)` refuses embedded taxonomic records; `checkPresetReferences(preset, snapshots)` reports checksum mismatches and ids that no longer exist.
+
+## Bundles
+
+A `.onetaxonomy` bundle is a ZIP holding `manifest.json`, an optional sealed snapshot, views, lessons and media, each listed with its size and SHA-256. The format is documented in [docs/architecture/bundle-format.md](../../docs/architecture/bundle-format.md).
+
+```js
+import { readBundle, writeBundle } from '@captiveorigins/onetaxonomy-import'
+
+const bytes = writeBundle({ createdAt, createdBy: { app: 'my-app', version: '1.0.0' }, snapshots: [{ snapshot, embed: true }], views: [view] })
+const result = await readBundle(bytes)
+if (!result.ok) console.log(result.problems) // [{ code: 'checksum-mismatch', path: 'views/main.view.json', message: '…' }]
+```
+
+`writeBundle` refuses a view or lesson made with a snapshot it doesn't pin. `readBundle` checks everything before returning anything (the manifest and its format version, each file's presence, size and checksum, the JSON, that embedded snapshots are sealed and match their pins) and returns either the whole bundle or every problem, never part of one. `writeZip` and `crc32` are exported too.

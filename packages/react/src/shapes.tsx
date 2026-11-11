@@ -20,50 +20,54 @@ export const shapeAt = (i: number): MarkShape => MARK_SHAPES[((i % MARK_SHAPES.l
 const f = (n: number) => Number(n.toFixed(2))
 const poly = (points: [number, number][]) => `M${points.map(([x, y]) => `${f(x)} ${f(y)}`).join(' L')} Z`
 
-/** An SVG path for a shape centred on 0,0, about `r` from the centre, with roughly equal areas. */
-export function shapePath(shape: MarkShape, r: number): string {
+/**
+ * The corners of a shape centred on 0,0, about `r` from the centre, with roughly equal
+ * areas; `null` for the circle. The SVG path and the canvas drawing both come from
+ * these points, so the two renderers draw the same shapes.
+ */
+export function shapePolygon(shape: MarkShape, r: number): [number, number][] | null {
   switch (shape) {
     case 'square': {
       const s = r * 0.89
-      return poly([[-s, -s], [s, -s], [s, s], [-s, s]])
+      return [[-s, -s], [s, -s], [s, s], [-s, s]]
     }
     case 'diamond': {
       const s = r * 1.2
-      return poly([[0, -s], [s, 0], [0, s], [-s, 0]])
+      return [[0, -s], [s, 0], [0, s], [-s, 0]]
     }
     case 'triangle': {
       const s = r * 1.3
-      return poly([[0, -s], [s * 0.95, s * 0.7], [-s * 0.95, s * 0.7]])
+      return [[0, -s], [s * 0.95, s * 0.7], [-s * 0.95, s * 0.7]]
     }
     case 'triangle-down': {
       const s = r * 1.3
-      return poly([[0, s], [s * 0.95, -s * 0.7], [-s * 0.95, -s * 0.7]])
+      return [[0, s], [s * 0.95, -s * 0.7], [-s * 0.95, -s * 0.7]]
     }
     case 'triangle-left': {
       const s = r * 1.3
-      return poly([[-s, 0], [s * 0.7, -s * 0.95], [s * 0.7, s * 0.95]])
+      return [[-s, 0], [s * 0.7, -s * 0.95], [s * 0.7, s * 0.95]]
     }
     case 'triangle-right': {
       const s = r * 1.3
-      return poly([[s, 0], [-s * 0.7, -s * 0.95], [-s * 0.7, s * 0.95]])
+      return [[s, 0], [-s * 0.7, -s * 0.95], [-s * 0.7, s * 0.95]]
     }
     case 'hourglass': {
       const s = r * 1.05
-      return poly([[-s, -s], [s, -s], [0, 0], [s, s], [-s, s], [0, 0]])
+      return [[-s, -s], [s, -s], [0, 0], [s, s], [-s, s], [0, 0]]
     }
     case 'star': {
       const outer = r * 1.4
       const inner = outer * 0.45
-      return poly(Array.from({ length: 10 }, (_, i) => {
+      return Array.from({ length: 10 }, (_, i) => {
         const a = -Math.PI / 2 + (Math.PI / 5) * i
         const d = i % 2 ? inner : outer
         return [d * Math.cos(a), d * Math.sin(a)] as [number, number]
-      }))
+      })
     }
     case 'plus': {
       const s = r * 1.15
       const w = s * 0.38
-      return poly([[-w, -s], [w, -s], [w, -w], [s, -w], [s, w], [w, w], [w, s], [-w, s], [-w, w], [-s, w], [-s, -w], [-w, -w]])
+      return [[-w, -s], [w, -s], [w, -w], [s, -w], [s, w], [w, w], [w, s], [-w, s], [-w, w], [-s, w], [-s, -w], [-w, -w]]
     }
     case 'cross': {
       // The plus turned 45 degrees.
@@ -71,13 +75,19 @@ export function shapePath(shape: MarkShape, r: number): string {
       const w = s * 0.38
       const c = Math.SQRT1_2
       const turn = ([x, y]: [number, number]): [number, number] => [(x - y) * c, (x + y) * c]
-      return poly(([[-w, -s], [w, -s], [w, -w], [s, -w], [s, w], [w, w], [w, s], [-w, s], [-w, w], [-s, w], [-s, -w], [-w, -w]] as [number, number][]).map(turn))
+      return ([[-w, -s], [w, -s], [w, -w], [s, -w], [s, w], [w, w], [w, s], [-w, s], [-w, w], [-s, w], [-s, -w], [-w, -w]] as [number, number][]).map(turn)
     }
     case 'hexagon':
-      return poly(Array.from({ length: 6 }, (_, i) => [r * 1.05 * Math.cos((Math.PI / 3) * i), r * 1.05 * Math.sin((Math.PI / 3) * i)] as [number, number]))
+      return Array.from({ length: 6 }, (_, i) => [r * 1.05 * Math.cos((Math.PI / 3) * i), r * 1.05 * Math.sin((Math.PI / 3) * i)] as [number, number])
     default:
-      return `M${f(-r)} 0 a${f(r)} ${f(r)} 0 1 0 ${f(2 * r)} 0 a${f(r)} ${f(r)} 0 1 0 ${f(-2 * r)} 0 Z`
+      return null
   }
+}
+
+/** An SVG path for a shape centred on 0,0, about `r` from the centre, with roughly equal areas. */
+export function shapePath(shape: MarkShape, r: number): string {
+  const points = shapePolygon(shape, r)
+  return points ? poly(points) : `M${f(-r)} 0 a${f(r)} ${f(r)} 0 1 0 ${f(2 * r)} 0 a${f(r)} ${f(r)} 0 1 0 ${f(-2 * r)} 0 Z`
 }
 
 /** The shape for each state of a trait set, in the set's order. */

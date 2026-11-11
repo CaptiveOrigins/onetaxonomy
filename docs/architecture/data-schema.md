@@ -38,7 +38,7 @@ The TypeScript types in [`packages/core/src/model.ts`](../../packages/core/src/m
 
 Results list ids in the classification's own order (the source's order), not traversal order. Exclusion wins over every policy.
 
-Planned for later milestones (types are added with the code that uses them): `TaxonomicView`, `ViewAction`, `Highlight` (M4), `Lesson`, `Scene`, `Workspace` and the `.onetaxonomy` bundle manifest (M5–M6).
+Planned for later milestones (types are added with the code that uses them): `TaxonomicView`, `ViewAction`, `Highlight` (M4), `Lesson`, `Scene` and `Workspace` (M5–M6). The `.onetaxonomy` bundle and its manifest (M6) are documented in [bundle-format.md](bundle-format.md).
 
 ## Semantics that matter
 

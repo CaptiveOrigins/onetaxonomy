@@ -1,3 +1,6 @@
+/// <reference types="node" />
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Mocked Tauri file system: this checks the order of file calls, not the real disk.
@@ -9,11 +12,12 @@ vi.mock('@tauri-apps/plugin-fs', () => ({
   readTextFile: vi.fn(),
   exists: vi.fn(async (path: string) => onDisk.has(path)),
   writeTextFile: vi.fn(async (path: string) => { calls.push(`write ${path}`); onDisk.add(path) }),
+  writeFile: vi.fn(async (path: string, data: Uint8Array) => { calls.push(`write ${data.length} bytes ${path}`); onDisk.add(path) }),
   rename: vi.fn(async (from: string, to: string) => { calls.push(`rename ${from} -> ${to}`); onDisk.delete(from); onDisk.add(to) }),
   remove: vi.fn(async (path: string) => { calls.push(`remove ${path}`); onDisk.delete(path) }),
 }))
 
-const { OPENED_FILE_REFUSAL, TREE_EXTENSIONS, pickTree, saveJson } = await import('../src/files')
+const { OPENED_FILE_REFUSAL, TREE_EXTENSIONS, pickDataset, pickTree, saveBundle, saveJson } = await import('../src/files')
 
 describe('saving', () => {
   beforeEach(() => { calls.length = 0; onDisk.clear() })
@@ -76,5 +80,46 @@ describe('adding a tree', () => {
     expect(await pickTree()).toEqual({ path: '/made-up/t.nwk', text: '(a,b);' })
     expect(TREE_EXTENSIONS).toEqual(['nwk', 'newick', 'tree', 'tre', 'treefile', 'nex', 'nexus', 'nxs', 'xml', 'phyloxml'])
     expect(vi.mocked(dialog.open).mock.calls.at(-1)![0]!.filters![0]!.extensions).toEqual(TREE_EXTENSIONS)
+  })
+})
+
+describe('bundles', () => {
+  beforeEach(() => { calls.length = 0; onDisk.clear() })
+  it('saves a bundle’s bytes the same safe way, offering only .onetaxonomy', async () => {
+    const dialog = await import('@tauri-apps/plugin-dialog')
+    vi.mocked(dialog.save).mockResolvedValueOnce('/made-up/turtles.onetaxonomy')
+    expect(await saveBundle('turtles.onetaxonomy', Uint8Array.from([1, 2, 3]))).toBe('/made-up/turtles.onetaxonomy')
+    expect(calls).toEqual(['write 3 bytes /made-up/turtles.onetaxonomy.tmp', 'rename /made-up/turtles.onetaxonomy.tmp -> /made-up/turtles.onetaxonomy'])
+    expect(vi.mocked(dialog.save).mock.calls.at(-1)![0]).toEqual({ defaultPath: 'turtles.onetaxonomy', filters: [{ name: 'OneTaxonomy bundle', extensions: ['onetaxonomy'] }] })
+  })
+  it('writes nothing when the save dialog is cancelled, or when the chosen file is the bundle that was opened', async () => {
+    const dialog = await import('@tauri-apps/plugin-dialog')
+    vi.mocked(dialog.save).mockResolvedValueOnce(null).mockResolvedValueOnce('/made-up/Opened.onetaxonomy')
+    expect(await saveBundle('x.onetaxonomy', Uint8Array.from([1]))).toBeNull()
+    await expect(saveBundle('x.onetaxonomy', Uint8Array.from([1]), { never: '/made-up/opened.onetaxonomy' })).rejects.toThrow(OPENED_FILE_REFUSAL)
+    expect(calls).toEqual([])
+  })
+  it('removes the temporary file when writing a bundle fails', async () => {
+    const dialog = await import('@tauri-apps/plugin-dialog')
+    const fs = await import('@tauri-apps/plugin-fs')
+    vi.mocked(dialog.save).mockResolvedValueOnce('/made-up/b.onetaxonomy')
+    vi.mocked(fs.rename).mockRejectedValueOnce(new Error('disk full'))
+    await expect(saveBundle('b.onetaxonomy', Uint8Array.from([1]))).rejects.toThrow(/^disk full$/)
+    expect(calls).toEqual(['write 1 bytes /made-up/b.onetaxonomy.tmp', 'remove /made-up/b.onetaxonomy.tmp'])
+  })
+  it('reads a picked bundle as bytes', async () => {
+    const dialog = await import('@tauri-apps/plugin-dialog')
+    const fs = await import('@tauri-apps/plugin-fs')
+    vi.mocked(dialog.open).mockResolvedValueOnce('/made-up/b.onetaxonomy')
+    vi.mocked(fs.readFile).mockResolvedValueOnce(Uint8Array.from([9]))
+    expect(await pickDataset()).toEqual({ path: '/made-up/b.onetaxonomy', text: '', bytes: Uint8Array.from([9]) })
+  })
+})
+
+describe('permissions the built app needs', () => {
+  // The app's tests run without Tauri's permission checks (how 0.1.0 shipped without rename), so the capability file is read here.
+  it('may write binary files (bundles) as well as text, and rename and remove its temporary files', () => {
+    const capability = JSON.parse(readFileSync(join(__dirname, '../src-tauri/capabilities/default.json'), 'utf8')) as { permissions: unknown[] }
+    expect(capability.permissions).toEqual(expect.arrayContaining(['fs:allow-write-file', 'fs:allow-write-text-file', 'fs:allow-read-file', 'fs:allow-rename', 'fs:allow-remove', 'fs:allow-exists']))
   })
 })
