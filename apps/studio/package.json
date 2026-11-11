@@ -15,6 +15,7 @@
   },
   "dependencies": {
     "@captiveorigins/onetaxonomy-core": "workspace:^",
+    "@captiveorigins/onetaxonomy-education": "workspace:^",
     "@captiveorigins/onetaxonomy-import": "workspace:^",
     "@captiveorigins/onetaxonomy-react": "workspace:^",
     "@tauri-apps/api": "^2",

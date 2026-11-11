@@ -6,7 +6,25 @@ export { normalizeChecklist, DEFAULT_STATUS_MAP, type ChecklistRow, type Checkli
 export { parseDelimited, parseDelimitedRecords } from './delimited'
 export { csvAdapter, readChecklistTable, DARWIN_CORE_COLUMNS, type ChecklistColumns, type CsvAdapterOptions } from './csv'
 export { dwcaAdapter, readDwca, parseMeta, type DwcaInput, type DwcaAdapterOptions } from './dwca'
-export { readZip, ZipError, type Inflate } from './zip'
+export { readZip, writeZip, crc32, ZipError, type Inflate } from './zip'
+export {
+  readBundle,
+  writeBundle,
+  isSafeBundlePath,
+  BUNDLE_FORMAT,
+  BUNDLE_FORMAT_VERSION,
+  type Bundle,
+  type BundleFile,
+  type BundleFileRole,
+  type BundleLesson,
+  type BundleManifest,
+  type BundleMedia,
+  type BundleProblem,
+  type BundleProblemCode,
+  type BundleRead,
+  type SnapshotPin,
+  type WriteBundleInput,
+} from './bundle'
 export { readSnapshotJson } from './json'
 export { reconcile, type ReconcileReport } from './reconcile'
 export { selectiveImport, type SelectiveImport, type SelectiveImportOptions } from './selective'

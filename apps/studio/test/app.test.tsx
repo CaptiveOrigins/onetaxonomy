@@ -6,24 +6,32 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { verifySnapshot, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { createView, indexDataset, verifySnapshot, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { readBundle, writeBundle } from '@captiveorigins/onetaxonomy-import'
 
 const written = new Map<string, string>()
+const writtenBytes = new Map<string, Uint8Array>()
 const calls: string[] = []
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn(async () => undefined) }))
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open: vi.fn(), save: vi.fn(), ask: vi.fn() }))
 vi.mock('@tauri-apps/plugin-fs', () => ({
   readFile: vi.fn(),
   readTextFile: vi.fn(),
-  exists: vi.fn(async (path: string) => written.has(path)),
+  exists: vi.fn(async (path: string) => written.has(path) || writtenBytes.has(path)),
+  writeFile: vi.fn(async (path: string, data: Uint8Array) => {
+    calls.push(`write ${path}`)
+    writtenBytes.set(path, data)
+  }),
   writeTextFile: vi.fn(async (path: string, text: string) => {
     calls.push(`write ${path}`)
     written.set(path, text)
   }),
   rename: vi.fn(async (from: string, to: string) => {
     calls.push(`rename ${from} -> ${to}`)
-    written.set(to, written.get(from)!)
+    if (writtenBytes.has(from)) writtenBytes.set(to, writtenBytes.get(from)!)
+    else written.set(to, written.get(from)!)
     written.delete(from)
+    writtenBytes.delete(from)
   }),
   remove: vi.fn(async (path: string) => {
     calls.push(`remove ${path}`)
@@ -50,6 +58,7 @@ async function openFile(path: string, text: string) {
 
 beforeEach(() => {
   written.clear()
+  writtenBytes.clear()
   calls.length = 0
 })
 afterEach(cleanup)
@@ -227,5 +236,114 @@ describe('focus and errors in the Mac app (accessibility audit gaps, 2026-11-11)
     await waitFor(() => expect(status().textContent).toMatch(/^Opened fine\.nwk\./))
     expect(alert()).toBe(region)
     expect(region.textContent).toBe('')
+  })
+})
+
+describe('.onetaxonomy bundles in the Mac app', () => {
+  // Made-up data: release 1 and release 2 of the fictional checklist share an id.
+  const V1 = readFileSync(join(__dirname, '../../../fixtures/checklist.json'), 'utf8')
+  const V2 = readFileSync(join(__dirname, '../../../fixtures/checklist-v2.json'), 'utf8')
+  const header = () => document.querySelector('.app-header') as HTMLElement
+  const bundleButton = () => within(header()).getByRole('button', { name: 'Save as bundle…' })
+  const madeBundle = (text: string, embed: boolean) => {
+    const s = JSON.parse(text) as DatasetSnapshot
+    const view = createView(indexDataset(s), { id: 'main', title: 'Release view', target: { kind: 'classification', id: 'fx:checklist' } })
+    return writeBundle({ createdAt: '2026-11-11T10:00:00.000Z', createdBy: { app: 'test', version: '0' }, snapshots: [{ snapshot: s, embed }], views: [view] })
+  }
+  async function openBundle(path: string, bytes: Uint8Array) {
+    vi.mocked(dialog.open).mockResolvedValueOnce(path)
+    vi.mocked(fs.readFile).mockResolvedValueOnce(bytes as Uint8Array<ArrayBuffer>)
+    fireEvent.click(within(header()).getByRole('button', { name: 'Open…' }))
+  }
+  const opened = async (path: string, text: string) => {
+    await openFile(path, text)
+    await waitFor(() => expect(status().textContent).toMatch(/^Opened/))
+  }
+
+  it('saves the dataset and view as a bundle after one question, writes nothing on Cancel, and opens it again', async () => {
+    render(<App />)
+    await opened('/made-up/checklist.json', V1)
+    fireEvent.click(bundleButton())
+    expect(document.activeElement).toBe(screen.getByRole('heading', { level: 2, name: 'Save as bundle' }))
+    expect(screen.getByText(/^It will hold 1 view, 0 lessons, 0 media files, made with fixture-checklist version 1\.$/)).toBeTruthy()
+    expect((screen.getByRole('checkbox', { name: /^Include the dataset \(\d+ KB\)/ }) as HTMLInputElement).checked).toBe(true)
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(document.activeElement).toBe(bundleButton())
+    expect(calls).toEqual([])
+
+    // Cancelling the save dialog writes nothing either.
+    fireEvent.click(bundleButton())
+    vi.mocked(dialog.save).mockResolvedValueOnce(null)
+    fireEvent.click(screen.getByRole('button', { name: 'Save bundle…' }))
+    await waitFor(() => expect(document.activeElement).toBe(bundleButton()))
+    expect(calls).toEqual([])
+
+    fireEvent.click(bundleButton())
+    vi.mocked(dialog.save).mockResolvedValueOnce('/made-up/checklist.onetaxonomy')
+    fireEvent.click(screen.getByRole('button', { name: 'Save bundle…' }))
+    await waitFor(() => expect(status().textContent).toMatch(/^Saved bundle to checklist\.onetaxonomy, with its dataset\./))
+    expect(vi.mocked(dialog.save).mock.calls.at(-1)![0]!.defaultPath).toBe('fixture-checklist.onetaxonomy')
+    expect(calls).toEqual(['write /made-up/checklist.onetaxonomy.tmp', 'rename /made-up/checklist.onetaxonomy.tmp -> /made-up/checklist.onetaxonomy'])
+    const saved = await readBundle(writtenBytes.get('/made-up/checklist.onetaxonomy')!)
+    if (!saved.ok) throw new Error('expected the saved bundle to read')
+    expect(saved.bundle.manifest.snapshots).toEqual([{ id: 'fixture-checklist', version: '1', checksum: (JSON.parse(V1) as DatasetSnapshot).checksum, file: 'snapshots/fixture-checklist-1.json' }])
+
+    cleanup()
+    render(<App />)
+    await openBundle('/made-up/checklist.onetaxonomy', writtenBytes.get('/made-up/checklist.onetaxonomy')!)
+    await waitFor(() => expect(status().textContent).toMatch(/^Opened checklist\.onetaxonomy with its view “Illustrative checklist”\./))
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('checklist.onetaxonomy')
+    expect(vi.mocked(dialog.open).mock.calls.at(-1)![0]!.filters![0]!.extensions).toContain('onetaxonomy')
+  })
+
+  it('refuses a damaged bundle with what is wrong, and keeps what was open', async () => {
+    render(<App />)
+    await opened('/made-up/checklist.json', V1)
+    const damaged = madeBundle(V1, true).slice()
+    // Flip a byte inside the embedded snapshot's text: its size stays, its checksum doesn't.
+    const at = new TextDecoder().decode(damaged).indexOf('"fixture-checklist"', 2000)
+    damaged[at + 1] = 'F'.charCodeAt(0)
+    await openBundle('/made-up/damaged.onetaxonomy', damaged)
+    await waitFor(() => expect(alert().textContent).toMatch(/^Could not open damaged\.onetaxonomy: This bundle is damaged or incomplete, so nothing in it was opened\. snapshots\/fixture-checklist-1\.json doesn’t match its checksum in the manifest: it has changed or is damaged\. What was open before is unchanged\.$/))
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('checklist.json')
+  })
+
+  it('asks which version to use when the bundle pins another one, and does nothing on Cancel', async () => {
+    render(<App />)
+    await opened('/made-up/checklist-v2.json', V2)
+    const bundle = madeBundle(V1, true)
+    await openBundle('/made-up/release-1.onetaxonomy', bundle)
+    const title = await screen.findByRole('heading', { level: 2, name: 'Which version of fixture-checklist?' })
+    expect(document.activeElement).toBe(title)
+    expect(screen.getByText('This bundle was made with fixture-checklist version 1; the dataset open now is version 2.')).toBeTruthy()
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(status().textContent).toMatch(/^Didn't open release-1\.onetaxonomy\. Nothing was changed\./)
+    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('checklist-v2.json')
+    expect(document.activeElement).toBe(within(header()).getByRole('button', { name: 'Open…' }))
+
+    await openBundle('/made-up/release-1.onetaxonomy', bundle)
+    fireEvent.click(await screen.findByRole('button', { name: 'Relink to version 2 (open now)' }))
+    expect(status().textContent).toMatch(/^Opened release-1\.onetaxonomy, relinked to fixture-checklist version 2\./)
+    expect(within(status()).getByText(/^Relinked 1 view or lesson from fixture-checklist version 1 to version 2\./)).toBeTruthy()
+
+    await openBundle('/made-up/release-1.onetaxonomy', bundle)
+    fireEvent.click(await screen.findByRole('button', { name: 'Keep version 1 (from the bundle)' }))
+    expect(status().textContent).toMatch(/^Opened release-1\.onetaxonomy with the version it pins, fixture-checklist version 1\./)
+    expect(calls).toEqual([])
+  })
+
+  it('can’t keep a version the bundle doesn’t include, and says why next to the button', async () => {
+    render(<App />)
+    await opened('/made-up/checklist-v2.json', V2)
+    await openBundle('/made-up/no-data.onetaxonomy', madeBundle(V1, false))
+    const keep = (await screen.findByRole('button', { name: 'Keep version 1 (from the bundle)' })) as HTMLButtonElement
+    expect(keep.disabled).toBe(true)
+    expect(document.getElementById(keep.getAttribute('aria-describedby')!)!.textContent).toMatch(/^The bundle doesn't include version 1, so it can't be kept here\./)
+  })
+
+  it('refuses a bundle without its dataset when that dataset isn’t open', async () => {
+    render(<App />)
+    await openBundle('/made-up/no-data.onetaxonomy', madeBundle(V1, false))
+    await waitFor(() => expect(alert().textContent).toBe("Could not open no-data.onetaxonomy: This bundle doesn't include its dataset. It was made with fixture-checklist version 1: open that snapshot first, then open the bundle again. What was open before is unchanged."))
   })
 })

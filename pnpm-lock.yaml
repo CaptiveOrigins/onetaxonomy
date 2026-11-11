@@ -51,6 +51,9 @@ importers:
       '@captiveorigins/onetaxonomy-core':
         specifier: workspace:^
         version: link:../../packages/core
+      '@captiveorigins/onetaxonomy-education':
+        specifier: workspace:^
+        version: link:../../packages/education
       '@captiveorigins/onetaxonomy-import':
         specifier: workspace:^
         version: link:../../packages/import

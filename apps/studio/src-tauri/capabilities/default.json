@@ -10,6 +10,7 @@
     "fs:allow-read-text-file",
     "fs:allow-read-file",
     "fs:allow-write-text-file",
+    "fs:allow-write-file",
     "fs:allow-exists",
     "fs:allow-rename",
     "fs:allow-remove",
