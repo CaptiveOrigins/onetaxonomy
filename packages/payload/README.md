@@ -2,7 +2,7 @@
 
 OneTaxonomy for Payload: sealed taxonomy snapshots, views pinned to them, import jobs that turn source files into staged snapshots, people's own proposals that a manager can accept into a new staged version, and a small read API for search, ancestors, descendants, MRCA, coverage, projected views and exports, all behind your own access rules.
 
-> **Status: early, parts 1 to 4 of M7.** Not on npm yet. The collections, publishing, tenant scope, import jobs, proposals and the read endpoints work, and are tested on a real Payload 3.93 with an in-memory MongoDB (139 tests): bad checksums refused, sealed snapshots locked, an import of each format, re-runs that store nothing new, malformed files refused with their line, interrupted jobs resumed, runs started together claimed by one, every endpoint's results, a view's `source` through the Local API and GraphQL, proposals kept private, shared, accepted into a staged version once and declined, access refusals and cross-tenant denial. Twelve of those tests send real requests through Payload's own REST router, signed in with a token from the login route; the rest call the endpoint handlers and the Local API directly. It also runs in a small real site, [`apps/payload-example`](../../apps/payload-example) (Next.js 16, on this machine only), where 46 more checks go over HTTP with sign-in cookies. It hasn't run on a deployed site, or on Postgres or SQLite, and no URL import has fetched over a real network. No admin views yet: a proposal is a JSON field in the admin. See [ADR 0012](../../docs/architecture/adr/0012-payload-plugin.md).
+> **Status: early, parts 1 to 4 of M7.** Not on npm yet. The collections, publishing, tenant scope, import jobs, proposals and the read endpoints work, and are tested on a real Payload 3.93 with an in-memory MongoDB (142 tests): bad checksums refused, sealed snapshots locked, an import of each format, re-runs that store nothing new, malformed files refused with their line, interrupted jobs resumed, runs started together claimed by one, every endpoint's results, a view's `source` through the Local API and GraphQL, proposals kept private, shared, accepted into a staged version once and declined, access refusals and cross-tenant denial. Twelve of those tests send real requests through Payload's own REST router, signed in with a token from the login route; the rest call the endpoint handlers and the Local API directly. It also runs in a small real site, [`apps/payload-example`](../../apps/payload-example) (Next.js 16, on this machine only), where 46 more checks go over HTTP with sign-in cookies. It hasn't run on a deployed site, or on Postgres or SQLite, and no URL import has fetched over a real network. No admin views yet: a proposal is a JSON field in the admin. See [ADR 0012](../../docs/architecture/adr/0012-payload-plugin.md).
 
 ## What it does
 
@@ -52,7 +52,7 @@ export default buildConfig({
         fetch: ({ url }) => fetchFromAllowedHosts(url),     // optional; your function decides which URLs are allowed
       },
       proposals: {                                          // optional; `true` takes the defaults; without it there is no proposals collection
-        nameOf: ({ req }) => req.user.handle,               // the name sealed into an accepted version: a public handle, not an email
+        displayName: ({ personId }) => handleOf(personId),  // optional; the name shown beside a person's id, looked up when shown, never stored
       },
     }),
   ],
@@ -96,7 +96,7 @@ Host pages can call `searchNames`, `ancestorsOf`, `descendantsOf`, `mrcaOf`, `co
 
 ## Proposals
 
-Turn them on with `proposals: true` or `proposals: { nameOf, maxMoves, maxPerUser }`.
+Turn them on with `proposals: true` or `proposals: { personId, displayName, maxMoves, maxPerUser }`.
 
 ```js
 // Anyone signed in who may read and propose. It starts private.
@@ -116,7 +116,7 @@ const p = await payload.create({
 await payload.update({ collection: 'taxonomy-proposals', id: p.id, data: { status: 'shared' }, user, overrideAccess: false })
 ```
 
-The plugin sets the proposal's id, author name and date, and drops anything else sent with it. A proposal that doesn't fit its snapshot (an unknown node, a move from a parent the node doesn't have, a cycle) is refused with the reason.
+The plugin sets the proposal's id, its author (a person id, below) and its date, and drops anything else sent with it. A proposal that doesn't fit its snapshot (an unknown node, a move from a parent the node doesn't have, a cycle) is refused with the reason.
 
 | Status | Who sees it | What can happen |
 | --- | --- | --- |
@@ -137,11 +137,17 @@ Anyone else gets the 404 of a missing proposal. A refusal that depends on the pr
 
 The new version is core's `acceptIntoSnapshot`: the classification gets a new version, each moved placement names the proposal as its source, a source record `proposal:<id>` says who proposed and who accepted, and `derivedFrom` pins the snapshot it was made from. It is stored staged, so publishing it is a second, separate step. Deleting that staged version before it is published opens the proposal again.
 
-**Names are permanent.** `nameOf` gives the name a person's proposals and decisions carry (default `User <id>`). When a proposal is accepted, its author's name and the manager's are sealed into the new snapshot, inside its checksum. They can't be taken out later. Give a name people are happy to have published. If `nameOf` throws or gives nothing, the action stops and nothing is saved.
+**People are recorded by id, never by name.** A proposal's author and the manager who accepts it are stored as a person id. When a proposal is accepted, those two ids are sealed into the new snapshot, inside its checksum, and can't be taken out later. An id that means nothing on its own leaves nothing personal there.
 
-**When someone leaves.** Your server code can take back their shared proposals (`status: 'private'`) and delete their private and declined ones. Their accepted proposals stay, with the name they carried when accepted, and so does that name in the snapshot.
+- `personId({ req })` gives the id. The default is the signed-in user's document id. Give your own if you have a steadier one, or more than one auth collection (two collections can hold the same id).
+- An id is 1 to 64 characters: letters, digits, `.`, `_`, `:` and `-`, starting with a letter or digit. An email address, or a name with a space in it, is refused: the action stops, nothing is saved, and the value is not written to the log. A one-word handle would pass, so don't give one. The plugin can't tell it from an id.
+- `displayName({ req, personId })` gives the name to show for an id. It is looked up each time a proposal is read (once per person per request) and comes back as `authorName` on the proposal and in the preview. It is never stored and never sealed, and anything sent as `authorName` is dropped. If it gives nothing or throws, the id is shown alone.
 
-Options: `slugs` (`snapshots`, `views`, `imports`, `proposals`), `access` (`read`, `manage`, `propose`), `tenant` (`collection`, `field`, `resolve`), `locale`, `limits`, `imports` (`uploads`, `fetch`, `maxBytes`, `staleAfterMinutes`, `runOnCreate`), `proposals` (`nameOf`, `maxMoves` default 500, `maxPerUser` default 200, not counting accepted ones), `admin.group`.
+A proposal's title and notes, each move's note and the manager's note are people's own words. On acceptance the title, the moves' notes and the manager's note are sealed into the snapshot, and the proposal itself is kept as it was. Don't put anything personal in them. The plugin doesn't check.
+
+**When someone leaves.** Your server code can take back their shared proposals (`status: 'private'`) and delete their private and declined ones. Their accepted proposals stay, and so does their id in the snapshot. Stop giving a name for that id from `displayName`, and nothing shown names them. The accepted proposal's document still points to their user document (`author`, and `decidedBy` for a manager); that link can't be changed, so keep or delete the user document as your own rules say.
+
+Options: `slugs` (`snapshots`, `views`, `imports`, `proposals`), `access` (`read`, `manage`, `propose`), `tenant` (`collection`, `field`, `resolve`), `locale`, `limits`, `imports` (`uploads`, `fetch`, `maxBytes`, `staleAfterMinutes`, `runOnCreate`), `proposals` (`personId`, `displayName`, `maxMoves` default 500, `maxPerUser` default 200, not counting accepted ones), `admin.group`.
 
 ## Limits
 

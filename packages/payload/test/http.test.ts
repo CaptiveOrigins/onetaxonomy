@@ -66,7 +66,10 @@ beforeAll(async () => {
         tenant: { collection: 'tenants', resolve: ({ req }) => tenantOfUser(req.user) },
         // Answered from memory: no network.
         imports: { fetch: ({ url }) => (url === TREES ? '[&R] ((Alpha:1,Beta:1):1,Gamma:2);' : Promise.reject(new Error('not allowed'))) },
-        proposals: { nameOf: ({ req }) => (roleOf(req.user) === 'manager' ? 'Cara Curator' : `Reader ${String(req.user?.id).slice(-4)}`) },
+        proposals: {
+          personId: ({ req }) => `${roleOf(req.user) === 'manager' ? 'm' : 'r'}-${String(req.user?.id).slice(-6)}`,
+          displayName: ({ personId }) => (personId.startsWith('m-') ? 'Cara Curator' : 'Robin Reader'),
+        },
       }),
     ],
   }))
@@ -222,7 +225,7 @@ describe('over HTTP: proposals', () => {
     expect(p).toMatchObject({ status: 'private', author: String(ann.id) })
     expect(p.decidedBy ?? null).toBeNull()
     expect(p.acceptedInto ?? null).toBeNull()
-    expect(p.proposal.author).toMatch(/^Reader /)
+    expect(p.proposal.author).toMatch(/^r-[0-9a-f]{6}$/)
     expect(p.proposal.id).not.toBe('chosen-id')
     // Private: nobody else gets it, by list, by id or by preview.
     for (const user of [ben, managerA, managerB, null]) {
@@ -267,10 +270,13 @@ describe('over HTTP: proposals', () => {
     expect((await get(`/${SNAPSHOTS}/${made}/export`, ann)).status).toBe(404)
     const content = (await get(`/${SNAPSHOTS}/${made}/export`, managerA)).body as DatasetSnapshot
     expect(verifySnapshot(content)).toBe(true)
-    expect(content.derivedFrom?.proposal).toMatchObject({ author: p.proposal.author, acceptedBy: 'Cara Curator' })
+    expect(content.derivedFrom?.proposal).toMatchObject({ author: `r-${String(ann.id).slice(-6)}`, acceptedBy: `m-${String(managerA.id).slice(-6)}` })
+    expect(JSON.stringify(content)).not.toMatch(/Cara Curator|Robin Reader/)
     // Readers see that it was accepted, without who decided or where it went.
     const seen = (await get(`/${PROPOSALS}/${p.id}?depth=0`, ben)).body as Doc
     expect(seen.status).toBe('accepted')
+    // The author's name is looked up for the response; the proposal itself holds their id.
+    expect(seen).toMatchObject({ authorName: 'Robin Reader', proposal: { author: `r-${String(ann.id).slice(-6)}` } })
     expect(seen).not.toHaveProperty('decidedBy')
     expect(seen).not.toHaveProperty('acceptedInto')
     // Kept: no change and no delete, for its author or a manager.

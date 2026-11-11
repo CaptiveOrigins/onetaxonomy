@@ -1,14 +1,14 @@
 # OneTaxonomy Payload example
 
-A small Payload and Next.js site that uses [`@captiveorigins/payload-plugin-onetaxonomy`](../../packages/payload). It shows the plugin set up the way a real site would: accounts with two roles, public pages that draw published views, and proposals that carry a public handle instead of an email address.
+A small Payload and Next.js site that uses [`@captiveorigins/payload-plugin-onetaxonomy`](../../packages/payload). It shows the plugin set up the way a real site would: accounts with two roles, public pages that draw published views, and proposals that record a person by an id, with a public handle shown beside it and no email address.
 
-> **Status: an example, not a product.** It runs on this machine only, on a throwaway in-memory MongoDB, with made-up accounts and the repository's illustrative fixtures. Tested: 46 checks over HTTP with sign-in cookies (`pnpm smoke`), on `next dev` and on the built site, with Payload 3.93 and Next.js 16; the three public pages were looked at in headless Chrome, in light and dark, at desktop width and at 520 px. Not tested: a person clicking through the admin, a screen reader, a phone, Postgres or SQLite, or a deployed site.
+> **Status: an example, not a product.** It runs on this machine only, on a throwaway in-memory MongoDB, with made-up accounts and the repository's illustrative fixtures. Tested: 47 checks over HTTP with sign-in cookies (`pnpm smoke`), on `next dev` and on the built site, with Payload 3.93 and Next.js 16; the three public pages were looked at in headless Chrome, in light and dark, at desktop width and at 520 px. Not tested: a person clicking through the admin, a screen reader, a phone, Postgres or SQLite, or a deployed site.
 
 ## What it shows
 
 - **Public pages.** `/` lists the published views. `/views/<id>` draws one as an SVG tree with its keyboard outline, what the view leaves out, and its sources. Both are Server Components: the tree is drawn on the server and no tree code is sent to the browser. The pages read as an anonymous visitor, so they only ever show what is published.
 - **Two roles.** A curator manages snapshots, views and import jobs, uses the admin, and decides on proposals. A member reads what is published and makes proposals. Only a curator hands out roles: a member can't raise their own, and sees no account but their own.
-- **Proposals under a handle.** `proposals.nameOf` gives each person's `handle`, not their email address. When a curator accepts a proposal, the new snapshot version names the proposer and the curator by handle, inside its checksum. Those names can't be taken out later, which is why the handle field says so where people fill it in.
+- **Proposals by id, with a handle shown.** A proposal stores its author's account id, and when a curator accepts one, the new snapshot version records the proposer and the curator by those ids, inside its checksum. No name or email address is sealed. `proposals.displayName` looks up each person's `handle` when a proposal is shown, so a changed handle shows at once and a removed one leaves the id alone.
 - **Staged, then published.** The seed stores one published snapshot with two views, and one staged snapshot that only the curator sees. An accepted proposal makes a new staged version; visitors see nothing until the curator publishes it.
 - **Cookies from this site only.** Payload's `csrf` list holds the site's own address, so a sign-in cookie sent from another site's page counts for nothing.
 
@@ -52,8 +52,9 @@ This builds the site, starts it on a free port with its own database, and sends 
 - a visitor can't store a snapshot, make a proposal, or list accounts or proposals;
 - a sign-in cookie can't be read by scripts, and counts for nothing from another site;
 - a member can't make themself a curator, sees only their own account, and is sent away from the admin;
-- a member's proposal is stored under their handle whatever the request says, with no email address in it, and stays private until shared;
-- only the curator can accept it, and the new version is staged, sealed, names both people by handle, holds no email address, and isn't public;
+- a member's proposal is stored under their account's id whatever the request says, shows their handle, has no email address in it, and stays private until shared;
+- only the curator can accept it, and the new version is staged, sealed, records both people by id, holds no handle and no email address, and isn't public;
+- a changed handle shows on the accepted proposal at once, and the sealed version doesn't change;
 - an accepted proposal can't be deleted.
 
 `--dev` runs `next dev` instead of a build, and `--skip-build` reuses the last build. CI runs the smoke test on every pull request.

@@ -34,11 +34,11 @@ beforeAll(async () => {
         oneTaxonomy({
           access,
           proposals: {
-            nameOf: async ({ req }) => {
+            personId: async ({ req }) => {
               const run = meanwhile
               meanwhile = null
               await run?.()
-              return `Keeper ${String(req.user?.id).slice(-4)}`
+              return `keeper-${String(req.user?.id).slice(-4)}`
             },
           },
         }),
@@ -56,9 +56,11 @@ beforeAll(async () => {
 afterAll(async () => stop?.())
 
 describe('proposals on a site without tenants', () => {
-  it('names people "User <id>" unless the site says otherwise, and lets any signed-in reader propose', async () => {
+  it('uses the user\'s document id as the person id unless the site says otherwise, looks up no names, and lets any signed-in reader propose', async () => {
     const opts = resolveOptions({ proposals: true })
-    expect(await opts.proposals!.nameOf({ req: { user: { id: 42 } } } as never)).toBe('User 42')
+    expect(await opts.proposals!.personId({ req: { user: { id: 42 } } } as never)).toBe('42')
+    expect(await opts.proposals!.personId({ req: { user: null } } as never)).toBe('')
+    expect(opts.proposals!.displayName).toBeNull()
     expect(opts.proposals).toMatchObject({ maxMoves: 500, maxPerUser: 200 })
     expect(await opts.access.propose({ req: { user: { id: 42 } } as never, tenant: null })).toBe(true)
     expect(await opts.access.propose({ req: { user: null } as never, tenant: null })).toBe(false)
@@ -80,7 +82,9 @@ describe('proposals on a site without tenants', () => {
     const done = await accept(p.id, manager, { version: '2', checksum: shared.checksum })
     expect(done).toMatchObject({ status: 200, body: { snapshot: { version: '2', status: 'staged' } } })
     const made = (await payload.findByID({ collection: SNAPSHOTS as never, id: done.body.snapshot.doc, depth: 0 })) as Doc
-    expect((made.snapshot as DatasetSnapshot).derivedFrom!.proposal).toMatchObject({ author: `Keeper ${String(ann.id).slice(-4)}`, acceptedBy: `Keeper ${String(manager.id).slice(-4)}` })
+    expect((made.snapshot as DatasetSnapshot).derivedFrom!.proposal).toMatchObject({ author: `keeper-${String(ann.id).slice(-4)}`, acceptedBy: `keeper-${String(manager.id).slice(-4)}` })
+    // No `displayName` on this site: a proposal shows its author's id and no name.
+    expect(((await payload.findByID({ collection: PROPOSALS as never, id: p.id, depth: 0, user: ben, overrideAccess: false })) as Doc).authorName ?? null).toBeNull()
     expect(await seen(SNAPSHOTS, ann)).toEqual([snap])
     expect((await payload.findByID({ collection: PROPOSALS as never, id: p.id, depth: 0 })) as Doc).toMatchObject({ status: 'accepted' })
   })

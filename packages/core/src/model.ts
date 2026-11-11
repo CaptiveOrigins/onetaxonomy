@@ -189,8 +189,9 @@ export type DatasetSnapshot = {
 
 /**
  * The proposal a snapshot version was made from: whose it was, who accepted it, the classification version it was
- * drawn over and the concepts it moved. Names are written as their owners want them read; they are sealed with the
- * snapshot and can't be taken out later.
+ * drawn over and the concepts it moved. `author` and `acceptedBy` are whatever the caller gave: a name, or an id that
+ * stands for the person. They are sealed with the snapshot and can't be taken out later, so where people may later ask
+ * to be forgotten, give an id that means nothing on its own. The title is the author's own words and is sealed too.
  */
 export type AcceptedProposal = {
   id: Id

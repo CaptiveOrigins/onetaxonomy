@@ -140,7 +140,10 @@ export type AcceptOptions = {
   version: string
   /** ISO date-time of the acceptance, supplied by the caller (core stays pure). It becomes the new snapshot's `createdAt`. */
   createdAt: string
-  /** Who accepted it, written as they want it read. It is sealed with the snapshot. */
+  /**
+   * Who accepted it: a name, or an id that stands for the person. It is sealed with the snapshot and can't be taken
+   * out later, so where people may later ask to be forgotten, give an id that means nothing on its own.
+   */
   acceptedBy: string
   note?: string
 }
@@ -170,7 +173,7 @@ export function acceptIntoSnapshot(base: DatasetSnapshot, proposal: Proposal, o:
   if (!text(o.version)) throw new ProposalError('The new version needs a name')
   if (o.version === base.version) throw new ProposalError(`Version ${o.version} is the base snapshot’s own: an accepted proposal makes a new version`)
   if (!text(o.createdAt) || Number.isNaN(Date.parse(o.createdAt))) throw new ProposalError('The acceptance needs its date')
-  if (!text(o.acceptedBy)) throw new ProposalError('The acceptance needs the name of who accepted it')
+  if (!text(o.acceptedBy)) throw new ProposalError('The acceptance needs to say who accepted it')
   if (!text(proposal.author)) throw new ProposalError('A proposal names its author')
   if (proposal.base.kind !== 'classification')
     throw new ProposalError('Only a proposal on a classification can be accepted into a dataset. A phylogeny is a published hypothesis: a tree rearranged by hand is a result its study never found. Import the new analysis as its own hypothesis instead')
