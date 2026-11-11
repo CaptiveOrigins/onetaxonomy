@@ -2,6 +2,15 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: OneOrigin brand source
+
+Owner decision N105 (2026-11-11): "A: send it, accept guidelines (Recommended)". Tests went from 299 to 300: studio (Mac app) 40 to 41 (`apps/studio/test/theme.test.ts`). The rest are unchanged.
+
+- **Promises:** `brand/oneorigin/` matches `brand/oneorigin.lock` byte for byte, and CI fails on a hand edit; `apps/studio/src/oneorigin.css` is what `build` writes from the copy's tokens; the app's shell colors are the suite's tokens; nothing that was drawn changes color.
+- **Covered:** `node scripts/oneorigin.mjs check` in CI (11 files and the built CSS). `theme.test.ts` (1 new): `--bg`, `--panel`, `--text`, `--muted`, `--border`, `--accent`, `--focus` and `--error` in `app.css` equal the built `--ot-` tokens in light, system dark and a chosen Dark. The script itself is tested in OnePhylogeny, where it comes from (`scripts/oneorigin.test.mjs`, 19 tests: build output, lock and check passing, a hand edit failing, the warning paths); this repo carries the same file.
+- **Gaps left:** the built CSS hasn't been looked at in the running app. The check downloads the locked files from OnePhylogeny's main branch to see whether the source differs; that only warns, and until OnePhylogeny's PR lands it warns that the files aren't there yet.
+- **Left out as overkill:** repeating the script's tests here; they'd test the same file.
+
 ## 2026-11-11: Studio bundle
 
 Scope: M6's `.onetaxonomy` bundle and relink flow, and the SQLite decision (ADR 0011, proposed: not needed now). Import gains `bundle.ts` (`writeBundle`, `readBundle`) and a ZIP writer in `zip.ts` (`writeZip`, `crc32`); core gains `sha256Bytes`; the Mac app gains `bundle.ts` (`planBundleOpen`, `keepPinned`, `relinkToAvailable`, `planBundleSave`, `bundleBytes`), `saveBundle` in `files.ts`, the Save as bundle and relink forms in `App.tsx`, and `fs:allow-write-file` in its capability file. Tests went from 299 to 348: core 105 to 106, import 42 to 63 (21 in the new `bundle.test.ts`), studio 40 to 67 (17 in the new `bundle.test.ts`, 5 in `files.test.ts`, 5 in `app.test.tsx`). Tauri was mocked throughout: dialogs and the file system are fakes that record calls, so no real disk, built app or screen reader was involved. The one outside check is the system `unzip -t` and `unzip -p` on a written bundle.
