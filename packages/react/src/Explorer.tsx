@@ -21,6 +21,7 @@ import {
   type Id,
   type LayoutKind,
   type LifeStatus,
+  type Phylogeny,
   type Projection,
   type TaxonomicView,
   type TraitSet,
@@ -34,6 +35,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent, 
 import { dropOrder, drawnSubtree, dropTarget } from './drag.js'
 import { citationLine, disclosureLines, downloadBlob, standaloneSvg, svgToPng } from './export.js'
 import { Icon } from './icons.js'
+import { ComparePanel, PHYLO_LABELS, rootedRecord, SupportControl, supportSummary, type PhyloLabels } from './Phylo.js'
 import { TreeOutline } from './TreeOutline.js'
 import { treeViewBox, TreeView, type ViewBox } from './TreeView.js'
 
@@ -95,7 +97,7 @@ export function layoutFor(projection: Projection, kind: LayoutKind): TreeLayout 
   return rectangular(projection)
 }
 
-export type ExplorerLabels = Record<
+export type ExplorerLabels = PhyloLabels & Record<
   | 'undo' | 'redo' | 'expandAll' | 'collapseAll' | 'rotate' | 'layout' | 'status' | 'allStatuses' | 'outline' | 'details' | 'nothingSelected' | 'clade' | 'group' | 'hidden' | 'rank' | 'lifeStatus' | 'focus' | 'unfocus'
   | 'zoomIn' | 'zoomOut' | 'fit' | 'download' | 'print' | 'canvas' | 'controls' | 'dragHint'
   | 'propose' | 'proposalTitle' | 'proposalAuthor' | 'proposalStart' | 'proposalCancel' | 'proposalHint' | 'proposalBy' | 'proposalLeave' | 'proposalNoMoves' | 'proposalUnder' | 'proposalRoot'
@@ -108,6 +110,7 @@ export type ExplorerLabels = Record<
 >
 
 const LABELS: ExplorerLabels = {
+  ...PHYLO_LABELS,
   undo: 'Undo',
   redo: 'Redo',
   expandAll: 'Expand all',
@@ -213,6 +216,18 @@ export type ExplorerProps = {
   onViewChange?: (view: TaxonomicView) => void
   /** Extra content in the inspector for the selected node (e.g. a link to its page). */
   renderDetails?: (id: Id) => ReactNode
+  /**
+   * Other phylogenies to offer in "Compare with…", besides the dataset's own. The panel
+   * appears when a phylogeny is shown and there is at least one other to compare with.
+   */
+  compareWith?: Phylogeny[]
+  /**
+   * Turns on "Midpoint root" and "Root on this tip/clade (outgroup)". Each makes a new
+   * phylogeny record (with a new id and a `rooting` note) and hands it here; the record
+   * shown is never changed. Where the new record goes, and how it is shown, is the host's
+   * choice: add it to a new snapshot and show it, for example.
+   */
+  onRooted?: (record: Phylogeny) => void
 }
 
 /**
@@ -220,7 +235,7 @@ export type ExplorerProps = {
  * redo, expand/collapse, flip, layout, life-status filter) and an inspector. Every
  * change is a view action over the pinned snapshot; the data itself never changes.
  */
-export function Explorer({ dataset, initialView, title, height = '32rem', labels: custom, onViewChange, renderDetails }: ExplorerProps) {
+export function Explorer({ dataset, initialView, title, height = '32rem', labels: custom, onViewChange, renderDetails, compareWith = [], onRooted }: ExplorerProps) {
   const labels = { ...LABELS, ...custom }
   const t = useTaxonomyView(dataset, initialView, onViewChange ? { onChange: onViewChange } : {})
   const { view, projection, dispatch } = t
@@ -230,7 +245,33 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
   const statusValue = STATUS_FILTERS.find((f) => JSON.stringify(f.statuses ?? null) === JSON.stringify(view.filter.status ?? null))?.value ?? 'all'
   const hidden = (n: number) => `${n} ${labels.hidden}`
   const marks = useMemo(() => nodeOverlays(dataset, view, projection, { mixedLabel: labels.mixed }), [dataset, view, projection, labels.mixed])
-  const disclosure = useMemo(() => describeView(dataset, view, projection), [dataset, view, projection])
+  const phylogeny = view.target.kind === 'phylogeny' ? dataset.phylogeny(view.target.id).phylogeny : null
+  const rooting = phylogeny?.rooting
+  const rootingLine = rooting ? `${labels.rooting} ${rooting.note ?? rooting.method}` : null
+  // The rooting note goes into the About list, exports and prints, next to the hypothesis it describes.
+  const disclosure = useMemo(() => {
+    const d = describeView(dataset, view, projection)
+    if (!rootingLine) return d
+    const at = d.lines.findIndex((l) => l.startsWith('Phylogenetic hypothesis:'))
+    const lines = [...d.lines]
+    lines.splice(at + 1, 0, rootingLine)
+    return { ...d, lines }
+  }, [dataset, view, projection, rootingLine])
+  const others = useMemo(
+    () => (phylogeny ? [...dataset.snapshot.phylogenies, ...compareWith.filter((p) => !dataset.snapshot.phylogenies.some((q) => q.id === p.id))].filter((p) => p.id !== phylogeny.id) : []),
+    [dataset, compareWith, phylogeny],
+  )
+  const [rootError, setRootError] = useState<string | null>(null)
+  const root = (node: Id | null) => {
+    if (!phylogeny || !onRooted) return
+    try {
+      const record = rootedRecord(dataset, phylogeny.id, node, compareWith.map((p) => p.id))
+      setRootError(null)
+      onRooted(record)
+    } catch (e) {
+      setRootError((e as Error).message)
+    }
+  }
   const details = useMemo(() => (selected && node ? inspectNode(dataset, view, selected) : null), [dataset, view, selected, node])
   const traits = dataset.snapshot.traits ?? []
   const isUnrooted = view.target.kind === 'phylogeny' && !dataset.phylogeny(view.target.id).rooted
@@ -444,6 +485,14 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
             ))}
           </select>
         </label>
+        <span className="ot-toolbar-gap" aria-hidden="true" />
+        <SupportControl view={view} dispatch={dispatch} labels={labels} />
+        {phylogeny && onRooted && (
+          <button type="button" onClick={() => root(null)}>
+            <Icon name="flip" />
+            {labels.midpointRoot}
+          </button>
+        )}
         {(hasSupport || hasExtinct || traits.length > 0) && <span className="ot-toolbar-gap" aria-hidden="true" />}
         {hasSupport && (
           <button type="button" aria-pressed={Boolean(overlays.support)} onClick={() => { const { support, ...rest } = overlays; setOverlays(support ? rest : { ...rest, support: {} }) }}>
@@ -474,8 +523,17 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
       </div>
       {/* Always present, so a screen reader announces a refusal or a failed export when the text appears. */}
       <p className="ot-error" role="status">
-        {t.error ?? exportError ?? ''}
+        {t.error ?? rootError ?? exportError ?? ''}
       </p>
+      {/* Support collapsing hides branches, so what it did is shown and announced as it changes. */}
+      <p className="ot-notice ot-support-status" role="status">
+        {supportSummary(projection, labels)}
+      </p>
+      {rootingLine && (
+        <p className="ot-notice ot-rooting" role="note">
+          {rootingLine}
+        </p>
+      )}
       <div className="ot-panes">
         <div
           ref={canvas}
@@ -621,6 +679,12 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
                     <Icon name={view.focus === node.id ? 'unfocus' : 'focus'} />
                     {view.focus === node.id ? labels.unfocus : labels.focus}
                   </button>
+                  {phylogeny && onRooted && dataset.phylogeny(phylogeny.id).parent.get(node.id) != null && (
+                    <button type="button" onClick={() => root(node.id)}>
+                      <Icon name="flip" />
+                      {node.isTip ? labels.rootOnTip : labels.rootOnClade}
+                    </button>
+                  )}
                 </div>
                 {(view.target.kind === 'classification' && dataset.snapshot.phylogenies.length > 0) && <CladeCheck dataset={dataset} view={view} projection={projection} dispatch={dispatch} labels={labels} single />}
                 {renderDetails?.(node.id)}
@@ -637,6 +701,7 @@ export function Explorer({ dataset, initialView, title, height = '32rem', labels
         </div>
       </div>
       <Legend layout={layout} highlights={view.highlights} labels={labels} trait={traits.find((tr) => tr.id === overlays.trait)} support={Boolean(overlays.support)} onRemoveHighlight={(id) => dispatch({ type: 'removeHighlight', id })} />
+      {phylogeny && others.length > 0 && <ComparePanel key={phylogeny.id} dataset={dataset} view={view} others={others} dispatch={dispatch} labels={labels} />}
       {proposal && proposal.moves.length > 0 && <ProposalCompare dataset={dataset} view={view} labels={labels} title={title} />}
       <details className="ot-about">
         <summary>

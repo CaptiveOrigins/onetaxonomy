@@ -2,6 +2,32 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: controls for comparison, rooting and support collapse
+
+Scope: the explorer and Mac app controls for the features in the previous section: the support threshold, "Compare with…", rerooting and midpoint rooting, and opening NEXUS and phyloXML in the Mac app. Core and import are unchanged. Tests went from 202 to 228: react 29 to 44 (`phylo.test.tsx`, 15 new), studio 20 to 31 (6 in `open.test.ts`, 1 in `files.test.ts`, 4 in the new `app.test.tsx`, which renders the whole window in jsdom with Tauri mocked). Core (101), import (42), layout (6) and education (4) are unchanged. Everything ran in jsdom: no screen reader, browser or built app.
+
+### Covered
+
+- **Support threshold.** Typing "7" then "70" applies nothing until Enter, so it's one undo step; Enter and leaving the field both apply it, and an empty field clears it. The summary ("2 branches below 70 collapsed; 1 has no support value.") is in a status region that is mounted, empty, before the first message; About gives the core's longer disclosure. Undo brings back every branch and empties the field. Clear is named "Clear support threshold", which contains its visible text, and is disabled when nothing is set. For a classification the field is disabled and its `aria-describedby` points at the visible reason. Singular and plural wording (`phylo.test.tsx`).
+- **Compare with…** Only offered when there's another phylogeny. On the two amniote fixtures: distance 2, normalized 0.25, rooted, 6 shared tips, the clade each tree has that the other lacks, and "None" for tips in one tree only. Changing the mode and the tree (selects, so keyboard-operable) updates the status sentence; a given tree missing one tip is reported as "only in" with the core's note. Tips without concept mappings give the core's refusal, and no distance is shown. "Select" on a differing clade selects it in the drawing (`phylo.test.tsx`).
+- **Rooting never changes the record shown.** Rooting on a tip and on a clade (every tip under it) hands a new record to `onRooted` with a new id, the method, the outgroup and the source record, and the sealed snapshot's JSON is unchanged afterwards. Midpoint rooting skips an id that's already taken. A refusal (no branch lengths, the whole tree as outgroup) is shown in the status region and nothing is handed on. No outgroup button on the root, and no rooting controls without `onRooted`. A rooted record's note is shown under the toolbar and in About (`phylo.test.tsx`).
+- **Mac app: the rooted tree is a new snapshot and a new file.** `withPhylogeny` leaves the open (sealed, frozen) snapshot unchanged and still verifying, drops the checksum, records `derivedFrom`, refuses a duplicate id, and seals on save (`open.test.ts`). In the window: rooting a tip from a NEXUS file shows the new tree with its note and says the file is unchanged; choosing the opened file in the save dialog is refused before anything is written; saving elsewhere writes the temporary file and renames it, and the saved file holds all three trees and verifies (`app.test.tsx`). `saveJson` refuses the opened path in any letter case (`files.test.ts`).
+- **Mac app: NEXUS and phyloXML.** Every extension in the open dialog maps to a kind; `.tre` with `#NEXUS` at the top (after comments) is NEXUS, otherwise Newick. Rooting is asked only when a NEXUS `TREE` has no [&R] or [&U] (a BEAST-style comment with "=" before the tree's "=" doesn't confuse it) or a phyloXML `<phylogeny>` has no `rooted`; paired support is noticed in NEXUS. TRANSLATE names reach the tips, nothing is mapped to taxa, and skipped parts become notes with their line ("Line 2: TAXA block is not read"). In the window, a NEXUS file opens through the mocked dialog with that note in the list, and a file that leaves rooting unsaid gets the question (`open.test.ts`, `app.test.tsx`).
+
+### Gaps left
+
+- **Comparison in the Mac app always refuses files it imports itself.** Newick, NEXUS and phyloXML tips are never mapped to taxa (by design: no matching by label), and comparison needs mappings. It works on snapshots that carry mappings. A way to map tips explicitly in the app (a mapping table the person confirms) is a feature, for the lead's list.
+- **Two controls are named "Show"** in the Mac app: the header's tree or classification picker and the explorer's living/extinct filter. They existed before; a clearer name for the header one ("Tree or classification") is a small wording change left to the owner.
+- **Differing clades aren't highlighted in the drawing.** "Select" puts one in the selection; drawing all of them at once would need a highlight that isn't saved in the view. Clades only in the other tree have no node here, so they're listed only.
+- **The rooting note is added by the explorer, not by `describeView`.** Exports from the explorer include it; another app calling `describeView` directly won't see it. Adding it in core would change core's output, which this branch was asked not to do.
+- **Not run for real:** VoiceOver reading the status regions, the number field's spinner and Enter in WebKit, and the Tauri dialogs and file writes in the built app. NEXUS and phyloXML were tried only on made-up files.
+- **Saving over the opened file is refused by path, letter case aside.** A symlink or another path to the same file isn't caught.
+
+### Left out as overkill
+
+- Comparison and rooting results in more cases: core's tests already cover them; the UI tests check that results and refusals are shown.
+- Every label override: they're plain strings in the same `labels` object as the rest.
+
 ## 2026-11-11: phylogeny comparison, rooting and new importers
 
 Scope: the M8 science items that need no owner data: `comparePhylogenies`, `rerootPhylogeny` and `midpointRoot`, the `collapseBelowSupport` view action, and the NEXUS and phyloXML readers. Tests went from 145 to 188: core 70 to 101, import 30 to 42. Layout (6), education (4), react (18) and the studio (17) are unchanged.

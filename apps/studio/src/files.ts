@@ -42,9 +42,18 @@ export async function writeFileSafely(path: string, text: string) {
   }
 }
 
-export async function saveJson(defaultPath: string, text: string): Promise<string | null> {
+/** Thrown before anything is written when the chosen file is the one that was opened. */
+export const OPENED_FILE_REFUSAL = "That is the file you opened, and OneTaxonomy never writes over it."
+
+/**
+ * Asks where to save, then saves safely. `never` is the path of the file that was opened:
+ * choosing it is refused before anything is written, so an open file is never replaced.
+ */
+export async function saveJson(defaultPath: string, text: string, { never }: { never?: string } = {}): Promise<string | null> {
   const path = await saveDialog({ defaultPath, filters: [{ name: 'JSON', extensions: ['json'] }] })
   if (!path) return null
+  // macOS volumes usually ignore case, so the comparison does too: a false refusal is safer than an overwrite.
+  if (never && path.toLowerCase() === never.toLowerCase()) throw new Error(OPENED_FILE_REFUSAL)
   await writeFileSafely(path, text)
   return path
 }

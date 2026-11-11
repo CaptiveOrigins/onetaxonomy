@@ -1,11 +1,11 @@
-import { createView, indexDataset, parseView, serializeView, validateDataset, validateView, type DatasetSnapshot, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
+import { createView, indexDataset, parseView, serializeView, validateDataset, validateView, type DatasetSnapshot, type Phylogeny, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
 import type { ChecklistColumns } from '@captiveorigins/onetaxonomy-import'
 import { Explorer } from '@captiveorigins/onetaxonomy-react'
 import { invoke } from '@tauri-apps/api/core'
 import { useEffect, useMemo, useRef, useState } from 'react'
 
 import { pickDataset, pickView, saveJson, type PickedFile } from './files'
-import { COLUMN_KEYS, delimiterOf, kindOf, newickQuestions, openDwca, openNewick, openSnapshot, openTable, sealedJson, suggestColumns, tableHeader, targetsOf, type ColumnKey, type Opened, type Target } from './open'
+import { COLUMN_KEYS, delimiterOf, kindOf, openDwca, openSnapshot, openTable, openTree, sealedJson, suggestColumns, tableHeader, targetsOf, treeQuestions, withPhylogeny, type ColumnKey, type Opened, type Target, type TreeKind } from './open'
 import { StatusBar } from './StatusBar'
 import { checkForUpdates, IN_APP_UPDATES, loadSettings, saveSettings, type Settings } from './updates'
 
@@ -20,7 +20,7 @@ const COLUMN_LABELS: Record<ColumnKey, string> = {
 }
 
 type Pending =
-  | { kind: 'newick'; file: PickedFile; rooted: boolean; supportMethods: number }
+  | { kind: 'tree'; format: TreeKind; file: PickedFile; rooted: boolean; supportMethods: number }
   | { kind: 'table'; file: PickedFile; header: string[]; delimiter: string; columns: Partial<Record<ColumnKey, string>> }
 
 const baseName = (path: string) => path.split(/[\\/]/).pop() ?? path
@@ -39,6 +39,9 @@ export function App() {
   const [loadedView, setLoadedView] = useState<TaxonomicView | null>(null)
   const [viewKey, setViewKey] = useState(0)
   const currentView = useRef<TaxonomicView | null>(null)
+  // The file on disk that was opened: saving over it is refused. `derived` is set once a rooted tree is added.
+  const [openedPath, setOpenedPath] = useState('')
+  const [derived, setDerived] = useState(false)
 
   useEffect(() => {
     void loadSettings().then((s) => {
@@ -72,6 +75,8 @@ export function App() {
     if (first) createView(index, { id: 'main', title: first.title, target: { kind: first.kind, id: first.id } })
     const problems = validateDataset(opened.snapshot).filter((d) => d.severity === 'error').length
     setSnapshot(opened.snapshot)
+    setOpenedPath(path)
+    setDerived(false)
     setFileName(baseName(path))
     setNotices(opened.notices)
     setSeal(opened.seal ?? '')
@@ -89,20 +94,20 @@ export function App() {
       const file = await pickDataset()
       if (!file) return
       const now = new Date().toISOString()
-      const kind = kindOf(file.path)
+      const kind = kindOf(file.path, file.text)
       if (kind === 'snapshot') show(openSnapshot(file.text), file.path)
       else if (kind === 'dwca') show(await openDwca(file.bytes!, file.path, now), file.path)
-      else if (kind === 'newick') {
-        const q = newickQuestions(file.text)
-        if (q.rooted || q.supportMethods) setPending({ kind: 'newick', file, ...q })
-        else show(openNewick(file.text, file.path, {}, now), file.path)
+      else if (kind === 'newick' || kind === 'nexus' || kind === 'phyloxml') {
+        const q = treeQuestions(kind, file.text)
+        if (q.rooted || q.supportMethods) setPending({ kind: 'tree', format: kind, file, ...q })
+        else show(openTree(kind, file.text, file.path, {}, now), file.path)
       } else {
         const delimiter = delimiterOf(file.path, file.text)
         const header = tableHeader(file.text, delimiter)
         setPending({ kind: 'table', file, header, delimiter, columns: suggestColumns(header) })
       }
     } catch (e) {
-      fail('open that file', e, 'Check that it is a checklist, Darwin Core Archive, Newick tree or OneTaxonomy snapshot, then try again.')
+      fail('open that file', e, 'Check that it is a checklist, Darwin Core Archive, Newick, NEXUS or phyloXML tree, or OneTaxonomy snapshot, then try again.')
     }
   }
 
@@ -129,10 +134,28 @@ export function App() {
 
   const save = async (name: string, text: () => string, done: string) => {
     try {
-      const path = await saveJson(name, text())
+      const path = await saveJson(name, text(), openedPath ? { never: openedPath } : {})
       if (path) setStatus(`${done} ${baseName(path)}.`)
     } catch (e) {
       fail('save', e, 'Nothing was changed. Try another location.')
+    }
+  }
+
+  // A rooted copy joins the dataset as a new tree and is shown; the open file and its record stay as they were.
+  const addRooted = (record: Phylogeny) => {
+    if (!snapshot) return
+    try {
+      const next = withPhylogeny(snapshot, record, new Date().toISOString())
+      indexDataset(next)
+      setSnapshot(next)
+      setDerived(true)
+      setSeal('')
+      setTargetKey(`phylogeny:${record.id}`)
+      setLoadedView(null)
+      setViewKey((n) => n + 1)
+      setStatus(`Made a new tree, “${record.title}”, and showed it. ${baseName(openedPath)} is unchanged; Save snapshot… writes both trees to a new file.`)
+    } catch (e) {
+      fail('add the rooted tree', e, 'The tree shown is unchanged.')
     }
   }
 
@@ -149,7 +172,7 @@ export function App() {
         <button type="button" onClick={() => void open()}>Open…</button>
         <button type="button" disabled={!dataset} onClick={() => void openView()}>Open view…</button>
         <button type="button" disabled={!view} onClick={() => void save(`${fileName.replace(/\.[^.]+$/, '') || 'view'}.view.json`, () => serializeView(currentView.current ?? view!), 'Saved view to')}>Save view…</button>
-        <button type="button" disabled={!snapshot} onClick={() => void save(`${snapshot?.id ?? 'dataset'}.snapshot.json`, () => sealedJson(snapshot!), 'Saved snapshot to')}>Save snapshot…</button>
+        <button type="button" disabled={!snapshot} onClick={() => void save(`${snapshot?.id ?? 'dataset'}${derived ? '-rooted' : ''}.snapshot.json`, () => sealedJson(snapshot!), 'Saved snapshot to')}>Save snapshot…</button>
         {targets.length > 1 && (
           <label>
             Show{' '}
@@ -175,15 +198,15 @@ export function App() {
       <main className="app-main">
         {showSettings ? (
           <SettingsPanel settings={settings} onChange={changeSettings} onCheck={() => void checkForUpdates(true).then((m) => m && setStatus(m))} onClose={() => setShowSettings(false)} />
-        ) : pending?.kind === 'newick' ? (
-          <NewickForm
+        ) : pending?.kind === 'tree' ? (
+          <TreeForm
             pending={pending}
             onCancel={() => setPending(null)}
             onOpen={(rooted, supportMethods) => {
               try {
-                show(openNewick(pending.file.text, pending.file.path, { ...(pending.rooted ? { rooted } : {}), supportMethods }, new Date().toISOString()), pending.file.path)
+                show(openTree(pending.format, pending.file.text, pending.file.path, { ...(pending.rooted ? { rooted } : {}), supportMethods }, new Date().toISOString()), pending.file.path)
               } catch (e) {
-                fail('read that tree', e, 'Check that it is valid Newick, then try again.')
+                fail('read that tree', e, `Check that it is valid ${FORMAT_NAMES[pending.format]}, then try again.`)
               }
             }}
           />
@@ -200,11 +223,11 @@ export function App() {
             }}
           />
         ) : dataset && view ? (
-          <Explorer key={viewKey} dataset={dataset} initialView={view} title={view.title} height="calc(100vh - 110px)" onViewChange={(v) => { currentView.current = v }} />
+          <Explorer key={viewKey} dataset={dataset} initialView={view} title={view.title} height="calc(100vh - 110px)" onViewChange={(v) => { currentView.current = v }} onRooted={addRooted} />
         ) : (
           <section className="app-panel">
             <h2>Open a dataset</h2>
-            <p className="app-hint">A CSV or TSV checklist, a Darwin Core Archive (.zip), a Newick tree, or a OneTaxonomy snapshot. Your file is read on this Mac and is never changed.</p>
+            <p className="app-hint">A CSV or TSV checklist, a Darwin Core Archive (.zip), a Newick, NEXUS or phyloXML tree, or a OneTaxonomy snapshot. Your file is read on this Mac and is never changed.</p>
             <button type="button" onClick={() => void open()}>Open…</button>
           </section>
         )}
@@ -213,7 +236,9 @@ export function App() {
   )
 }
 
-function NewickForm({ pending, onOpen, onCancel }: { pending: Extract<Pending, { kind: 'newick' }>; onOpen: (rooted: boolean, supportMethods: string[]) => void; onCancel: () => void }) {
+const FORMAT_NAMES: Record<TreeKind, string> = { newick: 'Newick', nexus: 'NEXUS', phyloxml: 'phyloXML' }
+
+function TreeForm({ pending, onOpen, onCancel }: { pending: Extract<Pending, { kind: 'tree' }>; onOpen: (rooted: boolean, supportMethods: string[]) => void; onCancel: () => void }) {
   const [rooted, setRooted] = useState('')
   const [methods, setMethods] = useState('')
   const names = methods.split(',').map((m) => m.trim()).filter(Boolean)
@@ -224,7 +249,7 @@ function NewickForm({ pending, onOpen, onCancel }: { pending: Extract<Pending, {
       <p className="app-hint">The file doesn't say, so OneTaxonomy won't guess.</p>
       {pending.rooted && (
         <label className="app-field">
-          Is this tree rooted?
+          {pending.format === 'newick' ? 'Is this tree rooted?' : 'Are the trees in this file that don’t say rooted?'}
           <select value={rooted} onChange={(e) => setRooted(e.target.value)}>
             <option value="">Choose…</option>
             <option value="yes">Yes, the root is known</option>
