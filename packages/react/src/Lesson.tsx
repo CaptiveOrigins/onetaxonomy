@@ -3,7 +3,7 @@
 import { projectView, type DatasetIndex, type Id, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
 import { sceneAt, sceneFromView, type Annotation, type Camera, type LessonDeck } from '@captiveorigins/onetaxonomy-education'
 import type { TreeLayout } from '@captiveorigins/onetaxonomy-layout'
-import { useMemo, useState } from 'react'
+import { useMemo, useState, type KeyboardEvent } from 'react'
 
 import { Explorer, layoutFor } from './Explorer.js'
 import { Icon } from './icons.js'
@@ -18,7 +18,7 @@ export type LessonMode =
   | 'studio'
 
 export type LessonLabels = Record<
-  'previous' | 'next' | 'scene' | 'step' | 'present' | 'explore' | 'studio' | 'addScene' | 'sceneTitle' | 'annotate' | 'annotation' | 'remove' | 'notes' | 'selectToAnnotate' | 'modes',
+  'previous' | 'next' | 'scene' | 'step' | 'present' | 'explore' | 'studio' | 'addScene' | 'sceneTitle' | 'annotate' | 'annotation' | 'remove' | 'notes' | 'selectToAnnotate' | 'modes' | 'caution',
   string
 >
 
@@ -38,6 +38,7 @@ const LABELS: LessonLabels = {
   notes: 'Teacher notes',
   selectToAnnotate: 'Choose a taxon in the drawing to annotate it.',
   modes: 'Lesson mode',
+  caution: 'Caution:',
 }
 
 /** The viewBox for a camera: centered on its node (or the whole tree), zoom 1 = fit. */
@@ -81,6 +82,16 @@ export function LessonPlayer({ dataset, deck, mode: initialMode = 'present', mod
   const scene = deck.scenes[Math.min(sceneIndex, deck.scenes.length - 1)]
   const frame = useMemo(() => (scene ? sceneAt(scene, step, dataset) : null), [scene, step, dataset])
 
+  // Radio group pattern: one tab stop, arrow keys move and choose.
+  const onModeKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const by = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0
+    if (!by) return
+    e.preventDefault()
+    const i = (offered.indexOf(mode) + by + offered.length) % offered.length
+    setMode(offered[i]!)
+    ;(e.currentTarget.querySelectorAll<HTMLElement>('[role="radio"]')[i])?.focus()
+  }
+
   const go = (delta: 1 | -1) => {
     if (!scene) return
     const next = step + delta
@@ -94,9 +105,9 @@ export function LessonPlayer({ dataset, deck, mode: initialMode = 'present', mod
   return (
     <div className="ot-lesson" data-mode={mode}>
       <div className="ot-toolbar" role="toolbar" aria-label={deck.title}>
-        <div className="ot-segmented" role="radiogroup" aria-label={labels.modes}>
+        <div className="ot-segmented" role="radiogroup" aria-label={labels.modes} onKeyDown={onModeKey}>
           {offered.map((m) => (
-            <button key={m} type="button" role="radio" aria-checked={mode === m} onClick={() => setMode(m)}>
+            <button key={m} type="button" role="radio" aria-checked={mode === m} tabIndex={mode === m ? 0 : -1} onClick={() => setMode(m)}>
               {labels[m]}
             </button>
           ))}
@@ -119,7 +130,7 @@ export function LessonPlayer({ dataset, deck, mode: initialMode = 'present', mod
         <>
           <h2 className="ot-lesson-title">{scene.title}</h2>
           {frame.caption && <p className="ot-lesson-caption">{frame.caption}</p>}
-          {mode === 'present' && <Present dataset={dataset} view={frame.view} camera={frame.camera} annotations={frame.annotations} title={scene.title} height={height} />}
+          {mode === 'present' && <Present dataset={dataset} view={frame.view} camera={frame.camera} annotations={frame.annotations} title={scene.title} height={height} cautionLabel={labels.caution} />}
           {mode === 'explore' && <Explorer key={`${scene.id}:${step}`} dataset={dataset} initialView={frame.view} title={scene.title} height={height} />}
           {mode === 'studio' && onChange && <Studio dataset={dataset} deck={deck} sceneIndex={sceneIndex} startView={frame.view} onChange={onChange} labels={labels} height={height} onAdded={(i) => { setSceneIndex(i); setStep(0) }} />}
           {showNotes && scene.notes && (
@@ -133,7 +144,7 @@ export function LessonPlayer({ dataset, deck, mode: initialMode = 'present', mod
   )
 }
 
-function Present({ dataset, view, camera, annotations, title, height }: { dataset: DatasetIndex; view: TaxonomicView; camera: Camera; annotations: Annotation[]; title: string; height: string }) {
+function Present({ dataset, view, camera, annotations, title, height, cautionLabel }: { dataset: DatasetIndex; view: TaxonomicView; camera: Camera; annotations: Annotation[]; title: string; height: string; cautionLabel: string }) {
   const projection = useMemo(() => projectView(dataset, view), [dataset, view])
   const layout = useMemo(() => layoutFor(projection, view.layout.kind), [projection, view.layout.kind])
   const box = useMemo(() => cameraBox(layout, camera), [layout, camera])
@@ -151,6 +162,8 @@ function Present({ dataset, view, camera, annotations, title, height }: { datase
         <ol className="ot-annotations">
           {annotations.map((a) => (
             <li key={a.id} data-tone={a.tone ?? 'note'}>
+              {/* A caution says so in words, not only in color. */}
+              {a.tone === 'caution' && <strong>{cautionLabel} </strong>}
               {a.text}
             </li>
           ))}

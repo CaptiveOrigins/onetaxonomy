@@ -18,6 +18,8 @@ export type TreeOutlineProps = {
   hiddenLabel?: (count: number) => string
   /** Shown for nodes without a name (e.g. unlabelled internal nodes of a tree). */
   unnamedLabel?: string
+  /** Read out in place of the † mark, which screen readers say as "dagger". Default "extinct". */
+  extinctLabel?: string
 }
 
 const DEFAULT_HIDDEN = (n: number) => `${n} not shown`
@@ -28,7 +30,7 @@ const DEFAULT_HIDDEN = (n: number) => `${n} not shown`
  * select, Alt+Up/Down to reorder. Screen-reader users get the whole structure;
  * everyone gets a keyboard path to every drawing interaction.
  */
-export function TreeOutline({ projection, label, onToggle, onSelect, onMove, renderMeta, hiddenLabel = DEFAULT_HIDDEN, unnamedLabel = 'Unnamed node' }: TreeOutlineProps) {
+export function TreeOutline({ projection, label, onToggle, onSelect, onMove, renderMeta, hiddenLabel = DEFAULT_HIDDEN, unnamedLabel = 'Unnamed node', extinctLabel = 'extinct' }: TreeOutlineProps) {
   const byId = useMemo(() => new Map(projection.nodes.map((n) => [n.id, n])), [projection])
   const order = useMemo(() => projection.nodes.map((n) => n.id), [projection]) // preorder = visual order
   const [active, setActive] = useState<Id | null>(projection.roots[0] ?? null)
@@ -154,7 +156,12 @@ export function TreeOutline({ projection, label, onToggle, onSelect, onMove, ren
           )}
           <span className="ot-outline-label" data-unnamed={n.label ? undefined : ''}>
             {n.label || unnamedLabel}
-            {n.status === 'extinct' ? ' †' : ''}
+            {n.status === 'extinct' && (
+              <>
+                <span aria-hidden="true"> †</span>
+                <span className="ot-sr-only"> ({extinctLabel})</span>
+              </>
+            )}
           </span>
           {renderMeta?.(n)}
           {n.hiddenDescendants > 0 && <span className="ot-outline-hidden"> · {hiddenLabel(n.hiddenDescendants)}</span>}
@@ -165,7 +172,7 @@ export function TreeOutline({ projection, label, onToggle, onSelect, onMove, ren
   }
 
   return (
-    <ul className="ot-outline" role="tree" aria-label={label}>
+    <ul className="ot-outline" role="tree" aria-label={label} aria-multiselectable={onSelect ? true : undefined}>
       {projection.roots.map(item)}
     </ul>
   )

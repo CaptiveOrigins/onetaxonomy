@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Accessibility audit against WCAG 2.2 AA (`docs/test-audit.md`, 2026-11-11). React: selected and dropped labels, the "Proposed by" badge, weak-support values, errors and lesson cautions now meet 4.5:1 contrast in light and dark, and text fields have 3:1 borders. The download menu takes focus and works with arrow keys and Escape. Refusals and failed exports are announced in a status region that is always there, and a failed PNG export now says so instead of failing silently. The outline reads † as "extinct" and says it allows several selections. The drawing's keys (arrows, + and −, 0, Escape) and the outline's keys are written in the drawing's label and the inspector's hint. Lesson modes take one Tab stop and move with arrow keys, and a caution starts with "Caution:" rather than relying on color. Exported SVGs were written with `xmlns` twice in tests, which isn't valid XML; they now have it once, with the title and description first. Mac app: Light or Dark chosen in Settings now applies to the explorer as well (before, Light on a dark Mac drew near-white text on white), the window has a level-one heading, and text fields have 3:1 borders. No screen reader was used.
+
 ## Mac app 0.1.1
 
 Fixes saving in the Mac app. 0.1.0 wasn't given permission to rename its temporary file over the chosen one, so a save very likely failed and left a `.tmp` file beside it. That was missed because the app's tests run without Tauri's permission checks. Nobody has saved with a built 0.1.0 or 0.1.1 yet: please try a save after installing.

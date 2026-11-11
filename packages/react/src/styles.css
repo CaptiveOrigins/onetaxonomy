@@ -14,6 +14,13 @@
   --ot-edge-width: 1.5px;
   --ot-node: var(--ot-ink);
   --ot-selected: #cf8137;
+  /* Text in the selection color: the brand orange is 3.07:1 on white, so text uses a deeper orange (4.91:1 on surface, 4.61:1 on panel). */
+  --ot-selected-text: #a65f20;
+  /* Warnings (weak support, cautions, refuted clades) and errors. */
+  --ot-warning: #b45309;
+  --ot-error: #b91c1c;
+  /* Borders of text fields: 3:1 against surface and panel (WCAG 1.4.11). */
+  --ot-field-border: #a08a83;
   --ot-surface: #ffffff;
   --ot-panel: #fbf7f4;
   --ot-border: #eaddd6;
@@ -31,6 +38,10 @@
     --ot-edge: #8a7470;
     --ot-node: var(--ot-ink);
     --ot-selected: #e7a066;
+    --ot-selected-text: #e7a066;
+    --ot-warning: #fbbf24;
+    --ot-error: #f87171;
+    --ot-field-border: #8a7470;
     --ot-surface: #1c1311;
     --ot-panel: #241916;
     --ot-border: #3a2a26;
@@ -44,7 +55,7 @@
 .ot-label { fill: var(--ot-text); font-size: 12px; }
 .ot-label[data-italic] { font-style: italic; }
 .ot-node[data-status='extinct'] .ot-node-dot { fill: none; stroke: var(--ot-node); }
-.ot-node[data-selected] .ot-label { fill: var(--ot-selected); font-weight: 600; }
+.ot-node[data-selected] .ot-label { fill: var(--ot-selected-text); font-weight: 600; }
 .ot-node[role='button'] { cursor: pointer; }
 .ot-node:focus { outline: none; }
 .ot-node:focus-visible { outline: 2px solid var(--ot-focus); }
@@ -54,7 +65,7 @@
 .ot-trait { fill: var(--ot-muted); opacity: 0.85; }
 .ot-node[data-trait='mixed'] .ot-trait { fill: none; stroke: var(--ot-muted); stroke-dasharray: 2 2; }
 .ot-support { fill: var(--ot-muted); font-size: 10px; }
-.ot-support[data-weak] { fill: #b45309; }
+.ot-support[data-weak] { fill: var(--ot-warning); }
 .ot-edge[data-weak] { stroke-dasharray: 5 4; }
 .ot-axis-label, .ot-axis-unit { fill: var(--ot-muted); font-size: 11px; }
 
@@ -78,7 +89,7 @@
 .ot-floating { position: absolute; top: 8px; right: 8px; z-index: 1; display: flex; gap: 4px; }
 .ot-floating button { width: 32px; padding: 0; justify-content: center; }
 .ot-node[data-dragging] { cursor: grabbing; }
-.ot-node[data-dragging] .ot-label { fill: var(--ot-selected); }
+.ot-node[data-dragging] .ot-label { fill: var(--ot-selected-text); }
 .ot-edge[data-dragging] { stroke-dasharray: 4 3; }
 .ot-canvas[data-dragging] .ot-edge:not([data-dragging]) { opacity: 0.5; }
 .ot-side { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
@@ -87,7 +98,7 @@
 .ot-outline { max-height: 20rem; overflow: auto; font-size: 14px; }
 .ot-outline-item:focus { outline: none; }
 .ot-outline-item:focus-visible > .ot-outline-row { outline: 2px solid var(--ot-focus); border-radius: 0.25rem; }
-.ot-outline-item[aria-selected='true'] > .ot-outline-row { font-weight: 600; color: var(--ot-selected); }
+.ot-outline-item[aria-selected='true'] > .ot-outline-row { font-weight: 600; color: var(--ot-selected-text); }
 .ot-outline-row { display: inline-flex; gap: 0.25rem; align-items: baseline; cursor: pointer; }
 .ot-outline-label[data-unnamed] { color: var(--ot-muted); font-style: italic; }
 .ot-outline-twisty { display: inline-block; width: 1rem; text-align: center; }
@@ -101,7 +112,10 @@
 .ot-inspector-actions { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .ot-highlights { list-style: none; padding: 0; margin: 0.5rem 0; }
 .ot-swatch { display: inline-block; width: 0.75rem; height: 0.75rem; border-radius: 50%; margin-inline-end: 0.375rem; background: var(--ot-muted); }
-.ot-error { color: #b91c1c; }
+.ot-error { margin: 0 0 8px; color: var(--ot-error); }
+.ot-error:empty { display: none; }
+/* Read by screen readers, not shown. */
+.ot-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
 .ot-explorer button[aria-pressed='true'] { border-color: var(--ot-selected); background: color-mix(in srgb, var(--ot-selected) 14%, var(--ot-surface)); }
 .ot-menu { position: relative; }
 .ot-menu-list { position: absolute; top: 36px; right: 0; display: flex; flex-direction: column; gap: 2px; padding: 4px; min-width: 12rem; border: 1px solid var(--ot-border); border-radius: 10px; background: var(--ot-surface); box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12); }
@@ -124,9 +138,10 @@
 .ot-assessment-box { border-inline-start: 3px solid var(--ot-muted); padding: 4px 10px; background: var(--ot-surface); border-radius: 6px; }
 .ot-assessment-box p { margin: 4px 0; }
 .ot-clade-check[data-status='monophyletic'] .ot-assessment-box { border-color: #2f7d5c; }
-.ot-clade-check[data-status='not-monophyletic'] .ot-assessment-box { border-color: #b45309; }
+.ot-clade-check[data-status='not-monophyletic'] .ot-assessment-box { border-color: var(--ot-warning); }
+.ot-select:has(input) { border-color: var(--ot-field-border); }
 .ot-select input { font: inherit; border: 0; background: transparent; color: inherit; min-width: 6rem; }
-.ot-explorer .ot-remove { height: 20px; width: 20px; padding: 0; justify-content: center; margin-inline-start: 6px; vertical-align: middle; }
+.ot-explorer .ot-remove { height: 24px; width: 24px; padding: 0; justify-content: center; margin-inline-start: 6px; vertical-align: middle; }
 @media print {
   html[data-ot-printing] body * { visibility: hidden; }
   html[data-ot-printing] [data-ot-printing], html[data-ot-printing] [data-ot-printing] * { visibility: visible; }
@@ -159,9 +174,9 @@
 .ot-annotations { align-self: start; margin: 0; padding: 10px 12px 10px 2rem; border: 1px solid var(--ot-border); border-radius: 10px; background: var(--ot-panel); font-size: 14px; }
 .ot-annotations li { margin: 4px 0; }
 .ot-annotations li[data-tone='question'] { font-style: italic; }
-.ot-annotations li[data-tone='caution'] { color: #b45309; }
+.ot-annotations li[data-tone='caution'] { color: var(--ot-warning); }
 .ot-badge circle { fill: var(--ot-selected); }
-.ot-badge text { fill: #fff; font-size: 9px; font-weight: 700; }
+.ot-badge text { fill: #1d2330; font-size: 9px; font-weight: 700; }
 .ot-lesson-notes { margin-top: 8px; padding: 8px 12px; border-inline-start: 3px solid var(--ot-muted); font-size: 13px; color: var(--ot-muted); }
 .ot-studio-tools { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
 
@@ -169,12 +184,12 @@
 .ot-node[data-moved] .ot-label { font-style: italic; text-decoration: underline dashed; text-underline-offset: 3px; }
 .ot-node[data-moved] .ot-node-dot { stroke: var(--ot-selected); stroke-width: 2; stroke-dasharray: 2 2; }
 .ot-node[data-drop-target] .ot-node-dot { r: 8px; fill: var(--ot-selected); }
-.ot-node[data-drop-target] .ot-label { fill: var(--ot-selected); font-weight: 600; }
-.ot-proposed-badge { position: absolute; bottom: 8px; inset-inline-start: 8px; z-index: 2; max-width: 70%; padding: 4px 8px; border: 1px dashed var(--ot-selected); border-radius: 6px; background: var(--ot-bg, #fff); color: var(--ot-selected); font-size: 12px; font-weight: 600; }
+.ot-node[data-drop-target] .ot-label { fill: var(--ot-selected-text); font-weight: 600; }
+.ot-proposed-badge { position: absolute; bottom: 8px; inset-inline-start: 8px; z-index: 2; max-width: 70%; padding: 4px 8px; border: 1px dashed var(--ot-selected); border-radius: 6px; background: var(--ot-surface); color: var(--ot-selected-text); font-size: 12px; font-weight: 600; }
 .ot-proposal { display: flex; flex-direction: column; gap: 8px; padding: 12px; border: 1px dashed var(--ot-selected); border-radius: 8px; margin-block-end: 8px; }
 .ot-proposal h3 { margin: 0; font-size: 14px; }
 .ot-proposal label { display: flex; flex-direction: column; gap: 2px; font-size: 13px; }
-.ot-proposal input, .ot-proposal textarea { padding: 4px 6px; font: inherit; border: 1px solid var(--ot-border, #ccc); border-radius: 4px; background: transparent; color: inherit; }
+.ot-proposal input, .ot-proposal textarea { padding: 4px 6px; font: inherit; border: 1px solid var(--ot-field-border); border-radius: 4px; background: transparent; color: inherit; }
 .ot-proposal ul { display: flex; flex-direction: column; gap: 4px; margin: 0; padding: 0; list-style: none; font-size: 13px; }
 .ot-proposal li { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 .ot-compare { margin-block-start: 8px; }

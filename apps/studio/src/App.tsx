@@ -145,7 +145,7 @@ export function App() {
   return (
     <>
       <header className="app-header">
-        <span className="app-title">{fileName || 'OneTaxonomy'}</span>
+        <h1 className="app-title">{fileName || 'OneTaxonomy'}</h1>
         <button type="button" onClick={() => void open()}>Open…</button>
         <button type="button" disabled={!dataset} onClick={() => void openView()}>Open view…</button>
         <button type="button" disabled={!view} onClick={() => void save(`${fileName.replace(/\.[^.]+$/, '') || 'view'}.view.json`, () => serializeView(currentView.current ?? view!), 'Saved view to')}>Save view…</button>
