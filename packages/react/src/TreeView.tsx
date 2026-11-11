@@ -2,6 +2,8 @@ import type { Highlight, Id, NodeOverlay, Projection } from '@captiveorigins/one
 import { edgePath, type TreeLayout } from '@captiveorigins/onetaxonomy-layout'
 import { useId, type KeyboardEvent, type MouseEvent } from 'react'
 
+import { CanvasTreeView } from './CanvasTreeView.js'
+import { CANVAS_THRESHOLD, chooseRenderer, isItalicRank, nodeText, type LodCounts, type Renderer, type ViewBox } from './canvasPlan.js'
 import { shapeAt, shapePath, type MarkShape } from './shapes.js'
 
 export type TreeViewProps = {
@@ -29,16 +31,33 @@ export type TreeViewProps = {
   badges?: ReadonlyMap<Id, string>
   /** Nodes are focusable and clickable. */
   interactive?: boolean
-  onNodeClick?: (id: Id, event: MouseEvent<SVGGElement>) => void
+  /** A node was clicked: an SVG `<g>`, or the canvas when the canvas renderer draws the tree. */
+  onNodeClick?: (id: Id, event: MouseEvent<Element>) => void
   onNodeKeyDown?: (id: Id, event: KeyboardEvent<SVGGElement>) => void
   /** Word for folded descendants, e.g. "+12 hidden". */
   hiddenLabel?: (count: number) => string
   className?: string
+  /**
+   * `auto` (default) draws SVG up to `canvasThreshold` drawn nodes and a canvas above
+   * it; `svg` or `canvas` forces one. The canvas has level of detail (`planCanvas`).
+   */
+  renderer?: Renderer
+  /** Drawn nodes above which `auto` uses the canvas. Default `CANVAS_THRESHOLD` (1,000). */
+  canvasThreshold?: number
+  /** Canvas only: a fixed size in CSS pixels. Without it the canvas fills its container. */
+  canvasSize?: { width: number; height: number }
+  /** Canvas only: level-of-detail limits (see `LOD_DEFAULTS`). */
+  lod?: { minLabelPx?: number; mergeBelowPx?: number }
+  /** Canvas only: words beside a subtree drawn as one wedge. */
+  mergedLabel?: (count: number) => string
+  /** Canvas only: the note on what the level of detail leaves out (default `describeLod`). Return '' for none. */
+  lodNote?: (counts: LodCounts) => string
 }
 
 const DEFAULT_HIDDEN = (n: number) => `+${n} not shown`
 
-export type ViewBox = { x: number; y: number; width: number; height: number }
+export type { ViewBox }
+export { CANVAS_THRESHOLD }
 
 /** The box that shows the whole drawing with room for labels (the "fit" view). */
 export function treeViewBox(layout: TreeLayout, { padding = 16, labelWidth }: { padding?: number; labelWidth?: number } = {}): ViewBox {
@@ -54,12 +73,19 @@ export function treeViewBox(layout: TreeLayout, { padding = 16, labelWidth }: { 
 }
 
 /**
- * The tree as SVG. Renders on the server (no effects, no measuring) and in the
- * browser. Classes are stable (`ot-*`) and states are data attributes, so it can
- * be styled with the bundled stylesheet or entirely your own. The legend notice
- * (classification vs phylogeny) is part of the accessible description.
+ * The tree as SVG, or on a canvas for large trees. SVG renders on the server (no
+ * effects, no measuring) and in the browser. Classes are stable (`ot-*`) and states
+ * are data attributes, so it can be styled with the bundled stylesheet or entirely
+ * your own. The legend notice (classification vs phylogeny) is part of the
+ * accessible description. Above `canvasThreshold` drawn nodes (1,000 by default)
+ * `renderer="auto"` hands the same props to `CanvasTreeView`.
  */
 export function TreeView(props: TreeViewProps) {
+  if (chooseRenderer(props.layout, props.renderer, props.canvasThreshold) === 'canvas') return <CanvasTreeView {...props} />
+  return <SvgTreeView {...props} />
+}
+
+function SvgTreeView(props: TreeViewProps) {
   const { projection, layout, highlights = [], title, padding = 16, interactive = false } = props
   const titleId = useId()
   const descId = useId()
@@ -124,9 +150,7 @@ export function TreeView(props: TreeViewProps) {
           const flip = radialLayout && Math.cos(angle) < 0
           const labelTransform = radialLayout ? `rotate(${(-angle * 180) / Math.PI + (flip ? 180 : 0)})` : undefined
           const mark = marks?.get(ln.id)
-          const fossil = mark?.fossilAge ? ` ${mark.fossilAge.value}${mark.fossilAge.unit && mark.fossilAge.unit !== 'unspecified' ? ` ${mark.fossilAge.unit}` : ''}` : ''
-          const name = `${n.label}${n.status === 'extinct' ? ` †${fossil}` : ''}`
-          const text = n.collapsed && n.hiddenDescendants ? `${name} (${hidden(n.hiddenDescendants)})` : name
+          const text = nodeText(n, mark, hidden)
           return (
             <g
               key={ln.id}
@@ -172,7 +196,7 @@ export function TreeView(props: TreeViewProps) {
               )}
               {n.collapsed ? <path className="ot-node-collapsed" d="M0 0 L12 -6 L12 6 Z" /> : <circle className="ot-node-dot" r={ln.leaf ? 3 : 2.5} />}
               {(ln.leaf || !radialLayout) && text && (
-                <text className="ot-label" x={ln.leaf ? (flip ? -8 : 8) : 4} y={ln.leaf ? 4 : -6} textAnchor={ln.leaf && flip ? 'end' : 'start'} transform={ln.leaf ? labelTransform : undefined} data-italic={/^(genus|species|subspecies|variety|form)$/i.test(n.rank ?? '') ? '' : undefined}>
+                <text className="ot-label" x={ln.leaf ? (flip ? -8 : 8) : 4} y={ln.leaf ? 4 : -6} textAnchor={ln.leaf && flip ? 'end' : 'start'} transform={ln.leaf ? labelTransform : undefined} data-italic={isItalicRank(n.rank) ? '' : undefined}>
                   {text}
                 </text>
               )}

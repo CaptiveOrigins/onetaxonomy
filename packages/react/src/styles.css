@@ -240,3 +240,13 @@
 .ot-tip-links-possible li { margin: 0.25rem 0; }
 .ot-tip-links button[aria-pressed='true'] { border-color: var(--ot-ink); font-weight: 600; }
 .ot-tip-links-shared { border-inline-start: 3px solid var(--ot-warning); padding-inline-start: 0.5rem; }
+/* Canvas renderer for large trees (CanvasTreeView). It fills its container unless given a canvasSize. */
+.ot-canvas-tree { position: relative; display: block; width: 100%; height: 100%; min-height: 12rem; }
+.ot-canvas-tree[data-fixed-size] { min-height: 0; }
+.ot-tree-canvas { position: absolute; inset: 0; display: block; }
+.ot-canvas-tree[data-fixed-size] .ot-tree-canvas { position: static; }
+.ot-lod-note { position: absolute; bottom: 8px; inset-inline-end: 8px; z-index: 2; max-width: 60%; margin: 0; padding: 4px 8px; border: 1px solid var(--ot-border); border-radius: 6px; background: var(--ot-surface); color: var(--ot-text); font-size: 12px; }
+.ot-canvas-tree[data-fixed-size] .ot-lod-note { position: static; max-width: none; margin-block-start: 4px; }
+@media print {
+  html[data-ot-printing] [data-ot-printing] > .ot-canvas-tree { flex: 1; min-height: 0; }
+}
