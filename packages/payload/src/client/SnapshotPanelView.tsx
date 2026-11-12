@@ -159,7 +159,7 @@ export function SnapshotPanelView({ summary, canManage, outcome, onSetStatus, on
             {s.sources.map((x) => (
               <li key={x.id}>
                 <strong>{x.title}</strong>
-                {x.illustrative ? <span className="onetaxonomy-tag"> Made-up example data</span> : null}
+                {x.illustrative ? <> <span className="onetaxonomy-tag">Made-up example data</span></> : null}
                 {x.citation ? <div>{x.citation}</div> : null}
                 <div className="onetaxonomy-panel__hint">
                   {[x.license ? `License: ${x.license}` : 'No license recorded', x.externalVersion ? `version ${x.externalVersion}` : ''].filter(Boolean).join(', ')}

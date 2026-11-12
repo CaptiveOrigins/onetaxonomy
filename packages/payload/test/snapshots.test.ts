@@ -189,6 +189,15 @@ describe('a stored snapshot\'s content is read only when it is asked for by name
     expect(field.admin.condition({}, {}, { operation: 'create' })).toBe(true)
     expect(field.admin.condition({ id }, {}, { operation: 'update' })).toBe(false)
   })
+
+  it('hides in the form what the panel shows, and keeps those fields in it and in the list', () => {
+    const config = payload.collections[SNAPSHOTS as never]!.config
+    const admin = (name: string) => (config.fields.find((f) => 'name' in f && f.name === name) as { admin?: { hidden?: boolean; readOnly?: boolean; disabled?: boolean } }).admin
+    for (const name of ['label', 'snapshotId', 'version', 'checksum', 'counts']) expect(admin(name), name).toMatchObject({ hidden: true, readOnly: true })
+    for (const name of ['label', 'snapshotId', 'version', 'checksum', 'counts']) expect(admin(name)?.disabled, name).toBeUndefined()
+    expect(config.admin.useAsTitle).toBe('label')
+    expect(config.admin.defaultColumns).toEqual(expect.arrayContaining(['label', 'counts']))
+  })
 })
 
 describe('publishing and editing', () => {

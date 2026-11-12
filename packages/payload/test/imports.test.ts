@@ -142,6 +142,22 @@ describe('importing each format into a staged, sealed snapshot', () => {
   })
 })
 
+describe('the job\'s form in the admin', () => {
+  it('hides what the panel shows and keeps it in the form, so a later Save sends the run\'s result and not an old one', () => {
+    const fields = payload.collections[IMPORTS as never]!.config.fields
+    const admin = (name: string) => (fields.find((f) => 'name' in f && f.name === name) as { admin?: { hidden?: boolean; readOnly?: boolean; disabled?: boolean } }).admin
+    for (const name of ['message', 'checksum', 'inputSha256', 'diagnostics', 'warnings', 'warningCount', 'progress']) {
+      expect(admin(name), name).toMatchObject({ hidden: true, readOnly: true })
+      expect(admin(name)?.disabled, name).toBeUndefined()
+    }
+    // What the panel doesn't repeat stays in view, read-only.
+    for (const name of ['status', 'phase', 'snapshot', 'attempts', 'startedAt', 'finishedAt', 'runBy']) {
+      expect(admin(name), name).toMatchObject({ readOnly: true })
+      expect(admin(name)?.hidden, name).toBeUndefined()
+    }
+  })
+})
+
 describe('idempotent', () => {
   it('the same file with the same settings is "already imported": the same snapshot, nothing new stored', async () => {
     const first = (await payload.find({ collection: IMPORTS as never, where: { checksum: { equals: checklistJson.checksum } }, depth: 0 })).docs[0] as Job

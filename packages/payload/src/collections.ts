@@ -119,6 +119,9 @@ const CONTENT_OPERATIONS = new Set(['read', 'create', 'update', 'delete'])
 export const contentOnRequest: CollectionBeforeOperationHook = ({ args, operation }) =>
   CONTENT_OPERATIONS.has(operation) && args && (args as { select?: unknown }).select == null ? ({ ...args, select: { snapshot: false } } as typeof args) : args
 
+/** For what a panel already shows. */
+const IN_PANEL = { readOnly: true, hidden: true }
+
 /** Only staged snapshots and draft views can be deleted: published ones may be pinned by views and pages. */
 const onlyUnpublishedDeleted = (slug: string, deletable: string, what: string): CollectionBeforeDeleteHook => async ({ id, req }) => {
   const doc = (await req.payload.findByID({ collection: slug as never, id, depth: 0, req, overrideAccess: true, disableErrors: true, select: { status: true } as never })) as { status?: string } | null
@@ -188,7 +191,9 @@ export function snapshotsCollection(opts: ResolvedOptions): CollectionConfig {
     indexes: [{ fields: [...(opts.tenant ? [opts.tenant.field] : []), 'snapshotId', 'version'], unique: true }],
     fields: [
       ...panelField(opts, 'SnapshotPanel'),
-      { name: 'label', type: 'text', admin: { readOnly: true, description: 'The snapshot\'s id and version. Set from the snapshot.' } },
+      // The panel shows the label, id, version, checksum and counts. They are hidden, not disabled: they stay in the form
+      // and can still be columns in the list.
+      { name: 'label', type: 'text', admin: IN_PANEL },
       {
         name: 'snapshot',
         type: 'json',
@@ -200,13 +205,13 @@ export function snapshotsCollection(opts: ResolvedOptions): CollectionConfig {
           condition: (_data, _sibling, { operation }) => operation !== 'update',
         },
       },
-      { name: 'snapshotId', type: 'text', index: true, admin: { readOnly: true } },
-      { name: 'version', type: 'text', admin: { readOnly: true } },
-      { name: 'checksum', type: 'text', index: true, admin: { readOnly: true } },
+      { name: 'snapshotId', type: 'text', index: true, admin: IN_PANEL },
+      { name: 'version', type: 'text', admin: IN_PANEL },
+      { name: 'checksum', type: 'text', index: true, admin: IN_PANEL },
       {
         name: 'counts',
         type: 'group',
-        admin: { readOnly: true },
+        admin: IN_PANEL,
         fields: ['names', 'concepts', 'classifications', 'phylogenies'].map((name) => ({ name, type: 'number' }) as Field),
       },
       { name: 'status', type: 'select', required: true, defaultValue: 'staged', index: true, options: ['staged', 'published', 'withdrawn'], admin: { position: 'sidebar', description: 'Staged: only managers see it. Published: readers see it. Withdrawn: hidden from readers, kept for the views that pin it.' } },
