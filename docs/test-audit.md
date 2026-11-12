@@ -2,6 +2,45 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: Payload plugin part 5, admin panels
+
+Scope: `packages/payload`: the panels (`src/client/`), a snapshot's summary (`src/summary.ts`), the `admin.panels` option and the panel field on each collection; and `apps/payload-example`, which now shows the panels. ADR 0012 point 16. Plugin tests went from 143 to 237, all unit tests from 527 to 621, the example's smoke checks from 47 to 55.
+
+### Covered
+
+- **The summary keeps the read API's access rules** (`summary.test.ts`, 9 tests on a real Payload with an in-memory MongoDB): a manager gets counts, capped lists and sources and never the content; lists are cut to the limit and say so; a visitor, another tenant, a reader of a staged snapshot, a throwing access check, a missing id and an id that isn't one all get the same 404; a snapshot changed in the database is refused.
+- **Names for sealed ids go to signed-in people only, and are never stored** (`summary.test.ts`): a signed-in reader gets `authorName` and `acceptedByName` from the host's lookup; a visitor allowed to read the snapshot gets the two ids and no names; the stored document holds neither name.
+- **The panels have no powers of their own** (`panels-wired.test.tsx`, 25 tests in jsdom with `fetch` and Payload's hooks replaced by stand-ins): each request goes to the site's own API with the person's cookie; publishing is one `PATCH` that asks back only the fields shown; a run, an accept and a decline are one `POST` each; accept carries the checksum the panel showed; no buttons for someone Payload says may not save; a manager-only field is left out of the form for someone the site didn't send it to.
+- **Nothing is sent before the confirm, and a refusal is never reported as done** (`panels.test.tsx`, `panels-wired.test.tsx`): each of publish, withdraw, run, accept and decline sends nothing until confirmed; a refusal reads "Nothing was changed." with the site's reason and leaves the form alone; a confirm stays open when the action fails or throws.
+- **What gets sealed is said before accepting** (`panels.test.tsx`): the warning lists the title, notes, the manager's note, the date and the two ids, and asks to check for personal details; Accept needs a version name; a declining manager is told the author sees the note.
+- **Each role sees only its next steps** (`panels.test.tsx`, 49 tests): a manager gets only the step each status allows; someone who may not manage gets none; Publish on a view is held with its reason while the form is unsaved or the snapshot isn't published; a running import can't be started twice, and one running past the limit is called probably interrupted.
+- **An import's progress** (`panels-wired.test.tsx`): the panel looks again every 3 seconds while the job runs, stops when it doesn't, and stops when the page is left.
+- **Keyboard and screen-reader wiring, as far as jsdom shows it** (`panels.test.tsx`): Escape and Cancel close a confirm and put the focus back on its button; Escape is ignored while it works; a held button's reason is tied to it; a problem is announced at once; a running job is in a live region; the view's drawing has the same tree as an outline.
+- **Contrast, and status without colour** (`panels-css.test.ts`, 11 tests): colours are read from the installed `@payloadcms/ui` stylesheets. Text and muted text are at least 4.5:1 on the panel and on raised boxes, and control edges at least 3:1, in Payload's light and dark themes. The drawing colours equal the React package's. State colours are used only for borders.
+- **Browser code stays out of the server entry, and server code out of the browser** (`panels-wired.test.tsx`, "what runs where").
+- **Over HTTP, in the example site** (`scripts/smoke.mjs`, 8 new checks): the curator's built edit pages carry the panel; the staged version's summary is "not found" for a visitor and for the member; the member can't publish it; the curator's publish answers without the snapshot's content; once published a visitor reads the summary with the ids and no names.
+
+### Checked by breaking it
+
+Nineteen deliberate breaks, one at a time. Eighteen failed at least one test. In `src/client/`: no cookie sent; a publish not put into the form; the import poll never stopping; accept sending no checksum, or an empty one; a manager-only field always written to the form; the preview not bounded; a refused accept reported as a success; Escape closing a confirm while it works; focus not returned; Publish allowed with unsaved changes; decide buttons shown to non-managers; the seal warning shortened; a state colour put on text. In `src/summary.ts`: the head read with access skipped; the author's name given to visitors; the manager's name given to visitors; lists not clamped.
+
+The one that no test caught: taking out the `catch` around the summary's first read. Payload answers nothing for a missing or malformed id, and the plugin's access wrapper turns a throw into a no before that line, so no test reaches it. It stays, as the same guard the other endpoints have, and it is not counted as covered.
+
+### Gaps left
+
+- **No browser run in CI.** The snapshot, view and proposal panels were clicked through once in headless Chrome on the example site, signed in as the made-up curator, in light and dark: 18 checks, from a scratch script that isn't in the repo. A Payload upgrade that changes its hooks is caught by TypeScript and by the smoke test's "page carries the panel" checks, not by a click.
+- **The import panel hasn't run in a real admin.** The example site has no imports. Its logic is covered in jsdom only.
+- **No screen reader, Safari, Firefox, phone or custom Payload theme.** The jsdom tests check roles, labels and focus, which is not the same as hearing it.
+- **Payload's hooks are stand-ins in the jsdom tests.** `useDocumentInfo`, `useForm`, `useFormModified` and `useConfig` are replaced, so what Payload really gives them is seen only in the example site.
+- **Postgres and SQLite:** as before, not run.
+
+### Left out as overkill
+
+- Every status with every role: each transition and each role's refusal has a test, and the server's own rules are tested in `snapshots.test.ts`, `views.test.ts` and `proposals.test.ts`.
+- Payload's `PATCH` route and its access: the plugin's hooks behind it are tested already, over HTTP in `http.test.ts`.
+- How the tree is drawn: the React package's tests cover `TreeView`; the panel test checks that it is drawn, bounded and has its outline.
+- Pixel positions and screenshots of the panels.
+
 ## 2026-11-11: browser benchmark, and moving a departed person's proposals
 
 Scope: `apps/playground/bench.tsx` and `bench.html`, `scripts/bench-browser.mjs`, `docs/benchmarks-browser.md`, and the "When someone leaves" paragraph of `packages/payload/README.md`. Plugin tests went from 142 to 143, all unit tests from 526 to 527.

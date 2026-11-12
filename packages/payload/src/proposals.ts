@@ -36,9 +36,9 @@ import {
 } from 'payload'
 
 import { all, allowed, idOf, roleOf, tenantWhere } from './access.js'
-import { clamp, contentOf, get, integrityGuard, loadSnapshot, NOT_FOUND, params, respond, routeId, SnapshotIntegrityError, type ApiResult, type SnapshotRef } from './api.js'
+import { clamp, contentOf, get, integrityGuard, itemOf, loadSnapshot, NOT_FOUND, params, respond, routeId, SnapshotIntegrityError, type ApiResult, type SnapshotRef } from './api.js'
 import { asObject, fail, fillTenant, same, tenantField, tenantLocked } from './collections.js'
-import { optionsOf, type ResolvedOptions, type TenantId } from './types.js'
+import { optionsOf, panelField, type ResolvedOptions, type TenantId } from './types.js'
 import { viewSourceOf } from './views-api.js'
 
 /**
@@ -51,6 +51,7 @@ const TRANSITIONS: Record<string, string[]> = { private: ['shared'], shared: ['p
 const DECISION = ['decidedBy', 'decidedAt', 'decisionNote', 'acceptedInto']
 const MAX = { title: 200, notes: 5000, moveNote: 1000, id: 300, name: 200, version: 100, decisionNote: 2000 }
 const SNAPSHOT_BYTES = 15 * 1024 * 1024
+const LABELS_PER_ITEM = 20
 const DECIDED_BY_ACTION = 'Accepting and declining are done by a manager, with the accept and decline actions.'
 const NO_SNAPSHOT = 'The proposal\'s snapshot doesn\'t exist, or you can\'t read it.'
 const REOPENED = 'The staged version this proposal was accepted into was deleted, so the proposal is open again.'
@@ -60,7 +61,7 @@ const PHYLOGENY =
 type Who = { role: 'manager' | 'reader'; tenant: TenantId | null; user: string }
 
 /** A signed-in requester who may read. Proposals are never shown to anonymous visitors, even where snapshots are public. */
-async function whoIs(opts: ResolvedOptions, req: PayloadRequest): Promise<Who | null> {
+export async function whoIs(opts: ResolvedOptions, req: PayloadRequest): Promise<Who | null> {
   const user = req.user ? idOf(req.user.id) : undefined
   if (user === undefined) return null
   const who = await roleOf(opts, req)
@@ -211,7 +212,7 @@ const shownNames = new WeakMap<PayloadRequest, Map<string, Promise<string | unde
  * The name to show the requester for a person id, from the host's `proposals.displayName`, asked now and never
  * stored. Undefined when the host has no name to show, has no lookup, or the lookup fails: the id is shown alone.
  */
-function displayNameFor(opts: ResolvedOptions, req: PayloadRequest, personId: unknown): Promise<string | undefined> {
+export function displayNameFor(opts: ResolvedOptions, req: PayloadRequest, personId: unknown): Promise<string | undefined> {
   const lookup = opts.proposals?.displayName
   if (!lookup || typeof personId !== 'string' || personId === '') return Promise.resolve(undefined)
   let names = shownNames.get(req)
@@ -354,6 +355,7 @@ export function proposalsCollection(opts: ResolvedOptions): CollectionConfig {
     disableDuplicate: true,
     access: { read: readProposals(opts), create: createProposals(opts), update: updateProposals(opts), delete: deleteProposals(opts) },
     fields: [
+      ...panelField(opts, 'ProposalPanel', { limits: { version: MAX.version, note: MAX.decisionNote } }),
       { name: 'title', type: 'text', admin: ro('The proposal\'s title. Set from the proposal.') },
       { name: 'snapshot', type: 'relationship', relationTo: opts.slugs.snapshots as never, required: true, index: true, admin: { description: 'The snapshot this proposal is drawn over. It can\'t change.' } },
       {
@@ -429,6 +431,13 @@ export type ProposalPreview = {
   /** Groups the accepted hierarchy has and the proposed one doesn't, and the other way round. */
   broken: { node: Id; tips: Id[] }[]
   formed: { node: Id; tips: Id[] }[]
+  /**
+   * The name to show for ids in the lists above: a concept's accepted name, or a phylogeny node's label. An id with
+   * no name isn't here, and a very long preview names only the first ids: show the id alone for the rest.
+   */
+  labels: Record<Id, string>
+  /** Whether this requester is a manager here, so may accept or decline. The actions check it again. */
+  mayDecide: boolean
   /** True when a list was cut to `limit`. */
   truncated: boolean
 }
@@ -484,6 +493,24 @@ export async function previewProposal(req: PayloadRequest, id: string, query: { 
       return list.slice(0, limit)
     }
     const notes = new Map(doc.proposal.moves.map((m) => [m.node, m.note]))
+    const moved = cut(c.moved).map((m) => ({ ...m, ...(notes.get(m.node) ? { note: notes.get(m.node)! } : {}) }))
+    const changedGroups = cut(c.changedGroups).map((g) => ({ node: g.node, gained: cut(g.gained), lost: cut(g.lost) }))
+    const broken = cut(c.broken).map((g) => ({ node: g.node, tips: cut(g.tips) }))
+    const formed = cut(c.formed).map((g) => ({ node: g.node, tips: cut(g.tips) }))
+    // Names for the ids listed, so a person reads names and not ids. Bounded like the lists.
+    const labels = new Map<Id, string>()
+    const most = limit * LABELS_PER_ITEM
+    const name = (id: Id | null) => {
+      if (id === null || labels.has(id) || labels.size >= most) return
+      const label = itemOf(loaded.index, h.before, id).label
+      if (label) labels.set(id, label)
+    }
+    for (const m of moved) for (const id of [m.node, m.from, m.to]) name(id)
+    for (const g of [...broken, ...formed]) name(g.node)
+    for (const g of changedGroups) name(g.node)
+    for (const g of changedGroups) for (const id of [...g.gained, ...g.lost]) name(id)
+    for (const g of [...broken, ...formed]) for (const id of g.tips) name(id)
+    const mayDecide = (await whoIs(opts, req))?.role === 'manager'
     const head = await viewSourceOf(req, opts, snapshotDoc)
     const authorName = await displayNameFor(opts, req, doc.proposal.author)
     const why =
@@ -508,10 +535,12 @@ export async function previewProposal(req: PayloadRequest, id: string, query: { 
         acceptable: why === undefined,
         ...(why ? { notAcceptable: why } : {}),
         counts: { moves: c.moved.length, changedGroups: c.changedGroups.length, broken: c.broken.length, formed: c.formed.length },
-        moved: cut(c.moved).map((m) => ({ ...m, ...(notes.get(m.node) ? { note: notes.get(m.node)! } : {}) })),
-        changedGroups: cut(c.changedGroups).map((g) => ({ node: g.node, gained: cut(g.gained), lost: cut(g.lost) })),
-        broken: cut(c.broken).map((g) => ({ node: g.node, tips: cut(g.tips) })),
-        formed: cut(c.formed).map((g) => ({ node: g.node, tips: cut(g.tips) })),
+        moved,
+        changedGroups,
+        broken,
+        formed,
+        labels: Object.fromEntries(labels),
+        mayDecide,
         truncated,
       },
     }

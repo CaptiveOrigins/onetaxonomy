@@ -2,7 +2,7 @@
 
 OneTaxonomy for Payload: sealed taxonomy snapshots, views pinned to them, import jobs that turn source files into staged snapshots, people's own proposals that a manager can accept into a new staged version, and a small read API for search, ancestors, descendants, MRCA, coverage, projected views and exports, all behind your own access rules.
 
-> **Status: early, parts 1 to 4 of M7.** Not on npm yet. The collections, publishing, tenant scope, import jobs, proposals and the read endpoints work, and are tested on a real Payload 3.93 with an in-memory MongoDB (142 tests): bad checksums refused, sealed snapshots locked, an import of each format, re-runs that store nothing new, malformed files refused with their line, interrupted jobs resumed, runs started together claimed by one, every endpoint's results, a view's `source` through the Local API and GraphQL, proposals kept private, shared, accepted into a staged version once and declined, access refusals and cross-tenant denial. Twelve of those tests send real requests through Payload's own REST router, signed in with a token from the login route; the rest call the endpoint handlers and the Local API directly. It also runs in a small real site, [`apps/payload-example`](../../apps/payload-example) (Next.js 16, on this machine only), where 46 more checks go over HTTP with sign-in cookies. It hasn't run on a deployed site, or on Postgres or SQLite, and no URL import has fetched over a real network. No admin views yet: a proposal is a JSON field in the admin. See [ADR 0012](../../docs/architecture/adr/0012-payload-plugin.md).
+> **Status: early, parts 1 to 5 of M7.** Not on npm yet. The collections, publishing, tenant scope, import jobs, proposals, the read endpoints and the admin panels work. The server side is tested on a real Payload 3.93 with an in-memory MongoDB (152 tests): bad checksums refused, sealed snapshots locked, an import of each format, re-runs that store nothing new, malformed files refused with their line, interrupted jobs resumed, runs started together claimed by one, every endpoint's results, a view's `source` through the Local API and GraphQL, proposals kept private, shared, accepted into a staged version once and declined, access refusals and cross-tenant denial. Twelve of those tests send real requests through Payload's own REST router, signed in with a token from the login route; the rest call the endpoint handlers and the Local API directly. It also runs in a small real site, [`apps/payload-example`](../../apps/payload-example) (Next.js 16, on this machine only), where 55 more checks go over HTTP with sign-in cookies. The [admin panels](#admin-panels) have 74 tests in jsdom and were clicked through once in headless Chrome; no screen reader, Safari or Firefox has been tried on them. It hasn't run on a deployed site, or on Postgres or SQLite, and no URL import has fetched over a real network. See [ADR 0012](../../docs/architecture/adr/0012-payload-plugin.md).
 
 ## What it does
 
@@ -147,7 +147,36 @@ A proposal's title and notes, each move's note and the manager's note are people
 
 **When someone leaves.** Your server code can take back their shared proposals (`status: 'private'`) and delete their private and declined ones. Their accepted proposals stay, and so does their id in the snapshot. Stop giving a name for that id from `displayName`, and nothing shown names them. The accepted proposal's document still holds their user document's id, as text (`author`, and `decidedBy` for a manager). Nothing written through Payload can change those two, your own server code through the Local API included, and there is no option to allow it. The lock is a hook, so it doesn't cover a write made straight to the database. If your rules move a departed person's records to another account, change `author` and `decidedBy` there, in your own code, and change nothing else: leave `proposal` (it holds the sealed person id), `checksum` and the snapshot exactly as they are, or the proposal stops matching the version made from it. A test does this on MongoDB and checks that the proposal and the snapshot still verify. Otherwise keep or delete the user document as your own rules say; the two fields are plain text, so the database doesn't mind an id whose document is gone.
 
-Options: `slugs` (`snapshots`, `views`, `imports`, `proposals`), `access` (`read`, `manage`, `propose`), `tenant` (`collection`, `field`, `resolve`), `locale`, `limits`, `imports` (`uploads`, `fetch`, `maxBytes`, `staleAfterMinutes`, `runOnCreate`), `proposals` (`personId`, `displayName`, `maxMoves` default 500, `maxPerUser` default 200, not counting accepted ones), `admin.group`.
+Options: `slugs` (`snapshots`, `views`, `imports`, `proposals`), `access` (`read`, `manage`, `propose`), `tenant` (`collection`, `field`, `resolve`), `locale`, `limits`, `imports` (`uploads`, `fetch`, `maxBytes`, `staleAfterMinutes`, `runOnCreate`), `proposals` (`personId`, `displayName`, `maxMoves` default 500, `maxPerUser` default 200, not counting accepted ones), `admin` (`group`, `panels`).
+
+## Admin panels
+
+Each of the plugin's collections gets a panel at the top of its edit page. It is on unless you set `admin: { panels: false }`.
+
+- **Snapshot.** Status in words, the dataset, version, checksum and date, how many names, concepts, classifications, phylogenies and sources it holds, a table of its classifications and phylogenies, and its sources with their licenses. A snapshot made by accepting a proposal says which proposal, who proposed it and who accepted it. A manager gets **Publish this snapshot** on a staged one and **Withdraw this snapshot** on a published one.
+- **View.** Status, the snapshot it is drawn over and that snapshot's status, a drawing of the saved view (the first 200 nodes) with the same tree as an outline for the keyboard, and the lines readers are told about it. **Publish this view** waits until the form is saved and the snapshot is published, and says which it is waiting for.
+- **Import job.** The steps of the run with the one it is on, the result, the adapter's warnings and the diagnostics with their line or position. While a job is running the panel asks again every 3 seconds. A manager gets **Run this import** on a queued job and **Run it again** on a failed one, and on a running one only after `imports.staleAfterMinutes`.
+- **Proposal.** Whose it is, what it is drawn over, and what it would change: taxa with a new parent, groups that gain or lose members, groups only one side has. A manager gets **Accept this proposal**, which asks for the new version's name and an optional note, and **Decline this proposal**, which asks for a note the author will see.
+
+Every button asks first, in the page, and says what can't be undone. Nothing is sent until you confirm. If the site refuses, the panel says "Nothing was changed." and gives the site's reason. Before a proposal is accepted the panel lists what gets sealed into the new version for good (the title, the notes, your note, the date and the two person ids) and asks you to check none of it holds personal details.
+
+The panels are a page over the same API as everything else. They run in the browser and call your own site as the signed-in person, so your `access` callbacks decide every answer, and a button the panel shows by mistake still gets a 403 or 404. They add one endpoint, `GET /api/taxonomy-snapshots/:id/summary` (and `summarizeSnapshot(req, id)`): the counts, tables and sources above, with each list capped by `limit` (default 20), never the names or trees themselves. It answers the same 404 as the other endpoints.
+
+A person's name appears beside their id only if you give `proposals.displayName`, only to a signed-in requester, and it is looked up each time the page loads. It is never stored.
+
+**Setting up.** The panels need `@payloadcms/ui` and `react`, which a Payload admin already has. Payload finds them through its import map, so regenerate it after adding the plugin or changing `admin.panels`:
+
+```sh
+npx payload generate:importmap
+```
+
+Without that the edit pages load with nothing where the panel should be, and Payload logs `PayloadComponent not found in importMap`.
+
+**Colours.** The panels take their colours from Payload's theme variables, so they follow the admin's light and dark themes and a host's own theme. A status is always a word with a coloured edge, never colour alone. A test reads the installed `@payloadcms/ui` stylesheets and checks that text and muted text reach 4.5:1 and control edges 3:1 in both themes.
+
+**What was checked.** 74 tests render the panels in jsdom with Payload's hooks and `fetch` replaced by stand-ins: which buttons each person gets, that nothing is sent before the confirm, what a refusal says, and where Escape and the focus go. The example site's smoke test checks over HTTP that the built admin pages carry the panels and that the routes they call refuse a member. The panels were also clicked through once in headless Chrome on the example site, in light and dark: publishing a snapshot with the keyboard, the wait on an unsaved view, and accepting a proposal into a new version. That run is not in CI. The import panel has not run in a real admin, because the example site has no imports. Not checked: a screen reader, Safari, Firefox, a phone, or a custom Payload theme.
+
+**What Payload's own admin asks other sites for.** The panels ask only your site. Payload's JSON field loads its code editor (Monaco) from cdn.jsdelivr.net, and its default avatar asks gravatar.com with a hash of the signed-in person's email address. Both are Payload's, and both happen on these edit pages because they hold JSON fields. Set `admin.avatar: 'default'` in your Payload config to stop the second.
 
 ## Limits
 
@@ -161,7 +190,9 @@ Options: `slugs` (`snapshots`, `views`, `imports`, `proposals`), `access` (`read
 - A new snapshot and its proposal's status are written in one transaction where the database has them (a MongoDB replica set). Without transactions the snapshot is removed again if the proposal couldn't be marked, but a crash between the two writes can leave a staged version that no proposal points to. A manager can delete it.
 - The claim that lets one manager's decision win is one statement on MongoDB. It hasn't been checked on Postgres or SQLite.
 - A proposal that is shared again after a decision keeps that decision's note until the next one.
-- Payload's default edit views only: an import's progress, warnings and diagnostics show as JSON, and a proposal is a JSON field. Admin views are a later part. [`apps/payload-example`](../../apps/payload-example) is a small site that uses the plugin.
+- The panels sit on Payload's default edit pages; there are no list views, no tree authoring and no page for making a proposal in the admin. A proposal is still made through the API, or in the React explorer.
+- A snapshot's edit page still carries the whole snapshot in Payload's JSON field under the panel, so a snapshot of several MB makes a heavy page. The panel itself asks only for the summary.
+- The panels haven't been run with a screen reader, in Safari or Firefox, or on a phone. See [Admin panels](#admin-panels) for what was checked.
 
 ## Commands
 

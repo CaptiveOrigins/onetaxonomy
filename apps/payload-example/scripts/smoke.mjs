@@ -209,6 +209,26 @@ async function checks() {
     check(`an accepted proposal can't be deleted by ${who}`, (await call('DELETE', `/api/taxonomy-proposals/${proposal?.id}`, { as, origin: site })).status >= 400)
   }
   check('the accepted proposal is still there', (await get(`/api/taxonomy-proposals/${proposal?.id}?depth=0`, member)).json?.status === 'accepted')
+
+  // The admin panels: on the curator's edit pages, and the addresses they call. No browser runs here, so this
+  // checks that each page carries its panel and that the site answers the panel's requests, not a click.
+  for (const [what, pathname] of [['snapshot', `taxonomy-snapshots/${next?.doc}`], ['view', `taxonomy-views/${viewId}`], ['proposal', `taxonomy-proposals/${proposal?.id}`]]) {
+    const page = await get(`/admin/collections/${pathname}`, curator)
+    check(`the curator's ${what} page in the admin carries the plugin's panel`, page.status === 200 && page.text.includes('onetaxonomy-panel'), { status: page.status })
+  }
+  const summary = await get(`/api/taxonomy-snapshots/${next?.doc}/summary`, curator)
+  const from = summary.json?.derivedFrom?.proposal
+  check('version 2\'s summary shows the curator both people by id, with their handles looked up beside them', summary.status === 200 && from?.author === String(me?.id) && from?.authorName === 'Morgan Renamed' && from?.acceptedBy === String(curatorId) && from?.acceptedByName === 'Cara Curator', from ?? { status: summary.status })
+  check('the staged version\'s summary is "not found" for a visitor and for the member', (await get(`/api/taxonomy-snapshots/${next?.doc}/summary`)).status === 404 && (await get(`/api/taxonomy-snapshots/${next?.doc}/summary`, member)).status === 404)
+  // Publishing the way the panel does: one PATCH that asks for three fields back.
+  const asPanel = `/api/taxonomy-snapshots/${next?.doc}?depth=0&select[status]=true&select[publishedBy]=true&select[publishedAt]=true`
+  check('the member cannot publish version 2', (await call('PATCH', asPanel, { as: member, origin: site, body: { status: 'published' } })).status >= 400 && (await get(`/api/taxonomy-snapshots/${next?.doc}/summary`, curator)).json?.snapshot?.status === 'staged')
+  const publishing = await call('PATCH', asPanel, { as: curator, origin: site, body: { status: 'published' } })
+  const answered = publishing.json?.doc
+  check('the curator publishes version 2, and the answer holds the fields asked for and not the snapshot\'s content', publishing.status === 200 && answered?.status === 'published' && Boolean(answered?.publishedAt) && !('snapshot' in answered) && publishing.text.length < 2000, { status: publishing.status, keys: answered && Object.keys(answered), length: publishing.text.length })
+  const publicSummary = await get(`/api/taxonomy-snapshots/${next?.doc}/summary`)
+  const publicFrom = publicSummary.json?.derivedFrom?.proposal
+  check('a visitor now reads version 2\'s summary, with the ids and no names', publicSummary.status === 200 && publicFrom?.author === String(me?.id) && !('authorName' in publicFrom) && !('acceptedByName' in publicFrom) && !publicSummary.text.includes('Morgan') && !publicSummary.text.includes('Cara') && !publicSummary.text.includes('@example.org'), publicFrom ?? { status: publicSummary.status })
 }
 
 let up = false

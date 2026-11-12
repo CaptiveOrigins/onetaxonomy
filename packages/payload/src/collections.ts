@@ -12,7 +12,7 @@ import {
 import { APIError, type CollectionBeforeChangeHook, type CollectionBeforeDeleteHook, type CollectionBeforeValidateHook, type CollectionConfig, type Field, type Where } from 'payload'
 
 import { createAccess, idOf, manageAccess, readAccess, tenantOf } from './access.js'
-import type { ResolvedOptions } from './types.js'
+import { panelField, type ResolvedOptions } from './types.js'
 import { forgetViewSource, viewSourceOf } from './views-api.js'
 
 export const fail = (message: string): never => {
@@ -175,6 +175,7 @@ export function snapshotsCollection(opts: ResolvedOptions): CollectionConfig {
     access: { read: readAccess(opts), create: createAccess(opts), update: manageAccess(opts), delete: manageAccess(opts, { status: { equals: 'staged' } }) },
     indexes: [{ fields: [...(opts.tenant ? [opts.tenant.field] : []), 'snapshotId', 'version'], unique: true }],
     fields: [
+      ...panelField(opts, 'SnapshotPanel'),
       { name: 'label', type: 'text', admin: { readOnly: true, description: 'The snapshot\'s id and version. Set from the snapshot.' } },
       { name: 'snapshot', type: 'json', required: true, admin: { description: 'The sealed OneTaxonomy snapshot, stored exactly as given. Its checksum is checked when it is stored and when it is read.' } },
       { name: 'snapshotId', type: 'text', index: true, admin: { readOnly: true } },
@@ -245,6 +246,7 @@ export function viewsCollection(opts: ResolvedOptions): CollectionConfig {
     disableDuplicate: true,
     access: { read: readAccess(opts), create: createAccess(opts), update: manageAccess(opts), delete: manageAccess(opts, { status: { equals: 'draft' } }) },
     fields: [
+      ...panelField(opts, 'ViewPanel'),
       { name: 'title', type: 'text', required: true },
       { name: 'snapshot', type: 'relationship', relationTo: opts.slugs.snapshots as never, required: true, index: true },
       { name: 'view', type: 'json', required: true, admin: { description: 'The OneTaxonomy view. It must pin its snapshot\'s id, version and checksum.' } },

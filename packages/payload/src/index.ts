@@ -37,6 +37,7 @@ export {
   type ImportSettings,
   type ImportStatus,
 } from './imports.js'
+export { summarizeSnapshot, type SnapshotStatus, type SnapshotSummary, type SourceSummary } from './summary.js'
 export {
   acceptProposal,
   declineProposal,
