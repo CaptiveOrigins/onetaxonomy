@@ -113,6 +113,10 @@ async function checks() {
   const published = publicSnaps.json?.docs ?? []
   check('a visitor sees the published snapshot and not the staged one', publicSnaps.status === 200 && published.length === 1 && published[0].snapshotId === 'fixture-amniotes' && published[0].status === 'published', published.map((d) => [d.snapshotId, d.status]))
   const snap = published[0]?.id
+  // A snapshot's content comes only when it is asked for by name; the list and a plain read leave it out.
+  const plain = await get(`/api/taxonomy-snapshots/${snap}?depth=0`)
+  const named = await get(`/api/taxonomy-snapshots/${snap}?depth=0&select[snapshot]=true`)
+  check('a list and a plain read of a snapshot leave its content out, and a read that selects it gets it', plain.status === 200 && plain.json?.checksum === published[0]?.checksum && !('snapshot' in plain.json) && !publicSnaps.text.includes('schemaVersion') && !plain.text.includes('schemaVersion') && named.json?.snapshot?.checksum === published[0]?.checksum && named.json?.snapshot?.concepts?.length > 0, { plain: plain.text.length, list: publicSnaps.text.length, named: named.text.length })
   const search = await get(`/api/taxonomy-snapshots/${snap}/search?q=aves`)
   check('a visitor can search the published snapshot', search.status === 200 && JSON.stringify(search.json).includes('Aves'), { status: search.status })
   const viewId = links[0]?.split('/').pop()
@@ -215,7 +219,11 @@ async function checks() {
   for (const [what, pathname] of [['snapshot', `taxonomy-snapshots/${next?.doc}`], ['view', `taxonomy-views/${viewId}`], ['proposal', `taxonomy-proposals/${proposal?.id}`]]) {
     const page = await get(`/admin/collections/${pathname}`, curator)
     check(`the curator's ${what} page in the admin carries the plugin's panel`, page.status === 200 && page.text.includes('onetaxonomy-panel'), { status: page.status })
+    // The stored snapshot can be 15 MB. Its page must not carry it, in the form or anywhere else in what is sent.
+    if (what === 'snapshot') check('the snapshot\'s admin page is sent without the snapshot\'s content and without the field for it', !page.text.includes('schemaVersion') && !page.text.includes('id="field-snapshot"'), { length: page.text.length, content: page.text.includes('schemaVersion'), field: (page.text.match(/.{60}id="field-snapshot".{60}/) ?? [])[0] })
   }
+  const blank = await get('/admin/collections/taxonomy-snapshots/create', curator)
+  check('the new-snapshot form in the admin still has the field to paste one into', blank.status === 200 && blank.text.includes('id="field-snapshot"'), { status: blank.status })
   const summary = await get(`/api/taxonomy-snapshots/${next?.doc}/summary`, curator)
   const from = summary.json?.derivedFrom?.proposal
   check('version 2\'s summary shows the curator both people by id, with their handles looked up beside them', summary.status === 200 && from?.author === String(me?.id) && from?.authorName === 'Morgan Renamed' && from?.acceptedBy === String(curatorId) && from?.acceptedByName === 'Cara Curator', from ?? { status: summary.status })

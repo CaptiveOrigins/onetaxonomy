@@ -82,5 +82,8 @@ export const sealed = {
   structures: () => sealSnapshot(clone(structures) as unknown as DatasetSnapshot) as DatasetSnapshot,
   checklist: () => sealSnapshot(clone(checklist) as unknown as DatasetSnapshot) as DatasetSnapshot,
 }
+/** Every stored field of a snapshot document, content included. A read that names no `select` leaves the content out. */
+export const WITH_CONTENT = { snapshot: true, label: true, snapshotId: true, version: true, checksum: true, counts: true, status: true, publishedBy: true, publishedAt: true } as never
+
 /** A sealed snapshot, copied so a test can change it (which breaks its checksum). */
 export const unfrozen = (s: DatasetSnapshot) => clone(s)

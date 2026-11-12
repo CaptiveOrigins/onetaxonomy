@@ -8,7 +8,7 @@ import type { Payload, TypedUser } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { oneTaxonomy, runImport } from '../src'
-import { access, callEndpoint, makeUser, sealed, startPayload, usersCollection } from './helpers'
+import { access, callEndpoint, makeUser, sealed, startPayload, usersCollection, WITH_CONTENT } from './helpers'
 
 import checklistJson from '../../../fixtures/checklist.json'
 
@@ -74,7 +74,7 @@ type Job = Record<string, any>
 const makeJob = (data: Record<string, unknown>, user: TypedUser | null = manager, context: Record<string, unknown> = {}) =>
   payload.create({ collection: IMPORTS as never, data: data as never, user, overrideAccess: false, context }) as Promise<Job>
 const snapshotCount = async () => (await payload.count({ collection: SNAPSHOTS as never })).totalDocs
-const storedSnapshot = async (id: unknown) => (await payload.findByID({ collection: SNAPSHOTS as never, id: id as string, depth: 0 })) as Record<string, any>
+const storedSnapshot = async (id: unknown) => (await payload.findByID({ collection: SNAPSHOTS as never, id: id as string, depth: 0, select: WITH_CONTENT })) as Record<string, any>
 const raw = () => (payload.db as unknown as { collections: Record<string, { updateOne: (q: unknown, u: unknown) => Promise<unknown>; findOne: (q: unknown) => { lean: () => Promise<Record<string, unknown> | null> } }> }).collections[IMPORTS]!
 
 describe('importing each format into a staged, sealed snapshot', () => {

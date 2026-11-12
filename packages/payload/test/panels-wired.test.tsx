@@ -15,7 +15,7 @@ import type { ProposalAcceptance, ProposalDecision } from '../src/proposals.js'
 
 const admin = vi.hoisted(() => ({
   config: { serverURL: '', routes: { api: '/api', admin: '/admin' } } as { serverURL?: string; routes: { api: string; admin: string } },
-  doc: { id: 'doc1' as string | number | undefined, collectionSlug: 'taxonomy-snapshots', hasSavePermission: true },
+  doc: { id: 'doc1', collectionSlug: 'taxonomy-snapshots', hasSavePermission: true } as { id: string | number | undefined; collectionSlug: string; hasSavePermission: boolean; lastUpdateTime?: number },
   modified: false,
   dispatchFields: vi.fn(),
 }))
@@ -93,6 +93,25 @@ describe('snapshot panel on a site', () => {
     expect(screen.getByRole('status').textContent).toBe('Loading the snapshot’s summary…')
     await screen.findByRole('button', { name: 'Publish this snapshot' })
     expect(calls).toEqual([{ method: 'GET', url: `${at}/summary`, body: undefined, credentials: 'include' }])
+  })
+
+  it('reads the summary again when Payload’s own Save has changed the document, and not otherwise', async () => {
+    site[`GET ${at}/summary`] = { body: summary('staged') }
+    admin.doc = { ...admin.doc, lastUpdateTime: 1 }
+    const { rerender } = render(<SnapshotPanel slugs={slugs} />)
+    await screen.findByRole('button', { name: 'Publish this snapshot' })
+    rerender(<SnapshotPanel slugs={slugs} />)
+    expect(called('GET')).toEqual([`${at}/summary`])
+    // Payload's Save button: the document changes on the site and the form's save time moves on.
+    site[`GET ${at}/summary`] = { body: summary('published') }
+    admin.doc = { ...admin.doc, lastUpdateTime: 2 }
+    rerender(<SnapshotPanel slugs={slugs} />)
+    // What was shown stays until the new answer is in: no flash back to "Loading".
+    expect(screen.queryByText('Loading the snapshot’s summary…')).toBeNull()
+    await screen.findByRole('button', { name: 'Withdraw this snapshot' })
+    expect(screen.queryByRole('button', { name: 'Publish this snapshot' })).toBeNull()
+    expect(called('GET')).toEqual([`${at}/summary`, `${at}/summary`])
+    expect(called('PATCH')).toEqual([])
   })
 
   it('uses the site’s own address and API path, and an id that is safe in an address', async () => {
@@ -182,6 +201,17 @@ describe('view panel on a site', () => {
     render(<ViewPanel slugs={slugs} />)
     expect(((await screen.findByRole('button', { name: 'Publish this view' })) as HTMLButtonElement).disabled).toBe(true)
     expect(document.body.textContent).toContain('Save your changes first.')
+  })
+
+  it('draws the view again after Payload’s own Save', async () => {
+    admin.doc = { ...admin.doc, lastUpdateTime: 1 }
+    const { rerender } = render(<ViewPanel slugs={slugs} />)
+    await screen.findByRole('group', { name: 'Drawing of Traditional classes' })
+    site[`GET ${at}${FIELDS}`] = { body: { id: 'doc1', title: 'Classes, renamed', status: 'draft', source, view: { layout: { kind: 'radial' }, highlights: [] } } }
+    admin.doc = { ...admin.doc, lastUpdateTime: 2 }
+    rerender(<ViewPanel slugs={slugs} />)
+    await screen.findByRole('group', { name: 'Drawing of Classes, renamed' })
+    expect(called('GET').sort()).toEqual([`${at}/projection?limit=200`, `${at}/projection?limit=200`, `${at}${FIELDS}`, `${at}${FIELDS}`].sort())
   })
 
   it('publishes with one PATCH and reads both the view and its preview again', async () => {

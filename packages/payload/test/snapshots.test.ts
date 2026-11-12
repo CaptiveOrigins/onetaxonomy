@@ -4,7 +4,7 @@ import type { Payload, TypedUser } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { oneTaxonomy } from '../src'
-import { access, callEndpoint, makeUser, sealed, startPayload, unfrozen, usersCollection } from './helpers'
+import { access, callEndpoint, makeUser, sealed, startPayload, unfrozen, usersCollection, WITH_CONTENT } from './helpers'
 
 const SNAPSHOTS = 'taxonomy-snapshots'
 let payload: Payload
@@ -63,7 +63,9 @@ describe('storing a snapshot', () => {
     const doc = (await create(s)) as Record<string, any>
     expect(doc).toMatchObject({ status: 'staged', snapshotId: 'fixture-amniotes', version: '1', checksum: s.checksum, label: 'fixture-amniotes 1' })
     expect(doc.counts).toMatchObject({ names: s.names.length, concepts: s.concepts.length, classifications: 1, phylogenies: 2 })
-    expect(doc.snapshot.checksum).toBe(snapshotChecksum(doc.snapshot))
+    const kept = (await payload.findByID({ collection: SNAPSHOTS as never, id: doc.id, depth: 0, select: { snapshot: true } as never })) as Record<string, any>
+    expect(kept.snapshot).toEqual(s)
+    expect(kept.snapshot.checksum).toBe(snapshotChecksum(kept.snapshot))
   })
 
   it('refuses a snapshot changed after sealing (bad checksum)', async () => {
@@ -110,6 +112,82 @@ describe('storing a snapshot', () => {
   it('refuses people who may not manage: readers, anonymous, and a host check that throws', async () => {
     const thrower = await makeUser(payload, 'thrower')
     for (const user of [reader, null, thrower]) await expect(create(sealed.checklist(), user)).rejects.toThrow(/not allowed/i)
+  })
+})
+
+describe('a stored snapshot\'s content is read only when it is asked for by name', () => {
+  let id: string | number
+  const s = (() => {
+    const draft = unfrozen(sealed.checklist())
+    draft.version = 'content-test'
+    return sealSnapshot(draft)
+  })()
+  // Something only the content holds, never the fields beside it.
+  const INSIDE = '"schemaVersion"'
+
+  it('leaves it out of what storing answers', async () => {
+    const made = (await create(s)) as Record<string, unknown>
+    id = made.id as string
+    expect(made).toMatchObject({ snapshotId: s.id, version: 'content-test', checksum: s.checksum, status: 'staged' })
+    expect(made).not.toHaveProperty('snapshot')
+    expect(JSON.stringify(made)).not.toContain(INSIDE)
+  })
+
+  it('leaves it out of a read, a list, an update\'s answer and a delete\'s answer when no select is named, for a manager and for trusted code', async () => {
+    for (const as of [{ user: manager, overrideAccess: false }, {}]) {
+      const one = (await payload.findByID({ collection: SNAPSHOTS as never, id, depth: 0, ...as })) as Record<string, unknown>
+      expect(one).toMatchObject({ id, checksum: s.checksum, counts: { concepts: s.concepts.length } })
+      expect(JSON.stringify(one)).not.toContain(INSIDE)
+      const list = await payload.find({ collection: SNAPSHOTS as never, depth: 0, limit: 100, ...as })
+      expect(list.docs.map((d) => (d as { id: unknown }).id)).toContain(id)
+      expect(JSON.stringify(list.docs)).not.toContain(INSIDE)
+    }
+    const published = (await update(id, { status: 'published' })) as Record<string, unknown>
+    expect(published).toMatchObject({ status: 'published', checksum: s.checksum })
+    expect(JSON.stringify(published)).not.toContain(INSIDE)
+    const many = await payload.update({ collection: SNAPSHOTS as never, where: { id: { equals: id } }, data: { status: 'withdrawn' } as never, user: manager, overrideAccess: false })
+    expect(many.docs).toHaveLength(1)
+    expect(JSON.stringify(many.docs)).not.toContain(INSIDE)
+    const other = unfrozen(sealed.checklist())
+    other.version = 'content-test-deleted'
+    const staged = (await create(sealSnapshot(other))) as { id: string | number }
+    const gone = await payload.delete({ collection: SNAPSHOTS as never, id: staged.id, user: manager, overrideAccess: false })
+    expect(gone).toMatchObject({ id: staged.id, version: 'content-test-deleted' })
+    expect(JSON.stringify(gone)).not.toContain(INSIDE)
+  })
+
+  it('gives it, exactly as sealed, to a select that names it', async () => {
+    const only = (await payload.findByID({ collection: SNAPSHOTS as never, id, depth: 0, select: { snapshot: true } as never, user: manager, overrideAccess: false })) as Record<string, unknown>
+    expect(only.snapshot).toEqual(s)
+    expect(only).not.toHaveProperty('checksum')
+    const whole = (await payload.findByID({ collection: SNAPSHOTS as never, id, depth: 0, select: WITH_CONTENT })) as Record<string, unknown>
+    expect(whole).toMatchObject({ snapshot: s, checksum: s.checksum, status: 'withdrawn' })
+    const listed = await payload.find({ collection: SNAPSHOTS as never, where: { id: { equals: id } }, depth: 0, select: { snapshot: true } as never })
+    expect((listed.docs[0] as unknown as Record<string, unknown>).snapshot).toEqual(s)
+    // A select that names other fields is left alone: it already says what is wanted.
+    const some = (await payload.findByID({ collection: SNAPSHOTS as never, id, depth: 0, select: { version: true } as never })) as Record<string, unknown>
+    expect(some).toEqual({ id, version: 'content-test' })
+    // So is one that only leaves fields out: everything else comes, the content included.
+    const allBut = (await payload.findByID({ collection: SNAPSHOTS as never, id, depth: 0, select: { label: false } as never })) as Record<string, unknown>
+    expect(allBut).not.toHaveProperty('label')
+    expect(allBut).toMatchObject({ snapshot: s, checksum: s.checksum })
+  })
+
+  it('still locks the content: an update is compared with what is stored, not with what was read', async () => {
+    const fresh = unfrozen(sealed.checklist())
+    fresh.version = 'content-test-locked'
+    const doc = (await create(sealSnapshot(fresh))) as { id: string | number }
+    await expect(update(doc.id, { snapshot: sealed.structures() })).rejects.toThrow(/can't be edited/)
+    await expect(update(doc.id, { snapshot: null })).rejects.toThrow(/can't be edited/)
+    // The same content sent back is no change.
+    await expect(update(doc.id, { snapshot: sealSnapshot(fresh) })).resolves.toMatchObject({ status: 'staged' })
+    await payload.delete({ collection: SNAPSHOTS as never, id: doc.id })
+  })
+
+  it('shows the content field in the admin only on the new-snapshot form', () => {
+    const field = payload.collections[SNAPSHOTS as never]!.config.fields.find((f) => 'name' in f && f.name === 'snapshot') as unknown as { admin: { condition: (data: unknown, sibling: unknown, more: { operation: string }) => boolean } }
+    expect(field.admin.condition({}, {}, { operation: 'create' })).toBe(true)
+    expect(field.admin.condition({ id }, {}, { operation: 'update' })).toBe(false)
   })
 })
 

@@ -2,7 +2,7 @@ import type { Payload, TypedUser } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { importsCollection, oneTaxonomy, proposalsCollection, resolveOptions, snapshotsCollection, viewsCollection } from '../src'
-import { access, callEndpoint, makeUser, roleOf, sealed, startPayload, tenantsCollection, usersCollection } from './helpers'
+import { access, callEndpoint, makeUser, roleOf, sealed, startPayload, tenantsCollection, usersCollection, WITH_CONTENT } from './helpers'
 
 const SNAPSHOTS = 'taxonomy-snapshots'
 const PROPOSALS = 'taxonomy-proposals'
@@ -180,7 +180,7 @@ describe('a snapshot made from an accepted proposal', () => {
     names.set('P-2003', 'Ann K.')
 
     // No name, and no email address, in what is stored.
-    const kept = JSON.stringify(await payload.findByID({ collection: SNAPSHOTS as never, id: made, depth: 0 }))
+    const kept = JSON.stringify(await payload.findByID({ collection: SNAPSHOTS as never, id: made, depth: 0, select: WITH_CONTENT }))
     expect(kept).not.toMatch(/Ann K|Cara Curator|Kowalczyk|@/)
     expect(kept).toContain('P-2003')
   })
