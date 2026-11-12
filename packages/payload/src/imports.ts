@@ -23,7 +23,7 @@ import { APIError, type CollectionAfterChangeHook, type CollectionBeforeChangeHo
 
 import { createAccess, idOf, manageAccess, tenantOf } from './access.js'
 import { respond, routeId, type ApiResult } from './api.js'
-import { optionsOf, type ResolvedOptions } from './types.js'
+import { optionsOf, panelField, type ResolvedOptions } from './types.js'
 
 export const IMPORT_FORMATS = ['csv', 'dwca', 'onetaxonomy-json', 'newick', 'nexus', 'phyloxml'] as const
 export type ImportFormat = (typeof IMPORT_FORMATS)[number]
@@ -417,6 +417,7 @@ export function importsCollection(opts: ResolvedOptions): CollectionConfig {
     disableDuplicate: true,
     access: { read: managerOnly, create: createAccess(opts), update: managerOnly, delete: managerOnly },
     fields: [
+      ...panelField(opts, 'ImportPanel', { staleAfterMinutes: io.staleAfterMs / 60_000 }),
       { name: 'title', type: 'text', admin: { description: 'A name for this import, for your own list.' } },
       { name: 'format', type: 'select', required: true, options: IMPORT_FORMATS.map((v) => ({ value: v, label: { csv: 'CSV/TSV checklist', dwca: 'Darwin Core Archive', 'onetaxonomy-json': 'OneTaxonomy JSON snapshot', newick: 'Newick tree', nexus: 'NEXUS trees', phyloxml: 'phyloXML trees' }[v] })) },
       ...(io.uploads ? [{ name: 'file', type: 'upload', relationTo: io.uploads.collection as never, admin: { description: 'The source file. It is read as the person running the job.' } } as Field] : []),

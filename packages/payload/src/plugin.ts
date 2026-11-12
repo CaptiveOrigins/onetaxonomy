@@ -4,6 +4,7 @@ import { snapshotEndpoints } from './api.js'
 import { snapshotsCollection, viewsCollection } from './collections.js'
 import { importsCollection } from './imports.js'
 import { proposalsCollection, reopenProposals } from './proposals.js'
+import { summaryEndpoints } from './summary.js'
 import { viewEndpoints } from './views-api.js'
 import { CUSTOM_KEY, resolveOptions, type OneTaxonomyPluginOptions } from './types.js'
 
@@ -32,7 +33,7 @@ export const oneTaxonomy =
         ...(config.collections ?? []),
         {
           ...snapshots,
-          endpoints: snapshotEndpoints(),
+          endpoints: [...snapshotEndpoints(), ...summaryEndpoints()],
           ...(opts.proposals ? { hooks: { ...snapshots.hooks, afterDelete: [...(snapshots.hooks?.afterDelete ?? []), reopenProposals(opts)] } } : {}),
         },
         { ...viewsCollection(opts), endpoints: viewEndpoints() },

@@ -193,7 +193,8 @@ function hierarchyOf(index: DatasetIndex, q: HierarchyQuery): ApiResult<TreeInde
   }
 }
 
-function itemOf(index: DatasetIndex, tree: TreeIndex, id: Id): NodeItem {
+/** A node with the name to show for it: a concept's accepted name, or a phylogeny node's own label. Null when it has none. */
+export function itemOf(index: DatasetIndex, tree: TreeIndex, id: Id): NodeItem {
   if (tree.kind === 'classification') return { id, label: index.nameOf(id) ?? null }
   const node = (tree as PhylogenyIndex).node.get(id)
   const concepts = node?.concepts ?? []

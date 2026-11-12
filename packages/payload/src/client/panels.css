@@ -1,0 +1,411 @@
+/*
+ * The OneTaxonomy admin panels. They take their colours, spacing and type from Payload's own theme variables, so
+ * they follow the admin's light and dark themes. Each variable has a fallback for a page that doesn't set it.
+ * Status is always said in words; colour only repeats it.
+ */
+.onetaxonomy-panel {
+  --otp-text: var(--theme-text, CanvasText);
+  --otp-muted: var(--theme-elevation-650, GrayText);
+  --otp-bg: var(--theme-elevation-50, Canvas);
+  --otp-raised: var(--theme-elevation-0, Canvas);
+  --otp-border: var(--theme-elevation-150, GrayText);
+  /* Edges of things a person presses or types in: 3:1 against the page (WCAG 1.4.11). */
+  --otp-control-border: var(--theme-elevation-500, GrayText);
+  --otp-success: var(--theme-success-500, #1a7f4b);
+  --otp-warning: var(--theme-warning-500, #b45309);
+  --otp-error: var(--theme-error-500, #b91c1c);
+  --otp-gap: var(--base, 1.25rem);
+  --otp-radius: var(--style-radius-m, 4px);
+  --otp-radius-s: var(--style-radius-s, 3px);
+  --otp-focus: var(--accessibility-outline, 2px solid var(--otp-text));
+
+  box-sizing: border-box;
+  margin: 0 0 var(--otp-gap);
+  padding: var(--otp-gap);
+  border: 1px solid var(--otp-border);
+  border-radius: var(--otp-radius);
+  background: var(--otp-bg);
+  color: var(--otp-text);
+  font-family: var(--font-body, system-ui, sans-serif);
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.onetaxonomy-panel *,
+.onetaxonomy-panel *::before {
+  box-sizing: border-box;
+}
+.onetaxonomy-panel p,
+.onetaxonomy-panel h3,
+.onetaxonomy-panel h4 {
+  margin: 0;
+}
+.onetaxonomy-panel > * + * {
+  margin-top: calc(var(--otp-gap) * 0.6);
+}
+.onetaxonomy-panel__title {
+  font-size: 1.15em;
+  font-weight: 600;
+}
+.onetaxonomy-panel h4 {
+  font-size: 1em;
+  font-weight: 600;
+  margin-bottom: 0.35em;
+}
+.onetaxonomy-panel a {
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+.onetaxonomy-panel a:focus-visible,
+.onetaxonomy-panel summary:focus-visible,
+.onetaxonomy-panel [tabindex]:focus-visible,
+.onetaxonomy-btn:focus-visible,
+.onetaxonomy-input:focus-visible {
+  outline: var(--otp-focus);
+  outline-offset: 2px;
+}
+.onetaxonomy-panel__block {
+  padding-top: calc(var(--otp-gap) * 0.6);
+  border-top: 1px solid var(--otp-border);
+}
+.onetaxonomy-panel__block > * + * {
+  margin-top: 0.5em;
+}
+.onetaxonomy-panel__hint,
+.onetaxonomy-panel__loading {
+  color: var(--otp-muted);
+  font-size: 0.925em;
+}
+.onetaxonomy-panel__message {
+  white-space: pre-wrap;
+}
+
+/* A status word. The bar beside it takes the status colour; the word stays in the text colour. */
+.onetaxonomy-status {
+  display: inline-block;
+  padding: 0.1em 0.6em;
+  border: 1px solid var(--otp-control-border);
+  border-inline-start-width: 0.4em;
+  border-radius: var(--otp-radius-s);
+  background: var(--otp-raised);
+  font-weight: 600;
+}
+.onetaxonomy-status[data-status='published'],
+.onetaxonomy-status[data-status='done'],
+.onetaxonomy-status[data-status='already-imported'],
+.onetaxonomy-status[data-status='accepted'] {
+  border-inline-start-color: var(--otp-success);
+}
+.onetaxonomy-status[data-status='staged'],
+.onetaxonomy-status[data-status='draft'],
+.onetaxonomy-status[data-status='shared'],
+.onetaxonomy-status[data-status='running'],
+.onetaxonomy-status[data-status='queued'] {
+  border-inline-start-color: var(--otp-warning);
+}
+.onetaxonomy-status[data-status='failed'],
+.onetaxonomy-status[data-status='declined'] {
+  border-inline-start-color: var(--otp-error);
+}
+
+.onetaxonomy-notice {
+  padding: 0.6em 0.8em;
+  border: 1px solid var(--otp-border);
+  border-inline-start: 0.4em solid var(--otp-control-border);
+  border-radius: var(--otp-radius-s);
+  background: var(--otp-raised);
+}
+.onetaxonomy-notice--error {
+  border-inline-start-color: var(--otp-error);
+}
+.onetaxonomy-notice--warning {
+  border-inline-start-color: var(--otp-warning);
+}
+.onetaxonomy-notice--success {
+  border-inline-start-color: var(--otp-success);
+}
+.onetaxonomy-outcome:focus {
+  outline: var(--otp-focus);
+  outline-offset: 2px;
+}
+
+.onetaxonomy-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
+  gap: 0.6em var(--otp-gap);
+  margin: 0;
+}
+.onetaxonomy-facts dt {
+  color: var(--otp-muted);
+  font-size: 0.925em;
+}
+.onetaxonomy-facts dd {
+  margin: 0;
+}
+.onetaxonomy-exact {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  font-size: 0.925em;
+  overflow-wrap: anywhere;
+}
+
+/* Buttons are tall enough to press (WCAG 2.5.8), and a disabled one keeps a visible edge. */
+.onetaxonomy-btn {
+  min-height: 2.25rem;
+  padding: 0.35em 0.9em;
+  border: 1px solid var(--otp-control-border);
+  border-radius: var(--otp-radius-s);
+  background: var(--otp-raised);
+  color: var(--otp-text);
+  font: inherit;
+  cursor: pointer;
+}
+.onetaxonomy-btn:hover:not(:disabled) {
+  border-color: var(--otp-text);
+}
+.onetaxonomy-btn--primary {
+  border-color: var(--theme-elevation-800, ButtonText);
+  background: var(--theme-elevation-800, ButtonText);
+  color: var(--theme-elevation-0, ButtonFace);
+}
+.onetaxonomy-btn--danger {
+  border-color: var(--otp-error);
+  border-width: 2px;
+}
+.onetaxonomy-btn:disabled {
+  cursor: not-allowed;
+  border-style: dashed;
+  border-color: var(--otp-control-border);
+  background: transparent;
+  color: var(--otp-muted);
+}
+.onetaxonomy-action {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6em;
+}
+.onetaxonomy-action__reason {
+  color: var(--otp-muted);
+  font-size: 0.925em;
+}
+.onetaxonomy-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75em;
+}
+.onetaxonomy-confirm {
+  flex: 1 1 100%;
+  padding: 0.8em;
+  border: 1px solid var(--otp-control-border);
+  border-radius: var(--otp-radius-s);
+  background: var(--otp-raised);
+}
+.onetaxonomy-confirm > * + * {
+  margin-top: 0.7em;
+}
+.onetaxonomy-confirm:focus {
+  outline: none;
+}
+.onetaxonomy-confirm:focus-visible {
+  outline: var(--otp-focus);
+  outline-offset: 2px;
+}
+.onetaxonomy-confirm__question {
+  font-weight: 600;
+}
+.onetaxonomy-confirm__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6em;
+}
+
+.onetaxonomy-field label {
+  display: block;
+  margin-bottom: 0.25em;
+  font-weight: 600;
+}
+.onetaxonomy-field__required,
+.onetaxonomy-field__optional {
+  color: var(--otp-muted);
+  font-weight: 400;
+}
+.onetaxonomy-field__hint {
+  margin-top: 0.25em;
+  color: var(--otp-muted);
+  font-size: 0.925em;
+}
+.onetaxonomy-input {
+  display: block;
+  width: 100%;
+  max-width: 40rem;
+  min-height: 2.25rem;
+  padding: 0.35em 0.6em;
+  border: 1px solid var(--otp-control-border);
+  border-radius: var(--otp-radius-s);
+  background: var(--theme-input-bg, Field);
+  color: var(--otp-text);
+  font: inherit;
+}
+
+/* A table wider than the page scrolls in its own box, which takes the keyboard focus to do it. */
+.onetaxonomy-scroll {
+  overflow-x: auto;
+}
+.onetaxonomy-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.onetaxonomy-table th,
+.onetaxonomy-table td {
+  padding: 0.35em 0.7em 0.35em 0;
+  border-bottom: 1px solid var(--otp-border);
+  text-align: start;
+  vertical-align: top;
+}
+.onetaxonomy-table th {
+  color: var(--otp-muted);
+  font-size: 0.925em;
+  font-weight: 600;
+}
+.onetaxonomy-table .onetaxonomy-num {
+  text-align: end;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.onetaxonomy-list {
+  margin: 0;
+  padding-inline-start: 1.2em;
+}
+.onetaxonomy-list > li + li {
+  margin-top: 0.25em;
+}
+.onetaxonomy-log {
+  max-height: 16rem;
+  overflow-y: auto;
+  font-size: 0.925em;
+}
+.onetaxonomy-tag {
+  display: inline-block;
+  padding: 0 0.45em;
+  border: 1px solid var(--otp-control-border);
+  border-radius: var(--otp-radius-s);
+  font-size: 0.85em;
+}
+.onetaxonomy-details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  min-height: 1.5rem;
+}
+.onetaxonomy-details > summary + * {
+  margin-top: 0.5em;
+}
+
+/* An import's steps, in order. Each says its state in words; the bar above it repeats it. */
+.onetaxonomy-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5em;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.onetaxonomy-steps > li {
+  flex: 1 1 9rem;
+  padding: 0.45em 0.7em;
+  border: 1px solid var(--otp-border);
+  border-top: 0.3em solid var(--otp-control-border);
+  border-radius: var(--otp-radius-s);
+  background: var(--otp-raised);
+}
+.onetaxonomy-steps > li[data-state='done'] {
+  border-top-color: var(--otp-success);
+}
+.onetaxonomy-steps > li[data-state='current'] {
+  border-top-color: var(--otp-warning);
+}
+.onetaxonomy-steps > li[data-state='stopped'] {
+  border-top-color: var(--otp-error);
+}
+.onetaxonomy-steps > li[data-state='todo'] {
+  border-top-style: dashed;
+}
+.onetaxonomy-steps__label {
+  display: block;
+  font-weight: 600;
+}
+.onetaxonomy-steps__state {
+  display: block;
+  color: var(--otp-muted);
+  font-size: 0.925em;
+}
+
+/*
+ * The drawing of a view. It keeps the drawing's own colours (the --ot-* variables of
+ * @captiveorigins/onetaxonomy-react) on the drawing's own surface, so its contrast is the one that package was
+ * checked for. That package picks light or dark from the device's setting; here the choice follows Payload's theme
+ * instead, which a person can set apart from their device. The values are copies: test/panels-css.test.ts fails if
+ * they drift from the package's stylesheet.
+ */
+/* drawing:light */
+.onetaxonomy-panel :is(.onetaxonomy-figure, .ot-root, .ot-outline) {
+  --ot-ink: #4c312c;
+  --ot-text: #1d2330;
+  --ot-muted: #5b6577;
+  --ot-edge: #a08a83;
+  --ot-node: var(--ot-ink);
+  --ot-selected: #cf8137;
+  --ot-selected-text: #a65f20;
+  --ot-warning: #b45309;
+  --ot-error: #b91c1c;
+  --ot-field-border: #a08a83;
+  --ot-surface: #ffffff;
+  --ot-panel: #fbf7f4;
+  --ot-border: #eaddd6;
+  --ot-focus: #a65f20;
+}
+/* drawing:dark */
+html[data-theme='dark'] .onetaxonomy-panel :is(.onetaxonomy-figure, .ot-root, .ot-outline) {
+  --ot-ink: #eda9ac;
+  --ot-text: #eef1f6;
+  --ot-muted: #a7b0c0;
+  --ot-edge: #8a7470;
+  --ot-node: var(--ot-ink);
+  --ot-selected: #e7a066;
+  --ot-selected-text: #e7a066;
+  --ot-warning: #fbbf24;
+  --ot-error: #f87171;
+  --ot-field-border: #8a7470;
+  --ot-surface: #1c1311;
+  --ot-panel: #241916;
+  --ot-border: #3a2a26;
+  --ot-focus: #e7a066;
+}
+.onetaxonomy-figure {
+  max-height: 32rem;
+  overflow: auto;
+  padding: 0.5em;
+  border: 1px solid var(--ot-border);
+  border-radius: var(--otp-radius-s);
+  background: var(--ot-surface);
+}
+/* As wide as the box but no wider than the tree's own size, as tall as its shape asks, and never squeezed so far
+   that its names can't be read. */
+.onetaxonomy-figure .ot-root {
+  display: block;
+  width: 100%;
+  max-width: var(--otp-widest, 100%);
+  min-width: min(36rem, var(--otp-widest, 36rem));
+  height: auto;
+}
+.onetaxonomy-panel .ot-outline {
+  color: var(--ot-text);
+}
+
+@media (forced-colors: active) {
+  .onetaxonomy-btn--primary {
+    border-color: ButtonText;
+    background: ButtonFace;
+    color: ButtonText;
+  }
+}

@@ -17,7 +17,8 @@ export default buildConfig({
   // second entry is the same server by its address.
   csrf: [serverURL.replace('//localhost', '//127.0.0.1')],
   secret: process.env.PAYLOAD_SECRET || '',
-  admin: { user: users.slug, importMap: { baseDir: dirname } },
+  // Payload's default avatar asks gravatar.com for a picture by a hash of the signed-in address. This example asks nobody.
+  admin: { user: users.slug, avatar: 'default', importMap: { baseDir: dirname } },
   collections: [users],
   // `ensureIndexes` builds the indexes before the first request, so the seed's first writes don't race them on an empty database.
   db: mongooseAdapter({ url: process.env.DATABASE_URI || '', ensureIndexes: true }),

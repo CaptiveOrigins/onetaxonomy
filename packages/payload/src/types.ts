@@ -1,4 +1,4 @@
-import type { PayloadRequest } from 'payload'
+import type { Field, PayloadRequest } from 'payload'
 
 /** A tenant's ID as the host stores it (a relationship value). */
 export type TenantId = string | number
@@ -58,8 +58,14 @@ export type OneTaxonomyPluginOptions = {
    * version, or decline it. Off unless given (`true` for the defaults).
    */
   proposals?: ProposalOptions | boolean
-  /** Admin group the collections appear under. Default `Taxonomy`. */
-  admin?: { group?: string }
+  /**
+   * `group`: the admin group the collections appear under. Default `Taxonomy`.
+   * `panels`: the plugin's panels on its collections' edit pages (status, what a snapshot holds, a view's drawing,
+   * an import's progress, a proposal's changes, and the buttons to act on them). Default true. They need
+   * `@payloadcms/ui` and `react`, and the host's import map regenerated (`payload generate:importmap`). False leaves
+   * the plain fields only.
+   */
+  admin?: { group?: string; panels?: boolean }
 }
 
 export type ProposalOptions = {
@@ -117,7 +123,7 @@ export type ResolvedOptions = {
   tenant: { collection: string; field: string; resolve: NonNullable<OneTaxonomyPluginOptions['tenant']>['resolve'] } | null
   locale: { default: string | null }
   limits: { maxResults: number; maxDepth: number; maxMrcaNodes: number; maxNodes: number; maxCoverageIds: number }
-  admin: { group: string }
+  admin: { group: string; panels: boolean }
   imports: { uploads: ImportOptions['uploads'] | null; fetch: ImportOptions['fetch'] | null; maxBytes: number; staleAfterMs: number; runOnCreate: boolean } | null
   proposals: { personId: NonNullable<ProposalOptions['personId']>; displayName: ProposalOptions['displayName'] | null; maxMoves: number; maxPerUser: number } | null
 }
@@ -138,7 +144,7 @@ export function resolveOptions(o: OneTaxonomyPluginOptions = {}): ResolvedOption
       maxNodes: positive(o.limits?.maxNodes, 5000),
       maxCoverageIds: positive(o.limits?.maxCoverageIds, 1000),
     },
-    admin: { group: o.admin?.group ?? 'Taxonomy' },
+    admin: { group: o.admin?.group ?? 'Taxonomy', panels: o.admin?.panels !== false },
     imports: o.imports
       ? {
           uploads: o.imports.uploads ?? null,
@@ -157,6 +163,18 @@ export function resolveOptions(o: OneTaxonomyPluginOptions = {}): ResolvedOption
         }
       : null,
   }
+}
+
+/** Where Payload's import map finds the panels. */
+const CLIENT = '@captiveorigins/payload-plugin-onetaxonomy/client'
+
+/**
+ * The panel at the top of a collection's edit page: a field that stores nothing and draws a client component.
+ * Empty when the host turned panels off. `props` must be plain values: they are sent to the browser.
+ */
+export function panelField(opts: ResolvedOptions, component: 'ImportPanel' | 'ProposalPanel' | 'SnapshotPanel' | 'ViewPanel', props: Record<string, unknown> = {}): Field[] {
+  if (!opts.admin.panels) return []
+  return [{ name: 'onetaxonomyPanel', type: 'ui', admin: { disableListColumn: true, components: { Field: { path: `${CLIENT}#${component}`, clientProps: { slugs: opts.slugs, ...props } } } } }]
 }
 
 /** The installed plugin's options, for host code calling the read functions directly. */
