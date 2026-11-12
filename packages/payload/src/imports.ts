@@ -404,6 +404,11 @@ const fillTenant = (opts: ResolvedOptions) => async ({ data, operation, req }: {
 }
 
 const ro = (description?: string) => ({ readOnly: true, ...(description ? { description } : {}) })
+/**
+ * For what the panel already shows. Hidden, not disabled: the field stays in the form, so the panel can put a run's
+ * result into it, and it can still be a column in the list.
+ */
+const inPanel = { readOnly: true, hidden: true }
 
 /** `taxonomy-imports`: import jobs. Managers only, in their own tenant. */
 export function importsCollection(opts: ResolvedOptions): CollectionConfig {
@@ -430,14 +435,14 @@ export function importsCollection(opts: ResolvedOptions): CollectionConfig {
       },
       { name: 'status', type: 'select', required: true, defaultValue: 'queued', index: true, options: ['queued', 'running', 'done', 'already-imported', 'failed'], admin: { position: 'sidebar', ...ro() } },
       { name: 'phase', type: 'select', options: ['reading', 'parsing', 'sealing', 'storing', 'finished'], admin: { position: 'sidebar', ...ro() } },
-      { name: 'message', type: 'text', admin: ro('What the last run did, or why it stopped.') },
+      { name: 'message', type: 'text', admin: inPanel },
       { name: 'snapshot', type: 'relationship', relationTo: opts.slugs.snapshots as never, admin: { position: 'sidebar', ...ro('The staged snapshot this job stored or found.') } },
-      { name: 'checksum', type: 'text', index: true, admin: ro() },
-      { name: 'inputSha256', type: 'text', admin: ro('SHA-256 of the file as read.') },
-      { name: 'diagnostics', type: 'json', admin: ro('Errors that stopped the job, and validation warnings.') },
-      { name: 'warnings', type: 'json', admin: ro('What the adapter noticed and handled conservatively (the first 200).') },
-      { name: 'warningCount', type: 'number', admin: ro() },
-      { name: 'progress', type: 'json', admin: ro() },
+      { name: 'checksum', type: 'text', index: true, admin: inPanel },
+      { name: 'inputSha256', type: 'text', admin: inPanel },
+      { name: 'diagnostics', type: 'json', admin: inPanel },
+      { name: 'warnings', type: 'json', admin: inPanel },
+      { name: 'warningCount', type: 'number', admin: inPanel },
+      { name: 'progress', type: 'json', admin: inPanel },
       { name: 'attempts', type: 'number', admin: { position: 'sidebar', ...ro() } },
       { name: 'startedAt', type: 'date', admin: { position: 'sidebar', ...ro() } },
       { name: 'finishedAt', type: 'date', admin: { position: 'sidebar', ...ro() } },

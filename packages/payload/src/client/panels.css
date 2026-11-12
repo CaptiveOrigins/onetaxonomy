@@ -34,13 +34,19 @@
 .onetaxonomy-panel *::before {
   box-sizing: border-box;
 }
-.onetaxonomy-panel p,
-.onetaxonomy-panel h3,
-.onetaxonomy-panel h4 {
+/*
+ * Spacing comes from the stacks below, not from each element. `:where` keeps this reset weaker than they are:
+ * written as `.onetaxonomy-panel p` it would beat them, and paragraphs and lists would sit flush against each other.
+ */
+.onetaxonomy-panel :where(p, h3, h4, ul, ol, dl) {
   margin: 0;
 }
 .onetaxonomy-panel > * + * {
   margin-top: calc(var(--otp-gap) * 0.6);
+}
+/* What a screen reader hears when it changes: the status, then what the last run said. */
+.onetaxonomy-panel__live > * + * {
+  margin-top: 0.35em;
 }
 .onetaxonomy-panel__title {
   font-size: 1.15em;
@@ -133,7 +139,6 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
   gap: 0.6em var(--otp-gap);
-  margin: 0;
 }
 .onetaxonomy-facts dt {
   color: var(--otp-muted);
@@ -274,7 +279,6 @@
   white-space: nowrap;
 }
 .onetaxonomy-list {
-  margin: 0;
   padding-inline-start: 1.2em;
 }
 .onetaxonomy-list > li + li {
@@ -306,7 +310,6 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5em;
-  margin: 0;
   padding: 0;
   list-style: none;
 }

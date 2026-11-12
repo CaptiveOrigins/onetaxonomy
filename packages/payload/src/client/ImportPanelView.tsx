@@ -89,7 +89,7 @@ export function ImportPanelView({ job, canRun, starting, staleAfterMinutes, now,
   return (
     <Panel title="Import">
       {/* Polite live region: a screen reader hears the status and message when they change, not on every check. */}
-      <div role="status">
+      <div className="onetaxonomy-panel__live" role="status">
         <StatusLine status={j.status} word={status.word}>
           {status.means}
         </StatusLine>

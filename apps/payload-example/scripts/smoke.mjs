@@ -9,6 +9,7 @@
 // It makes one more account and one proposal, so it always starts its own site and never checks one you have open.
 import { spawn } from 'node:child_process'
 import { randomBytes } from 'node:crypto'
+import { existsSync, readFileSync } from 'node:fs'
 import { createServer } from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -40,8 +41,9 @@ const finished = (child) => new Promise((resolve) => (child.exitCode !== null ||
 const port = await freePort()
 const site = `http://localhost:${port}`
 const password = randomBytes(12).toString('base64url')
-// DATABASE_URI is cleared so the checks never run against a database you named for something else.
-const env = { ...process.env, PORT: String(port), EXAMPLE_URL: site, EXAMPLE_PASSWORD: password, DATABASE_URI: '' }
+// DATABASE_URI and EXAMPLE_UPLOADS are cleared so the checks never run against a database or a folder you named for
+// something else.
+const env = { ...process.env, PORT: String(port), EXAMPLE_URL: site, EXAMPLE_PASSWORD: password, DATABASE_URI: '', EXAMPLE_UPLOADS: '' }
 
 if (!flags.has('--dev') && !flags.has('--skip-build')) {
   const started = Date.now()
@@ -55,7 +57,14 @@ if (!flags.has('--dev') && !flags.has('--skip-build')) {
 
 const server = run([flags.has('--dev') ? 'dev' : 'start'], env, true)
 let log = ''
-for (const stream of [server.stdout, server.stderr]) stream.on('data', (chunk) => (log = (log + chunk).slice(-20_000)))
+// The throwaway folder the site keeps uploaded files in, as it says when it starts.
+let uploads = null
+for (const stream of [server.stdout, server.stderr])
+  stream.on('data', (chunk) => {
+    log = (log + chunk).slice(-20_000)
+    uploads ??= log.match(/^Uploads: (.+) \(deleted when this stops\)$/m)?.[1] ?? null
+  })
+const fixture = (name) => readFileSync(path.join(app, '../../fixtures', name))
 
 let failed = 0
 let passed = 0
@@ -88,6 +97,15 @@ async function call(method, pathname, { as, origin, from = 'same-origin', body }
   return { status: res.status, text, json, res }
 }
 const get = (pathname, as) => call('GET', pathname, { as })
+
+/** Uploads a file the way Payload's admin does: a form with the file and the document's other fields as JSON. */
+async function upload(name, bytes, type, as) {
+  const form = new FormData()
+  form.set('file', new Blob([bytes], { type }), name)
+  form.set('_payload', '{}')
+  const res = await fetch(`${site}/api/sources?depth=0`, { method: 'POST', redirect: 'manual', headers: { ...(as ? { Cookie: as } : {}), Origin: site }, body: form, signal: AbortSignal.timeout(120_000) })
+  return { status: res.status, json: await res.json().catch(() => null) }
+}
 
 async function signIn(email) {
   const { status, res } = await call('POST', '/api/users/login', { body: { email, password } })
@@ -236,7 +254,59 @@ async function checks() {
   check('the curator publishes version 2, and the answer holds the fields asked for and not the snapshot\'s content', publishing.status === 200 && answered?.status === 'published' && Boolean(answered?.publishedAt) && !('snapshot' in answered) && publishing.text.length < 2000, { status: publishing.status, keys: answered && Object.keys(answered), length: publishing.text.length })
   const publicSummary = await get(`/api/taxonomy-snapshots/${next?.doc}/summary`)
   const publicFrom = publicSummary.json?.derivedFrom?.proposal
+  await imports({ member, curator })
   check('a visitor now reads version 2\'s summary, with the ids and no names', publicSummary.status === 200 && publicFrom?.author === String(me?.id) && !('authorName' in publicFrom) && !('acceptedByName' in publicFrom) && !publicSummary.text.includes('Morgan') && !publicSummary.text.includes('Cara') && !publicSummary.text.includes('@example.org'), publicFrom ?? { status: publicSummary.status })
+}
+
+/** Imports: source files and jobs are the curator's, a job waits until it is run, and the same file gives the same snapshot. */
+async function imports({ member, curator }) {
+  const run = (id, as) => call('POST', `/api/taxonomy-imports/${id}/run`, { as, origin: site })
+  const snapshots = async () => ((await get('/api/taxonomy-snapshots?depth=0&limit=100', curator)).json?.docs ?? []).length
+  const jobs = (await get('/api/taxonomy-imports?depth=0', curator)).json?.docs ?? []
+  const waiting = jobs.find((j) => j.status === 'queued')
+  const broken = jobs.find((j) => j.status === 'failed')
+  check('the curator sees the two seeded import jobs: one waiting, and one that failed and says why', jobs.length === 2 && Boolean(waiting) && waiting.attempts === 0 && Boolean(broken) && !broken.snapshot && /Missing required column/.test(broken.diagnostics?.[0]?.message ?? ''), jobs.map((j) => [j.title, j.status, j.message]))
+  const files = (await get('/api/sources?depth=0', curator)).json?.docs ?? []
+  const first = files.find((f) => f.filename === 'checklist.csv')
+  // Payload gives a file's address with the site in front; `get` wants the path.
+  const address = first?.url ? first.url.replace(site, '') : '/api/sources/file/checklist.csv'
+  check('the curator reads the seeded source file back, byte for byte', address.startsWith('/api/sources/file/') && (await get(address, curator)).text === String(fixture('checklist.csv')), files.map((f) => [f.filename, f.url]))
+  for (const [who, as] of [['a visitor', undefined], ['the member', member]]) {
+    const seen = { files: (await get('/api/sources?depth=0', as)).status, file: (await get(address, as)).status, jobs: (await get('/api/taxonomy-imports?depth=0', as)).status, job: (await get(`/api/taxonomy-imports/${waiting?.id}`, as)).status, run: (await run(waiting?.id, as)).status, upload: (await upload('mine.csv', 'id,name\n', 'text/csv', as)).status }
+    check(`${who} is refused the source files, a file by its address, the import jobs, running one, and uploading`, Object.values(seen).every((status) => status === 403 || status === 404), seen)
+  }
+  check('nobody but the curator ran the waiting job or added a file', (await get(`/api/taxonomy-imports/${waiting?.id}?depth=0`, curator)).json?.status === 'queued' && ((await get('/api/sources?depth=0', curator)).json?.docs ?? []).length === files.length)
+  const page = await get(`/admin/collections/taxonomy-imports/${waiting?.id}`, curator)
+  check('the curator\'s import job page in the admin carries the plugin\'s panel', page.status === 200 && page.text.includes('onetaxonomy-panel'), { status: page.status })
+
+  // Running the waiting job gives the committed fixture, checksum and all, staged.
+  const release1 = JSON.parse(fixture('checklist.json'))
+  const before = await snapshots()
+  const ran = await run(waiting?.id, curator)
+  const made = (await get(`/api/taxonomy-snapshots/${ran.json?.snapshot}?depth=0`, curator)).json
+  check('the curator runs the waiting job: a staged snapshot with the checksum of fixtures/checklist.json', ran.status === 200 && ran.json?.status === 'done' && ran.json?.checksum === release1.checksum && made?.status === 'staged' && made?.snapshotId === 'fixture-checklist' && (await snapshots()) === before + 1, ran.json ?? { status: ran.status })
+  check('the staged import is "not found" for a visitor', (await get(`/api/taxonomy-snapshots/${ran.json?.snapshot}`)).status === 404)
+  const again = await run(waiting?.id, curator)
+  check('running the finished job again stores nothing new', again.status === 200 && again.json?.status === 'done' && again.json?.snapshot === ran.json?.snapshot && (await snapshots()) === before + 1, again.json ?? { status: again.status })
+  const settings = (await get(`/api/taxonomy-imports/${waiting?.id}?depth=0`, curator)).json?.settings
+  const same = await call('POST', '/api/taxonomy-imports?depth=0', { as: curator, origin: site, body: { title: 'The same file again', format: 'csv', file: first?.id, settings } })
+  const found = await run(same.json?.doc?.id, curator)
+  check('a new job over the same file and settings waits, then finds the snapshot already stored', same.status === 201 && same.json?.doc?.status === 'queued' && found.json?.status === 'already-imported' && found.json?.snapshot === ran.json?.snapshot && (await snapshots()) === before + 1, found.json ?? same.json?.errors ?? { status: same.status })
+  const failedAgain = await run(broken?.id, curator)
+  check('running the failed job again fails the same way and stores nothing', failedAgain.status === 200 && failedAgain.json?.status === 'failed' && /Missing required column/.test(failedAgain.json?.message ?? '') && (await snapshots()) === before + 1, failedAgain.json ?? { status: failedAgain.status })
+
+  // The whole way round over HTTP: upload release 2, make its job, run it.
+  const release2 = JSON.parse(fixture('checklist-v2.json'))
+  const sent = await upload('checklist-v2.csv', fixture('checklist-v2.csv'), 'text/csv', curator)
+  check('the curator uploads a file, and it lands in the site\'s throwaway folder', sent.status === 201 && Boolean(uploads) && existsSync(path.join(uploads ?? '', sent.json?.doc?.filename ?? 'none')), sent.json?.errors ?? { status: sent.status, uploads })
+  const v2 = { ...settings, snapshot: { ...settings?.snapshot, version: '2' }, source: { ...settings?.source, externalVersion: '2' }, options: { ...settings?.options, classification: { ...settings?.options?.classification, version: '2' } } }
+  const job2 = await call('POST', '/api/taxonomy-imports?depth=0', { as: curator, origin: site, body: { title: 'Checklist, release 2', format: 'csv', file: sent.json?.doc?.id, settings: v2 } })
+  const ran2 = await run(job2.json?.doc?.id, curator)
+  check('a job over the uploaded file gives the checksum of fixtures/checklist-v2.json', job2.status === 201 && ran2.json?.status === 'done' && ran2.json?.checksum === release2.checksum && (await snapshots()) === before + 2, ran2.json ?? job2.json?.errors ?? { status: job2.status })
+  const html = await upload('page.html', '<!doctype html><script>alert(1)</script>', 'text/html', curator)
+  check('an HTML file is refused as a source file, even from the curator', html.status >= 400 && html.status < 500, { status: html.status })
+  const edited = await call('PATCH', `/api/taxonomy-imports/${job2.json?.doc?.id}?depth=0`, { as: curator, origin: site, body: { status: 'queued' } })
+  check('a finished job\'s results can\'t be edited, even by the curator', edited.status >= 400 && edited.status < 500 && (await get(`/api/taxonomy-imports/${job2.json?.doc?.id}?depth=0`, curator)).json?.status === 'done', { status: edited.status })
 }
 
 let up = false
@@ -253,6 +323,7 @@ try {
   server.kill('SIGTERM')
   await finished(server)
 }
+if (up) check('the folder of uploaded files is gone once the site has stopped', Boolean(uploads) && !existsSync(uploads), { uploads })
 if (failed && up) console.log(`\nThe site's last output:\n${log.split('\n').slice(-25).join('\n')}`)
 console.log(`\n${passed} passed, ${failed} failed.`)
 process.exit(failed ? 1 : 0)

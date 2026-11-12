@@ -2,6 +2,35 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: imports in the example site, and the admin clicked through
+
+Scope: `apps/payload-example` (the `sources` upload collection, import jobs on, two seeded jobs, the throwaway uploads folder, `scripts/smoke.mjs`, the new `scripts/click-through.mjs`); and in `packages/payload`, the panels' spacing (`src/client/panels.css`) and the fields a panel already shows, now hidden in the form (`src/collections.ts`, `src/imports.ts`). Plugin tests went from 247 to 249, all unit tests from 631 to 633, the example's smoke checks from 58 to 74. The click-through has 40 checks and is not in CI.
+
+### Covered
+
+- **Who can reach a source file** (`scripts/smoke.mjs`, in CI): a visitor and a member are each refused the list of source files, a file by its address, the import jobs, running one, and uploading; afterwards nobody but the curator has run the waiting job or added a file. An HTML file is refused as a source file even from the curator.
+- **Import jobs over HTTP** (`scripts/smoke.mjs`): the seed's two jobs are there, one waiting and one failed with its reason; the curator runs the waiting one into a staged snapshot with the checksum of `fixtures/checklist.json`; running it again stores nothing new; a second job over the same file and settings waits until run, then finds that snapshot; the failed job fails the same way and stores nothing; a job over a newly uploaded file gives the checksum of `fixtures/checklist-v2.json`; a finished job's results can't be edited.
+- **Nothing left behind** (`scripts/smoke.mjs`): the folder of uploaded files is gone once the site has stopped.
+- **The form doesn't repeat the panel, and still holds what it hides** (`snapshots.test.ts`, `imports.test.ts`, 2 new tests): the fields are hidden and read-only, not disabled, and the snapshot's label is still its title and a list column.
+- **In a real browser** (`scripts/click-through.mjs`, headless Chrome on the built site, as the made-up curator, not in CI): the earlier scratch run's steps (publishing a snapshot by keyboard, the wait on an unsaved view, accepting a proposal, pasting a snapshot, Payload's own Save on one), and new ones: a waiting job run by keyboard to Done, with its checksum and a link to the staged snapshot; the failed job run again; a job over the same file ending at Already imported; a finished job renamed with Payload's own Save, its result unchanged; the hidden fields holding the run's result; the snapshot list still naming each snapshot; the panel's parts spaced apart on every page looked at; and no request off the site except Payload's code editor.
+
+### Checked by breaking it
+
+Six deliberate breaks, each failing its own check, then restored. In the smoke test, three in one run: source files readable by anyone (the visitor's and the member's refusals), jobs running when made (the seeded waiting job), and the uploads folder not deleted. In the unit tests: the hidden fields disabled instead. In the click-through: the old margin reset (the spacing check, seen on the build made before the fix), and the panel no longer putting a run's result into the form (the hidden fields were empty, and Payload's Save on the finished job was refused). That last break first hung the script: the unsaved form made the browser ask "Leave site?", which held every later step. The script now answers such a question, counts it as a problem, and gives up on a browser that doesn't answer within two minutes.
+
+### Gaps left
+
+- **The click-through is not in CI.** It needs a Chrome on the machine and the network for Payload's code editor, and takes about two minutes. It is run by hand after a change to a panel or a collection's fields. What CI runs for the same promises: the jsdom panel tests and the smoke test.
+- **The panels' looks are measured only as gaps.** The script checks that no two parts of a panel touch. Screenshots were looked at once for this change, in light and dark; nothing compares them.
+- **The empty Counts group** from the last audit can't be seen any more, because the form no longer draws that group. Its cause was never found.
+- **Imports from a URL** aren't in the example site. The plugin's own tests cover them with a stand-in `fetch`, never a real network.
+- **A screen reader, Safari, Firefox, a phone, Postgres and SQLite:** as before, not run.
+
+### Left out as overkill
+
+- An upload collection's own behaviour (file names, sizes, MIME sniffing): Payload's. The example checks only its access rules and that Payload's refusal of HTML is on.
+- Clicking through every seeded record. One of each state a panel has is enough.
+
 ## 2026-11-11: a snapshot's content only on request
 
 Scope: `packages/payload`: the `contentOnRequest` hook and the content field's admin condition (`src/collections.ts`), the panels reading again after Payload's own Save (`src/client/wired.tsx`); and `apps/payload-example`. ADR 0012 point 17. Plugin tests went from 237 to 247, all unit tests from 621 to 631, the example's smoke checks from 55 to 58.
