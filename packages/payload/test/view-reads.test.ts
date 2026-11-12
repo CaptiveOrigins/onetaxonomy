@@ -90,6 +90,15 @@ describe('a view read through Payload says what its snapshot\'s status is', () =
     }
   })
 
+  it('fills a view\'s snapshot in without its content when the relationship is populated', async () => {
+    for (const user of [reader, manager]) {
+      const deep = await readView(views.current!, user, { depth: 1 })
+      expect(deep.snapshot).toMatchObject({ id: snapshots.current, snapshotId: 'fixture-amniotes', status: 'published' })
+      expect(deep.snapshot).not.toHaveProperty('snapshot')
+      expect(JSON.stringify(deep.snapshot)).not.toContain('"schemaVersion"')
+    }
+  })
+
   it('keeps the withdrawn snapshot itself hidden from readers, at any depth', async () => {
     const deep = await readView(views.old!, reader, { depth: 2 })
     expect(deep.source.withdrawn).toBe(true)
@@ -167,6 +176,15 @@ describe('GraphQL', () => {
     const one = await run(`{ TaxonomyView(id: "${views.old}", select: true) { source } }`, reader)
     expect(one.errors).toBeUndefined()
     expect(one.data.TaxonomyView.source).toEqual((await readView(views.old!)).source)
+  })
+
+  it('gives a snapshot\'s content only with the select argument, which reads the fields the query names', async () => {
+    const plain = await run(`{ TaxonomySnapshot(id: "${snapshots.current}") { checksum snapshot } }`, reader)
+    expect(plain.errors).toBeUndefined()
+    expect(plain.data.TaxonomySnapshot).toMatchObject({ checksum: sealed.amniotes().checksum, snapshot: null })
+    const named = await run(`{ TaxonomySnapshot(id: "${snapshots.current}", select: true) { checksum snapshot } }`, reader)
+    expect(named.errors).toBeUndefined()
+    expect(named.data.TaxonomySnapshot.snapshot).toEqual(sealed.amniotes())
   })
 
   it('refuses anonymous readers as before', async () => {

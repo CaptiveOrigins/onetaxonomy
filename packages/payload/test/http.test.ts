@@ -114,6 +114,25 @@ describe('over HTTP: who you are comes from the token', () => {
     expect((await get(`/${SNAPSHOTS}/${staged}`, managerA)).status).toBe(200)
   })
 
+  it('answers a snapshot and a list without the content, and with it when the query selects it', async () => {
+    const one = await get(`/${SNAPSHOTS}/${snapA}?depth=0`, ann)
+    expect(one.body).toMatchObject({ id: snapA, snapshotId: 'fixture-amniotes', checksum: sealed.amniotes().checksum })
+    expect(one.body).not.toHaveProperty('snapshot')
+    expect(one.text).not.toContain('"schemaVersion"')
+    expect((await get(`/${SNAPSHOTS}?depth=0&limit=50`, managerA)).text).not.toContain('"schemaVersion"')
+    const named = await get(`/${SNAPSHOTS}/${snapA}?depth=0&select[snapshot]=true`, ann)
+    expect(named.body.snapshot).toEqual(sealed.amniotes())
+    // A view at depth 1 fills its snapshot in, still without the content.
+    const view = await get(`/${VIEWS}/${viewPublished}?depth=1`, ann)
+    expect(view.body.snapshot).toMatchObject({ id: snapA, version: '1' })
+    expect(view.body.snapshot).not.toHaveProperty('snapshot')
+    // A manager's PATCH that names no select answers without it too.
+    const patched = await http('PATCH', `/${SNAPSHOTS}/${staged}?depth=0`, { as: managerA, body: {} })
+    expect(patched.status).toBe(200)
+    expect(patched.body.doc).toMatchObject({ id: staged, status: 'staged' })
+    expect(patched.text).not.toContain('"schemaVersion"')
+  })
+
   it('treats a token that isn\'t one, or is for nobody, as anonymous', async () => {
     for (const token of ['not-a-token', `${tokens.get(ann)!.slice(0, -4)}AAAA`]) {
       const res = await http('GET', `/${SNAPSHOTS}/${snapA}/search?q=aves`, { token })

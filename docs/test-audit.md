@@ -2,6 +2,35 @@
 
 Each audit lists what this repo promises, the tests that prove it, and the gaps: those closed in the same pass and those left, with why. Audits run after each feature or fix, and at least every 14 days while the repo has commits. Newest first.
 
+## 2026-11-11: a snapshot's content only on request
+
+Scope: `packages/payload`: the `contentOnRequest` hook and the content field's admin condition (`src/collections.ts`), the panels reading again after Payload's own Save (`src/client/wired.tsx`); and `apps/payload-example`. ADR 0012 point 17. Plugin tests went from 237 to 247, all unit tests from 621 to 631, the example's smoke checks from 55 to 58.
+
+### Covered
+
+- **No read carries the content unless it names it** (`snapshots.test.ts`, 5 new tests on a real Payload with an in-memory MongoDB): what storing answers; a read, a list, an update's answer and a delete's answer, for a manager and for trusted code; a select that names the content gets it exactly as sealed, and a caller's own select is left alone, whether it names fields or only leaves some out; the update lock (below); the content field is shown in the admin on the new-snapshot form only.
+- **The same over REST and GraphQL** (`http.test.ts`, `view-reads.test.ts`, 3 new tests): a snapshot, a list, a manager's `PATCH` and a view with its snapshot filled in answer without the content; `?select[snapshot]=true` and GraphQL's `select: true` give it; a plain GraphQL query answers `null` and no error.
+- **The lock on sealed content still holds** (`snapshots.test.ts`, one of the 5): an update that changes the content is refused when the caller read and selected nothing of it, because the comparison is with the stored document. The earlier lock tests ran unchanged.
+- **Everything in the plugin that needs the content still gets it**: views, imports, proposals, the summary, the export and the read API all ran their existing tests after `test/helpers.ts` stopped reading whole documents by default.
+- **The panels follow Payload's own Save** (`panels-wired.test.tsx`, 2 new tests in jsdom): the snapshot panel reads its summary again, and the view panel its view and drawing, when Payload reports the document saved, and not otherwise.
+- **Over HTTP, in the example site** (`scripts/smoke.mjs`, 3 new checks): a visitor's plain read and list hold no content and a select gets it; the curator's stored-snapshot admin page is sent without the content and without the field; the new-snapshot form still has the field.
+
+### Checked by breaking it
+
+Five deliberate breaks, one at a time, each failing at least one test: the hook taken off the collection (6 tests); the admin condition removed (2, one of them GraphQL, where the condition is what lets a plain query answer `null`); the hook changing a caller's own select (52); the view hook no longer selecting the content it checks (7); the panels ignoring Payload's Save (2).
+
+### Gaps left
+
+- **The browser run is still a scratch script, not in CI.** 28 checks in headless Chrome on the example site as the made-up curator: a stored snapshot's page is sent without content and has no editor; a sealed fixture pasted into the new-snapshot form is stored with the same checksum; Payload's own Save sends one `PATCH` under 4 kB with the status and no content, and the stored content is untouched; the panel then says the new status.
+- **One thing in that run isn't explained.** After a snapshot was made through the form and its page loaded again, Payload's read-only Counts group showed its heading with no fields under it, and they didn't appear after two seconds, a scroll or a Save. Payload draws a group's fields only once the group is in view. Four shorter runs of the same steps on the same build drew them, as did seeded snapshots and ones made through the API. It may be headless Chrome and Payload's lazy drawing, and it may not: the cause wasn't found, and it hasn't been looked at in a browser with a window.
+- **Hooks a host adds** that run after a read or a change get the document without `snapshot`. That is documented, not tested with a host's hook.
+- **Postgres and SQLite:** as before, not run.
+
+### Left out as overkill
+
+- Every operation with every kind of select: the hook is one line, and the tests cover no select, a select naming the content, an include-mode select naming other fields and an exclude-mode one.
+- Timing a 15 MB snapshot's admin page before and after. The test checks the content isn't sent, which is the cause.
+
 ## 2026-11-11: Payload plugin part 5, admin panels
 
 Scope: `packages/payload`: the panels (`src/client/`), a snapshot's summary (`src/summary.ts`), the `admin.panels` option and the panel field on each collection; and `apps/payload-example`, which now shows the panels. ADR 0012 point 16. Plugin tests went from 143 to 237, all unit tests from 527 to 621, the example's smoke checks from 47 to 55.

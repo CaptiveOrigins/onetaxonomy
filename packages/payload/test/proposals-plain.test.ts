@@ -4,7 +4,7 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { oneTaxonomy } from '../src'
 import { resolveOptions } from '../src/types'
-import { access, callEndpoint, makeUser, sealed, startPayload, usersCollection } from './helpers'
+import { access, callEndpoint, makeUser, sealed, startPayload, usersCollection, WITH_CONTENT } from './helpers'
 
 // One site, no tenants, on a database without transactions.
 const SNAPSHOTS = 'taxonomy-snapshots'
@@ -81,7 +81,7 @@ describe('proposals on a site without tenants', () => {
 
     const done = await accept(p.id, manager, { version: '2', checksum: shared.checksum })
     expect(done).toMatchObject({ status: 200, body: { snapshot: { version: '2', status: 'staged' } } })
-    const made = (await payload.findByID({ collection: SNAPSHOTS as never, id: done.body.snapshot.doc, depth: 0 })) as Doc
+    const made = (await payload.findByID({ collection: SNAPSHOTS as never, id: done.body.snapshot.doc, depth: 0, select: WITH_CONTENT })) as Doc
     expect((made.snapshot as DatasetSnapshot).derivedFrom!.proposal).toMatchObject({ author: `keeper-${String(ann.id).slice(-4)}`, acceptedBy: `keeper-${String(manager.id).slice(-4)}` })
     // No `displayName` on this site: a proposal shows its author's id and no name.
     expect(((await payload.findByID({ collection: PROPOSALS as never, id: p.id, depth: 0, user: ben, overrideAccess: false })) as Doc).authorName ?? null).toBeNull()

@@ -3,7 +3,7 @@ import type { Payload, TypedUser } from 'payload'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 
 import { oneTaxonomy, PERSON_ID, proposalChecksum } from '../src'
-import { access, callEndpoint, makeUser, roleOf, sealed, startPayload, tenantsCollection, usersCollection } from './helpers'
+import { access, callEndpoint, makeUser, roleOf, sealed, startPayload, tenantsCollection, usersCollection, WITH_CONTENT } from './helpers'
 
 const SNAPSHOTS = 'taxonomy-snapshots'
 const PROPOSALS = 'taxonomy-proposals'
@@ -55,7 +55,7 @@ const readAs = async (id: unknown, user: TypedUser) => (await payload.findByID({
 const seen = async (user: TypedUser) => (await payload.find({ collection: PROPOSALS as never, user, overrideAccess: false, depth: 0, limit: 100 })).docs.map((d) => (d as Doc).id as string)
 const snapshotsSeen = async (user: TypedUser) => (await payload.find({ collection: SNAPSHOTS as never, user, overrideAccess: false, depth: 0, limit: 100 })).docs.map((d) => String((d as Doc).id))
 const snapshotCount = async () => (await payload.count({ collection: SNAPSHOTS as never })).totalDocs
-const snapshot = async (id: unknown) => (await payload.findByID({ collection: SNAPSHOTS as never, id: id as string, depth: 0 })) as Doc
+const snapshot = async (id: unknown) => (await payload.findByID({ collection: SNAPSHOTS as never, id: id as string, depth: 0, select: { ...(WITH_CONTENT as object), tenant: true } as never })) as Doc
 const preview = (id: unknown, user: TypedUser | null, query: Record<string, string | number> = {}) => callEndpoint(payload, PROPOSALS, '/:id/preview', String(id), query, user)
 const accept = (id: unknown, user: TypedUser | null, body?: unknown) => callEndpoint(payload, PROPOSALS, '/:id/accept', String(id), {}, user, body)
 const decline = (id: unknown, user: TypedUser | null, body?: unknown) => callEndpoint(payload, PROPOSALS, '/:id/decline', String(id), {}, user, body)
@@ -259,8 +259,9 @@ describe('private and shared', () => {
     await expect(update(empty.id, { status: 'shared' }, ann)).rejects.toThrow(/moves nothing/)
     await remove(empty.id, ann)
     // A manager can draft over a staged snapshot, but not share it until the snapshot is published.
-    const staged = (await payload.create({ collection: SNAPSHOTS as never, data: { snapshot: sealed.checklist() } as never, user: managerA, overrideAccess: false })) as Doc
-    const c = (staged.snapshot as DatasetSnapshot).classifications[0]!
+    const checklist = sealed.checklist()
+    const staged = (await payload.create({ collection: SNAPSHOTS as never, data: { snapshot: checklist } as never, user: managerA, overrideAccess: false })) as Doc
+    const c = checklist.classifications[0]!
     const first = c.placements.find((x) => x.parent !== null)!
     const early = await propose(managerA, { snapshot: staged.id, proposal: { title: 'Early', base: { kind: 'classification', id: c.id, version: c.version }, moves: [{ node: first.concept, from: first.parent, to: null }] } })
     await expect(update(early.id, { status: 'shared' }, managerA)).rejects.toThrow(/while its snapshot is published/)
@@ -570,7 +571,7 @@ describe('accepting', () => {
     const doc = await stored(q.id)
     expect(doc.status).toBe('accepted')
     expect(String(idOf(doc.acceptedInto))).toBe(won.body.snapshot.doc)
-    const all = (await payload.find({ collection: SNAPSHOTS as never, depth: 0, limit: 100 })).docs as Doc[]
+    const all = (await payload.find({ collection: SNAPSHOTS as never, depth: 0, limit: 100, select: WITH_CONTENT })).docs as Doc[]
     expect(all.filter((s) => (s.snapshot as DatasetSnapshot).derivedFrom?.proposal?.id === q.proposalId)).toHaveLength(1)
   })
 })

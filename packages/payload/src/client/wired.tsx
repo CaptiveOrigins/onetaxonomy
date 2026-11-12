@@ -34,22 +34,23 @@ const POLL_MS = 3000
 const idIn = (v: unknown): string | null => (typeof v === 'string' || typeof v === 'number' ? String(v) : v && typeof v === 'object' && 'id' in v ? idIn((v as { id: unknown }).id) : null)
 const select = (fields: string[]) => fields.map((f) => `select[${encodeURIComponent(f)}]=true`).join('&')
 
-/** Where the site's API and admin are, and this document. */
+/** Where the site's API and admin are, this document, and when Payload's own form last saved it. */
 function usePlace() {
   const { config } = useConfig()
-  const { id, collectionSlug, hasSavePermission } = useDocumentInfo()
+  const { id, collectionSlug, hasSavePermission, lastUpdateTime } = useDocumentInfo()
   const api = `${config.serverURL ?? ''}${config.routes.api}`
   const admin = config.routes.admin.replace(/\/$/, '')
   const doc = id !== undefined && id !== null && collectionSlug ? `${api}/${collectionSlug}/${encodeURIComponent(String(id))}` : null
   const hrefOf = (slug: string, docId: string | null | undefined) => (docId ? `${admin}/collections/${slug}/${encodeURIComponent(docId)}` : null)
-  return { doc, hrefOf, mayWrite: Boolean(hasSavePermission) }
+  return { doc, hrefOf, mayWrite: Boolean(hasSavePermission), savedAt: lastUpdateTime }
 }
 
 /**
  * Fetches `url` as the signed-in person. `reload` fetches it again and keeps showing what is there until the new
- * answer arrives. A null `url` waits.
+ * answer arrives. A null `url` waits. A change in `savedAt` fetches it again too: that is Payload's own Save button,
+ * which changes the document without the panel doing anything.
  */
-function useLoad<T>(url: string | null): [Loadable<T>, () => void] {
+function useLoad<T>(url: string | null, savedAt: unknown): [Loadable<T>, () => void] {
   const [state, setState] = useState<Loadable<T>>({ state: 'loading' })
   const [turn, setTurn] = useState(0)
   const shown = useRef<string | null>(null)
@@ -69,7 +70,7 @@ function useLoad<T>(url: string | null): [Loadable<T>, () => void] {
       },
     )
     return () => stop.abort()
-  }, [url, turn])
+  }, [url, turn, savedAt])
   return [state, useCallback(() => setTurn((n) => n + 1), [])]
 }
 
@@ -116,8 +117,8 @@ function useSetStatus(doc: string | null, what: string, after: () => void): [Out
 
 /** On a snapshot's edit page: what it holds and where it came from, and the buttons to publish or withdraw it. */
 export function SnapshotPanel(_props: PanelProps) {
-  const { doc, mayWrite } = usePlace()
-  const [summary, reload] = useLoad<SnapshotSummary>(doc ? `${doc}/summary` : null)
+  const { doc, mayWrite, savedAt } = usePlace()
+  const [summary, reload] = useLoad<SnapshotSummary>(doc ? `${doc}/summary` : null, savedAt)
   const [outcome, setStatus] = useSetStatus(doc, 'snapshot', reload)
   if (!doc) return null
   return <SnapshotPanelView summary={summary} canManage={mayWrite} outcome={outcome} onSetStatus={setStatus} onRetry={reload} />
@@ -139,10 +140,10 @@ const savedView = (d: ViewDoc): SavedView => {
 
 /** On a view's edit page: its status, its snapshot, a small drawing of the saved view, and the buttons to publish or withdraw it. */
 export function ViewPanel({ slugs }: PanelProps) {
-  const { doc, hrefOf, mayWrite } = usePlace()
+  const { doc, hrefOf, mayWrite, savedAt } = usePlace()
   const unsaved = useFormModified()
-  const [view, reloadView] = useLoad<ViewDoc>(doc ? `${doc}?depth=0&${select(VIEW_FIELDS)}` : null)
-  const [preview, reloadPreview] = useLoad<ProjectionBody>(doc ? `${doc}/projection?limit=${PREVIEW_NODES}` : null)
+  const [view, reloadView] = useLoad<ViewDoc>(doc ? `${doc}?depth=0&${select(VIEW_FIELDS)}` : null, savedAt)
+  const [preview, reloadPreview] = useLoad<ProjectionBody>(doc ? `${doc}/projection?limit=${PREVIEW_NODES}` : null, savedAt)
   const reload = () => {
     reloadView()
     reloadPreview()
@@ -189,8 +190,8 @@ const jobOf = (d: JobDoc): ImportJob => ({
 
 /** On an import job's edit page: how it is going, what it found, the snapshot it made, and a button to run it. */
 export function ImportPanel({ slugs, staleAfterMinutes = 15 }: PanelProps) {
-  const { doc, hrefOf, mayWrite } = usePlace()
-  const [raw, reload] = useLoad<JobDoc>(doc ? `${doc}?depth=0&${select(JOB_FIELDS)}` : null)
+  const { doc, hrefOf, mayWrite, savedAt } = usePlace()
+  const [raw, reload] = useLoad<JobDoc>(doc ? `${doc}?depth=0&${select(JOB_FIELDS)}` : null, savedAt)
   const [starting, setStarting] = useState(false)
   const [outcome, setOutcome] = useState<Outcome>(null)
   const [now, setNow] = useState(() => Date.now())
@@ -256,9 +257,9 @@ type DecisionDoc = { status?: string; decisionNote?: string | null; decidedAt?: 
 
 /** On a proposal's edit page: what it would change, in names, and for a manager the buttons to accept or decline it. */
 export function ProposalPanel({ slugs, limits = { version: 100, note: 2000 } }: PanelProps) {
-  const { doc, hrefOf } = usePlace()
-  const [preview, reloadPreview] = useLoad<ProposalPreview>(doc ? `${doc}/preview` : null)
-  const [decided, reloadDecided] = useLoad<DecisionDoc>(doc ? `${doc}?depth=0&${select(DECISION_FIELDS)}` : null)
+  const { doc, hrefOf, savedAt } = usePlace()
+  const [preview, reloadPreview] = useLoad<ProposalPreview>(doc ? `${doc}/preview` : null, savedAt)
+  const [decided, reloadDecided] = useLoad<DecisionDoc>(doc ? `${doc}?depth=0&${select(DECISION_FIELDS)}` : null, savedAt)
   const [outcome, setOutcome] = useState<Outcome>(null)
   const saved = useSaved()
 

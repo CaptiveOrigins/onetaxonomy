@@ -9,7 +9,7 @@ import {
   type DatasetSnapshot,
   type TaxonomicView,
 } from '@captiveorigins/onetaxonomy-core'
-import { APIError, type CollectionBeforeChangeHook, type CollectionBeforeDeleteHook, type CollectionBeforeValidateHook, type CollectionConfig, type Field, type Where } from 'payload'
+import { APIError, type CollectionBeforeChangeHook, type CollectionBeforeDeleteHook, type CollectionBeforeOperationHook, type CollectionBeforeValidateHook, type CollectionConfig, type Field, type Where } from 'payload'
 
 import { createAccess, idOf, manageAccess, readAccess, tenantOf } from './access.js'
 import { panelField, type ResolvedOptions } from './types.js'
@@ -109,6 +109,16 @@ const snapshotBeforeChange = (opts: ResolvedOptions): CollectionBeforeChangeHook
   return data
 }
 
+/**
+ * A stored snapshot can be 15 MB, so its content is read only when it is asked for by name. A read, create, update or
+ * delete that names no `select` answers with every field except `snapshot`; `select: { snapshot: true }` reads it.
+ * Payload's admin pages, its lists and a populated relationship name no `select`, so none of them carries the content.
+ * The lock on sealed content doesn't depend on this: an update compares against the stored document, read whole.
+ */
+const CONTENT_OPERATIONS = new Set(['read', 'create', 'update', 'delete'])
+export const contentOnRequest: CollectionBeforeOperationHook = ({ args, operation }) =>
+  CONTENT_OPERATIONS.has(operation) && args && (args as { select?: unknown }).select == null ? ({ ...args, select: { snapshot: false } } as typeof args) : args
+
 /** Only staged snapshots and draft views can be deleted: published ones may be pinned by views and pages. */
 const onlyUnpublishedDeleted = (slug: string, deletable: string, what: string): CollectionBeforeDeleteHook => async ({ id, req }) => {
   const doc = (await req.payload.findByID({ collection: slug as never, id, depth: 0, req, overrideAccess: true, disableErrors: true, select: { status: true } as never })) as { status?: string } | null
@@ -129,7 +139,9 @@ const viewBeforeChange = (opts: ResolvedOptions): CollectionBeforeChangeHook => 
   const to = String(data.status ?? status)
   if (contentChanged || (to === 'published' && status !== 'published')) {
     if (!snapshotRef) fail('A view needs the snapshot it is shown over.')
-    const snap = (await req.payload.findByID({ collection: opts.slugs.snapshots as never, id: snapshotRef!, depth: 0, req, overrideAccess: true, disableErrors: true })) as Record<string, unknown> | null
+    // The content is only read when the view has to be checked against it.
+    const select = { snapshotId: true, version: true, checksum: true, status: true, ...(opts.tenant ? { [opts.tenant.field]: true } : {}), ...(contentChanged ? { snapshot: true } : {}) }
+    const snap = (await req.payload.findByID({ collection: opts.slugs.snapshots as never, id: snapshotRef!, depth: 0, req, overrideAccess: true, disableErrors: true, select: select as never })) as Record<string, unknown> | null
     if (!snap) fail('The view\'s snapshot doesn\'t exist.')
     if (opts.tenant) {
       const tenant = idOf(data[opts.tenant.field] ?? originalDoc?.[opts.tenant.field])
@@ -177,7 +189,17 @@ export function snapshotsCollection(opts: ResolvedOptions): CollectionConfig {
     fields: [
       ...panelField(opts, 'SnapshotPanel'),
       { name: 'label', type: 'text', admin: { readOnly: true, description: 'The snapshot\'s id and version. Set from the snapshot.' } },
-      { name: 'snapshot', type: 'json', required: true, admin: { description: 'The sealed OneTaxonomy snapshot, stored exactly as given. Its checksum is checked when it is stored and when it is read.' } },
+      {
+        name: 'snapshot',
+        type: 'json',
+        required: true,
+        admin: {
+          description: 'Paste a sealed OneTaxonomy snapshot. It is stored exactly as given, and its checksum is checked when it is stored and when it is read.',
+          // Only on the new-snapshot form. A stored snapshot's page never loads the content: the panel above shows what it holds.
+          // A condition also makes a required field nullable in GraphQL, so a plain query answers null for it and not an error.
+          condition: (_data, _sibling, { operation }) => operation !== 'update',
+        },
+      },
       { name: 'snapshotId', type: 'text', index: true, admin: { readOnly: true } },
       { name: 'version', type: 'text', admin: { readOnly: true } },
       { name: 'checksum', type: 'text', index: true, admin: { readOnly: true } },
@@ -192,6 +214,7 @@ export function snapshotsCollection(opts: ResolvedOptions): CollectionConfig {
       ...tenantField(opts),
     ],
     hooks: {
+      beforeOperation: [contentOnRequest],
       beforeValidate: [fillTenant(opts)],
       beforeChange: [snapshotBeforeChange(opts)],
       beforeDelete: [onlyUnpublishedDeleted(slug, 'staged', 'snapshot')],

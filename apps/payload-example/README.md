@@ -2,7 +2,7 @@
 
 A small Payload and Next.js site that uses [`@captiveorigins/payload-plugin-onetaxonomy`](../../packages/payload). It shows the plugin set up the way a real site would: accounts with two roles, public pages that draw published views, and proposals that record a person by an id, with a public handle shown beside it and no email address.
 
-> **Status: an example, not a product.** It runs on this machine only, on a throwaway in-memory MongoDB, with made-up accounts and the repository's illustrative fixtures. Tested: 55 checks over HTTP with sign-in cookies (`pnpm smoke`), on `next dev` and on the built site, with Payload 3.93 and Next.js 16; the three public pages were looked at in headless Chrome, in light and dark, at desktop width and at 520 px; and the admin's panels were clicked through once in headless Chrome as the curator, in light and dark (publishing a snapshot with the keyboard, a view, and accepting a proposal). That last run is not in CI. Not tested: a screen reader, Safari, Firefox, a phone, Postgres or SQLite, or a deployed site.
+> **Status: an example, not a product.** It runs on this machine only, on a throwaway in-memory MongoDB, with made-up accounts and the repository's illustrative fixtures. Tested: 58 checks over HTTP with sign-in cookies (`pnpm smoke`), on `next dev` and on the built site, with Payload 3.93 and Next.js 16; the three public pages were looked at in headless Chrome, in light and dark, at desktop width and at 520 px; and the admin's panels were clicked through in headless Chrome as the curator, in light and dark (publishing a snapshot with the keyboard, a view, accepting a proposal, and storing a snapshot pasted into the new-snapshot form). Those runs are not in CI. Not tested: a screen reader, Safari, Firefox, a phone, Postgres or SQLite, or a deployed site.
 
 ## What it shows
 
@@ -50,6 +50,7 @@ pnpm --filter @captiveorigins/onetaxonomy-payload-example smoke
 This builds the site, starts it on a free port with its own database, and sends it requests the way a browser would. It takes about 15 seconds on a recent Mac. It checks that:
 
 - a visitor reads the published snapshot and views, through the pages, REST and GraphQL, and gets "not found" for anything staged;
+- a visitor's plain read and list of snapshots hold no content, and a read that selects the content gets it;
 - a visitor can't store a snapshot, make a proposal, or list accounts or proposals;
 - a sign-in cookie can't be read by scripts, and counts for nothing from another site;
 - a member can't make themself a curator, sees only their own account, and is sent away from the admin;
@@ -58,6 +59,7 @@ This builds the site, starts it on a free port with its own database, and sends 
 - a changed handle shows on the accepted proposal at once, and the sealed version doesn't change;
 - an accepted proposal can't be deleted;
 - the curator's edit pages in the admin carry the plugin's panels;
+- a stored snapshot's admin page is sent without its content and without the content field, and the new-snapshot form still has that field;
 - the new version's summary shows the curator both people by id with their handles, is "not found" for a visitor and the member while it is staged, and once published gives a visitor the ids and no names;
 - a member can't publish it, and the curator's publish answers without the snapshot's content.
 
@@ -75,7 +77,7 @@ Set `DATABASE_URI` to a MongoDB address and the site uses it instead of the in-m
 
 - **No page for making a proposal.** A member makes one through the API. The curator decides on it in the admin, on the proposal's panel.
 - **No imports.** The `imports` option is off, so there are no import jobs and the import panel doesn't appear. It is tested in the plugin's own package.
-- **Two requests Payload's admin makes to other sites.** The admin's JSON fields load their code editor (Monaco) from cdn.jsdelivr.net. That is Payload's, and this example leaves it. Payload's default avatar would also ask gravatar.com with a hash of the signed-in address; this example turns that off (`admin.avatar: 'default'`).
+- **Two requests Payload's admin makes to other sites.** The admin's JSON fields load their code editor (Monaco) from cdn.jsdelivr.net, on the new-snapshot form and on a view's and a proposal's page. That is Payload's, and this example leaves it. Payload's default avatar would also ask gravatar.com with a hash of the signed-in address; this example turns that off (`admin.avatar: 'default'`).
 - **No tenants.** The plugin's tenant scope is tested in its own package, not shown here.
 - **No sign-up.** A curator adds accounts in the admin.
 - **Nothing for production.** No email, no rate limits, no backups, no deployment setup.
