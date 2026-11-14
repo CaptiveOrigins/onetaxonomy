@@ -1,4 +1,4 @@
-import { projectedView } from '@captiveorigins/payload-plugin-onetaxonomy'
+import { projectedView } from '@extantape/payload-plugin-onetaxonomy'
 import config from '@payload-config'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'

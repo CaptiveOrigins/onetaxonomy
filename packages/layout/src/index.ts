@@ -1,4 +1,4 @@
-import { TIME_UNITS, type Id, type Projection, type ProjectedNode } from '@captiveorigins/onetaxonomy-core'
+import { TIME_UNITS, type Id, type Projection, type ProjectedNode } from '@extantape/onetaxonomy-core'
 
 /**
  * Tree layouts as plain coordinates (M4). Pure and deterministic: the same

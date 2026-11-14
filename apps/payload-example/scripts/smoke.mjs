@@ -14,7 +14,7 @@ import { createServer } from 'node:net'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import { verifySnapshot } from '@captiveorigins/onetaxonomy-core'
+import { verifySnapshot } from '@extantape/onetaxonomy-core'
 
 const flags = new Set(process.argv.slice(2))
 const unknown = [...flags].filter((f) => !['--dev', '--skip-build'].includes(f))

@@ -3,7 +3,7 @@
 // so the SVG counts one layout unit per pixel and the canvas uses its default 800 × 600 plan.
 import { act, cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createView, indexDataset, projectView, type DatasetIndex, type DatasetSnapshot, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
+import { createView, indexDataset, projectView, type DatasetIndex, type DatasetSnapshot, type TaxonomicView } from '@extantape/onetaxonomy-core'
 import { canvasPlanOf, Explorer, type ViewBox } from '../src'
 import { revealBox, REVEAL_MARGIN_PX } from '../src/reveal'
 import { bigTree } from './bigTree'

@@ -22,6 +22,6 @@ Nothing in Phase 1 depends on networking, accounts or a hosted service. Phase 1 
 - **Evaluation lives in `core`** and returns explanations (`MonophylyResult`, `MrcaResult`), so challenge checks (identify the MRCA, choose the smallest clade, find omitted descendants) reuse it instead of judging pixel positions.
 - **Lessons and scenes** (M5) are portable files that a live session can reference by id.
 
-## Downstream: Captive Origins
+## Downstream: a curated taxonomy site
 
-Captive Origins' curated phylogenetic taxonomy (its own brief, 2026-11-02) depends on M3 (curated selections, coverage, staged import manifests), M4 (views, discovery categories rendered as non-clade groups) and M7 (Payload plugin). That integration lives in the Captive Origins repository and only consumes OneTaxonomy packages.
+A site's curated phylogenetic taxonomy (its own brief, 2026-11-02) depends on M3 (curated selections, coverage, staged import manifests), M4 (views, discovery categories rendered as non-clade groups) and M7 (Payload plugin). That integration lives in the site's own repository and only consumes OneTaxonomy packages.

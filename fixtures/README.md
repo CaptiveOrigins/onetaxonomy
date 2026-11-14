@@ -9,4 +9,4 @@ Small, **illustrative** datasets for tests, examples and documentation. Every fi
 | `checklist.csv` → `checklist.json` | A parent-pointer checklist in Darwin Core columns with **invented names** (Exemplaria, Alphus …): synonyms, a heterotypic synonym, a provisional species, common names in two languages. Used for adapters, curation, coverage and the selective-import demo. |
 | `checklist-v2.csv` → `checklist-v2.json` | "Release 2" of the same checklist: a rename, two relocations, a rank change, a split candidate (misapplied name) and a lump (removed species now a synonym). Used by `diffSnapshots`. |
 
-Regenerate the JSON from the CSV files with `pnpm build && pnpm --filter @captiveorigins/onetaxonomy-examples fixtures`; the CSV adapter test checks that the committed JSON still matches.
+Regenerate the JSON from the CSV files with `pnpm build && pnpm --filter @extantape/onetaxonomy-examples fixtures`; the CSV adapter test checks that the committed JSON still matches.

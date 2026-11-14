@@ -1,4 +1,4 @@
-import type { DatasetSnapshot, PhyloEdge, PhyloNode } from '@captiveorigins/onetaxonomy-core'
+import type { DatasetSnapshot, PhyloEdge, PhyloNode } from '@extantape/onetaxonomy-core'
 
 /**
  * A made-up phylogeny with `tips` tips, for canvas and level-of-detail tests. Split

@@ -1,4 +1,4 @@
-import type { Id, Phylogeny, Source } from '@captiveorigins/onetaxonomy-core'
+import type { Id, Phylogeny, Source } from '@extantape/onetaxonomy-core'
 import type { ImportResult, ImportWarning, SourceAdapter } from './adapter'
 import { NewickError, parseNewick, type NewickOptions } from './newick'
 

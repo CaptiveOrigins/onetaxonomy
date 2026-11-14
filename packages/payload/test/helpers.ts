@@ -1,5 +1,5 @@
 import { mongooseAdapter } from '@payloadcms/db-mongodb'
-import { sealSnapshot, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { sealSnapshot, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
 import { MongoMemoryReplSet } from 'mongodb-memory-server'
 import { buildConfig, createLocalReq, getPayload, type CollectionConfig, type Config, type Payload, type TypedUser } from 'payload'
 

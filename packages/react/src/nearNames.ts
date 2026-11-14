@@ -1,4 +1,4 @@
-import type { DatasetIndex, Id, NameStatus } from '@captiveorigins/onetaxonomy-core'
+import type { DatasetIndex, Id, NameStatus } from '@extantape/onetaxonomy-core'
 
 /**
  * How a tip's label came close to a name without matching it exactly:

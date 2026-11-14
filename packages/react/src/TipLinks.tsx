@@ -1,6 +1,6 @@
 'use client'
 
-import type { DatasetIndex, Id, NameStatus, Phylogeny, PhyloNode } from '@captiveorigins/onetaxonomy-core'
+import type { DatasetIndex, Id, NameStatus, Phylogeny, PhyloNode } from '@extantape/onetaxonomy-core'
 import { useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 
 import { nearNameMatches, type NearMatch } from './nearNames.js'

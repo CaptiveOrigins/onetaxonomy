@@ -5,8 +5,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createView, describeView, indexDataset, makeHighlight, projectView, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
-import { createLesson, sceneFromView } from '@captiveorigins/onetaxonomy-education'
+import { createView, describeView, indexDataset, makeHighlight, projectView, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
+import { createLesson, sceneFromView } from '@extantape/onetaxonomy-education'
 import { Explorer, Legend, LessonPlayer, MARK_SHAPES, shapePath, standaloneSvg, traitShapes, TreeOutline } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 import amniotesJson from '../../../fixtures/amniotes.json'
@@ -51,7 +51,7 @@ describe('contrast of the default themes (WCAG 1.4.3, 1.4.11)', () => {
     })
   }
 
-  it('draws the focus ring in the darker orange on light backgrounds and keeps the brand orange for selection (N154, 2026-11-11)', () => {
+  it('draws the focus ring in the darker orange on light backgrounds and keeps the brand orange for selection (owner decision, 2026-11-11)', () => {
     expect(themes.light['--ot-focus']).toBe('#a65f20')
     expect(themes.dark['--ot-focus']).toBe('#e7a066')
     expect(themes.light['--ot-selected']).toBe('#cf8137')
@@ -218,7 +218,7 @@ describe('exports and lessons', () => {
   })
 })
 
-// Gaps closed after the audit (K481, 2026-11-11): single-pointer alternatives, the toolbar pattern, visible reasons,
+// Gaps closed after the audit (2026-11-11): single-pointer alternatives, the toolbar pattern, visible reasons,
 // target size and shapes alongside color.
 describe('without dragging (WCAG 2.5.7)', () => {
   const order = () => screen.getAllByRole('treeitem').map((i) => i.querySelector('.ot-outline-label')!.textContent)

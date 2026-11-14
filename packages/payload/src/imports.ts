@@ -7,7 +7,7 @@ import {
   type DatasetSnapshot,
   type Id,
   type Source,
-} from '@captiveorigins/onetaxonomy-core'
+} from '@extantape/onetaxonomy-core'
 import {
   dwcaAdapter,
   csvAdapter,
@@ -18,7 +18,7 @@ import {
   toSnapshot,
   type ImportResult,
   type ImportWarning,
-} from '@captiveorigins/onetaxonomy-import'
+} from '@extantape/onetaxonomy-import'
 import { APIError, type CollectionAfterChangeHook, type CollectionBeforeChangeHook, type CollectionConfig, type Endpoint, type Field, type PayloadRequest, type Where } from 'payload'
 
 import { createAccess, idOf, manageAccess, tenantOf } from './access.js'

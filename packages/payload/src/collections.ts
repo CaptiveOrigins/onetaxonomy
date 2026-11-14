@@ -8,7 +8,7 @@ import {
   verifySnapshot,
   type DatasetSnapshot,
   type TaxonomicView,
-} from '@captiveorigins/onetaxonomy-core'
+} from '@extantape/onetaxonomy-core'
 import { APIError, type CollectionBeforeChangeHook, type CollectionBeforeDeleteHook, type CollectionBeforeOperationHook, type CollectionBeforeValidateHook, type CollectionConfig, type Field, type Where } from 'payload'
 
 import { createAccess, idOf, manageAccess, readAccess, tenantOf } from './access.js'

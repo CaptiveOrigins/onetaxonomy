@@ -1,6 +1,6 @@
 'use client'
 
-import type { Id } from '@captiveorigins/onetaxonomy-core'
+import type { Id } from '@extantape/onetaxonomy-core'
 import { useEffect, useId, useLayoutEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
 
 import { describeLod, drawPlan, hitTest, LIGHT_COLORS, planCanvas, prepareTree, readColors, type CanvasPlan, type LodCounts } from './canvasPlan.js'

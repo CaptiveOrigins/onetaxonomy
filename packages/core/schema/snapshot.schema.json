@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/mgilardi/onetaxonomy/blob/main/packages/core/schema/snapshot.schema.json",
   "title": "OneTaxonomy dataset snapshot (schema version 1)",
-  "description": "Structure only. Referential integrity, cycles, units and scientific caveats are checked by validateDataset in @captiveorigins/onetaxonomy-core; see docs/architecture/data-schema.md.",
+  "description": "Structure only. Referential integrity, cycles, units and scientific caveats are checked by validateDataset in @extantape/onetaxonomy-core; see docs/architecture/data-schema.md.",
   "type": "object",
   "required": ["schemaVersion", "id", "version", "createdAt", "sources", "names", "concepts", "classifications", "phylogenies"],
   "additionalProperties": false,

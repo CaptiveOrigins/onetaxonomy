@@ -2,7 +2,7 @@
 name = "onetaxonomy"
 version = "0.2.0"
 description = "OneTaxonomy for Mac"
-authors = ["Captive Origins"]
+authors = ["EXTANT APE"]
 license-file = "../../../LICENSE"
 edition = "2021"
 

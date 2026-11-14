@@ -1,4 +1,4 @@
-import type { Id, LengthUnit, Phylogeny, PhyloEdge, PhyloNode, Source, Support } from '@captiveorigins/onetaxonomy-core'
+import type { Id, LengthUnit, Phylogeny, PhyloEdge, PhyloNode, Source, Support } from '@extantape/onetaxonomy-core'
 import type { ImportResult, ImportWarning, SourceAdapter } from './adapter'
 import { parseXml, XmlError, type XmlElement } from './xml'
 

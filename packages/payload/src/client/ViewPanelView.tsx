@@ -1,5 +1,5 @@
-import type { Highlight, LayoutKind } from '@captiveorigins/onetaxonomy-core'
-import { layoutFor, TreeOutline, TreeView, treeViewBox } from '@captiveorigins/onetaxonomy-react'
+import type { Highlight, LayoutKind } from '@extantape/onetaxonomy-core'
+import { layoutFor, TreeOutline, TreeView, treeViewBox } from '@extantape/onetaxonomy-react'
 
 import type { ProjectionBody, ViewSource } from '../views-api.js'
 import { SNAPSHOT_STATUS } from './SnapshotPanelView.js'

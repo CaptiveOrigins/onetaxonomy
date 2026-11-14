@@ -9,9 +9,9 @@
 // browser holds the next frame back, so a steady frame time means the page kept up, not that painting was free.
 import { flushSync } from 'react-dom'
 import { createRoot } from 'react-dom/client'
-import { createView, indexDataset, projectView, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
-import { rectangular } from '@captiveorigins/onetaxonomy-layout'
-import { canvasPlanOf, TreeView, type ViewBox } from '@captiveorigins/onetaxonomy-react'
+import { createView, indexDataset, projectView, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
+import { rectangular } from '@extantape/onetaxonomy-layout'
+import { canvasPlanOf, TreeView, type ViewBox } from '@extantape/onetaxonomy-react'
 
 const STAGE = 1000 // CSS pixels, square
 const FRAMES = 180

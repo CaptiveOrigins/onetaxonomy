@@ -1,11 +1,11 @@
-# @captiveorigins/onetaxonomy-react
+# @extantape/onetaxonomy-react
 
-React components for OneTaxonomy: a server-renderable SVG tree, an accessible keyboard outline of the same tree, and an explorer with undo/redo. Every interaction is a view action from `@captiveorigins/onetaxonomy-core`, so the scientific data never changes and views can be saved, shared and replayed.
+React components for OneTaxonomy: a server-renderable SVG tree, an accessible keyboard outline of the same tree, and an explorer with undo/redo. Every interaction is a view action from `@extantape/onetaxonomy-core`, so the scientific data never changes and views can be saved, shared and replayed.
 
 ```tsx
-import { createView, indexDataset } from '@captiveorigins/onetaxonomy-core'
-import { Explorer } from '@captiveorigins/onetaxonomy-react'
-import '@captiveorigins/onetaxonomy-react/styles.css'
+import { createView, indexDataset } from '@extantape/onetaxonomy-core'
+import { Explorer } from '@extantape/onetaxonomy-react'
+import '@extantape/onetaxonomy-react/styles.css'
 
 const data = indexDataset(snapshot)
 const view = createView(data, { id: 'turtles', title: 'Turtles', target: { kind: 'classification', id: 'my-classification' } })
@@ -30,4 +30,4 @@ const view = createView(data, { id: 'turtles', title: 'Turtles', target: { kind:
 - **`useTaxonomyView`**: the headless state (view, projection, dispatch, undo/redo) for your own UI.
 - Styles are optional (`styles.css`, CSS custom properties, dark mode, reduced motion). The default light and dark themes meet WCAG 2.2 AA contrast for text (4.5:1) and lines and field borders (3:1); a test computes the ratios from the stylesheet. One known exception: the brand-orange focus ring is 2.88:1 on the panel color (3.07:1 on the drawing).
 
-Try it: `pnpm build && pnpm --filter @captiveorigins/onetaxonomy-playground build`, then open `apps/playground/dist/index.html`.
+Try it: `pnpm build && pnpm --filter @extantape/onetaxonomy-playground build`, then open `apps/playground/dist/index.html`.

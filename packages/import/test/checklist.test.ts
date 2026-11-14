@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { hasErrors, sealSnapshot, validateDataset, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { hasErrors, sealSnapshot, validateDataset, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
 import { csvAdapter, DARWIN_CORE_COLUMNS, parseDelimited, parseDelimitedRecords, readChecklistTable, toSnapshot } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 

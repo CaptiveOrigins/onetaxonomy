@@ -18,7 +18,7 @@ import {
   type ProposalBase,
   type ProposalMove,
   type TreeIndex,
-} from '@captiveorigins/onetaxonomy-core'
+} from '@extantape/onetaxonomy-core'
 import {
   APIError,
   commitTransaction,

@@ -1,8 +1,8 @@
 // Regenerates fixtures/checklist*.json from the CSV files (run after `pnpm build`):
 //   node examples/build-fixtures.mjs
 import { readFileSync, writeFileSync } from 'node:fs'
-import { sealSnapshot } from '@captiveorigins/onetaxonomy-core'
-import { readChecklistTable, DARWIN_CORE_COLUMNS, toSnapshot } from '@captiveorigins/onetaxonomy-import'
+import { sealSnapshot } from '@extantape/onetaxonomy-core'
+import { readChecklistTable, DARWIN_CORE_COLUMNS, toSnapshot } from '@extantape/onetaxonomy-import'
 
 const dir = new URL('../fixtures/', import.meta.url)
 for (const [file, release] of [['checklist', '1'], ['checklist-v2', '2']]) {

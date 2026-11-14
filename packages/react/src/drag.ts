@@ -1,5 +1,5 @@
-import type { Id, Projection } from '@captiveorigins/onetaxonomy-core'
-import type { TreeLayout } from '@captiveorigins/onetaxonomy-layout'
+import type { Id, Projection } from '@extantape/onetaxonomy-core'
+import type { TreeLayout } from '@extantape/onetaxonomy-layout'
 
 /**
  * Where a dragged node lands among its siblings (click-and-drag rearranging).

@@ -4,4 +4,4 @@
 
 **Decision.** PolyForm Noncommercial 1.0.0 for all three, with a `Required Notice` line in each `LICENSE`. General Payload plugins stay MIT; a One product's Payload plugin follows its product.
 
-**Consequences.** The projects are source-available, not open source. Commercial use needs a separate license from Captive Origins. Noncommercial users may keep their changes private. Versions already published stay MIT. Outside contributions need an agreement that keeps the owner's right to license separately. Needs legal review before the first stable release.
+**Consequences.** The projects are source-available, not open source. Commercial use needs a separate license from EXTANT APE. Noncommercial users may keep their changes private. Versions already published stay MIT. Outside contributions need an agreement that keeps the owner's right to license separately. Needs legal review before the first stable release.

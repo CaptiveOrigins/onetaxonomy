@@ -1,5 +1,5 @@
-import { sealSnapshot, type DatasetSnapshot, type Phylogeny, type ViewTarget } from '@captiveorigins/onetaxonomy-core'
-import { parseDelimited, parseNewick, readChecklistTable, readDwca, readNexus, readPhyloXml, readSnapshotJson, toSnapshot, type ChecklistColumns, type ImportResult } from '@captiveorigins/onetaxonomy-import'
+import { sealSnapshot, type DatasetSnapshot, type Phylogeny, type ViewTarget } from '@extantape/onetaxonomy-core'
+import { parseDelimited, parseNewick, readChecklistTable, readDwca, readNexus, readPhyloXml, readSnapshotJson, toSnapshot, type ChecklistColumns, type ImportResult } from '@extantape/onetaxonomy-import'
 
 /** Turning file contents into a dataset. No file access or app code here, so it can be tested alone. */
 

@@ -2,8 +2,8 @@
 // only those plus their ancestor paths, and show what was left out.
 //   pnpm build && node examples/selective-import.mjs
 import { readFileSync } from 'node:fs'
-import { indexDataset, sealSnapshot, diffSnapshots, referenceImpact, getCoverageReport } from '@captiveorigins/onetaxonomy-core'
-import { readChecklistTable, toSnapshot, selectiveImport } from '@captiveorigins/onetaxonomy-import'
+import { indexDataset, sealSnapshot, diffSnapshots, referenceImpact, getCoverageReport } from '@extantape/onetaxonomy-core'
+import { readChecklistTable, toSnapshot, selectiveImport } from '@extantape/onetaxonomy-import'
 
 const csv = readFileSync(new URL('../fixtures/checklist.csv', import.meta.url), 'utf8')
 const read = readChecklistTable(csv, {

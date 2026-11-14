@@ -1,8 +1,8 @@
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { createView, indexDataset, sealSnapshot, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
-import { runImport } from '@captiveorigins/payload-plugin-onetaxonomy'
+import { createView, indexDataset, sealSnapshot, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
+import { runImport } from '@extantape/payload-plugin-onetaxonomy'
 import { createLocalReq, type Payload, type TypedUser } from 'payload'
 
 import amniotes from '../../../fixtures/amniotes.json'

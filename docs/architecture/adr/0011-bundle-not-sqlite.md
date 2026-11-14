@@ -1,6 +1,6 @@
 # 0011 — The Mac app keeps its work in files: a `.onetaxonomy` bundle, no SQLite for now
 
-**Status.** Accepted by Science (the area lead), 2026-11-11. It follows the owner's rule that files stay plain and readable without the tool; revisit only on the measured triggers below.
+**Status.** Accepted by the maintainers, 2026-11-11. It follows the owner's rule that files stay plain and readable without the tool; revisit only on the measured triggers below.
 
 **Context.** M6 listed SQLite persistence, backups and migrations beside a `.onetaxonomy` bundle. The Mac app already works on plain files: it opens checklists, archives, trees and sealed snapshots, never writes over the file it opened, and saves views and sealed snapshots with a temporary file and a rename. The owner's rules for these tools say a person's files stay theirs, as plain documented files readable without the tool, and that a feature which adds something to look after has to take away more than it adds.
 
@@ -19,7 +19,7 @@ What M6 needs from storage:
 2. The manifest lists every file with its size and SHA-256, and each snapshot is sealed. The reader checks all of it before using any of it, and names each problem: no manifest, bad JSON, an unknown format version, a missing file, a size or checksum mismatch, a snapshot that isn't the one pinned, a path outside its folder. A damaged bundle is refused whole; it is never half-opened.
 3. The manifest pins each snapshot by id, version and checksum, and every view and lesson must point at a pin. When the open dataset is another version, the app asks: keep the pinned one (when it's embedded) or relink to the open one, which is checked first and refused whole if anything doesn't fit.
 4. Saves already go through a temporary file and a rename (`writeFileSafely`); bundles use the same path.
-5. Each format has a version (`formatVersion` in the manifest, `schemaVersion` in snapshots, `formatVersion` in views and lessons). A reader refuses a version it doesn't know, with a message that says so. A migration, when one is needed, is a function from one JSON shape to the next in `@captiveorigins/onetaxonomy-import`, as data-schema.md already says.
+5. Each format has a version (`formatVersion` in the manifest, `schemaVersion` in snapshots, `formatVersion` in views and lessons). A reader refuses a version it doesn't know, with a message that says so. A migration, when one is needed, is a function from one JSON shape to the next in `@extantape/onetaxonomy-import`, as data-schema.md already says.
 6. A bundle is a single file, so Time Machine, iCloud Drive, a USB stick or email back it up, and a copy is a backup. The app holds no state of its own beyond Settings.
 
 SQLite would add a database the person can't read without a tool, a second copy of the data to keep in step with their files, a native dependency in the Tauri build, and its own migrations and backup story. It would take nothing away that the files don't already handle.

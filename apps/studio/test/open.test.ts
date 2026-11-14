@@ -1,5 +1,5 @@
-import { indexDataset, createView, midpointRoot, projectView, sealSnapshot, validateDataset, verifySnapshot } from '@captiveorigins/onetaxonomy-core'
-import { Explorer } from '@captiveorigins/onetaxonomy-react'
+import { indexDataset, createView, midpointRoot, projectView, sealSnapshot, validateDataset, verifySnapshot } from '@extantape/onetaxonomy-core'
+import { Explorer } from '@extantape/onetaxonomy-react'
 import { createElement } from 'react'
 import { renderToString } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'

@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION, type Classification, type DatasetSnapshot, type Id, type Phylogeny, type ScientificName, type Source, type TaxonConcept } from '@captiveorigins/onetaxonomy-core'
+import { SCHEMA_VERSION, type Classification, type DatasetSnapshot, type Id, type Phylogeny, type ScientificName, type Source, type TaxonConcept } from '@extantape/onetaxonomy-core'
 
 /** Something an adapter noticed and handled conservatively (never silently). */
 export type ImportWarning = {

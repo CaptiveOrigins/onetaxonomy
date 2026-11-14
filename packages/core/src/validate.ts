@@ -36,7 +36,7 @@ export function validateDataset(s: DatasetSnapshot): Diagnostic[] {
   const out: Diagnostic[] = []
   const add = (severity: Severity, code: DiagnosticCode, path: string, message: string, extra: Partial<Diagnostic> = {}) => out.push({ severity, code, path, message, ...extra })
 
-  if (s.schemaVersion !== SCHEMA_VERSION) add('error', 'schema-version', 'schemaVersion', `Schema version ${s.schemaVersion} is not supported (expected ${SCHEMA_VERSION}).`, { suggestion: 'Migrate the snapshot with the matching @captiveorigins/onetaxonomy-import release.' })
+  if (s.schemaVersion !== SCHEMA_VERSION) add('error', 'schema-version', 'schemaVersion', `Schema version ${s.schemaVersion} is not supported (expected ${SCHEMA_VERSION}).`, { suggestion: 'Migrate the snapshot with the matching @extantape/onetaxonomy-import release.' })
 
   // Identity: ids are unique within each record family.
   const unique = (family: string, ids: Id[]) => {

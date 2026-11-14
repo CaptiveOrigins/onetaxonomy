@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
-import { hasErrors, sealSnapshot, type CuratedSelection, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { hasErrors, sealSnapshot, type CuratedSelection, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
 import { checkPresetReferences, readSnapshotJson, reconcile, selectiveImport, validatePreset, type CommunityPreset } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 import checklistV2Json from '../../../fixtures/checklist-v2.json'

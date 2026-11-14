@@ -2,8 +2,8 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createView, indexDataset, makeHighlight, projectView, type DatasetIndex, type DatasetSnapshot, type Projection, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
-import { radial, rectangular, type TreeLayout } from '@captiveorigins/onetaxonomy-layout'
+import { createView, indexDataset, makeHighlight, projectView, type DatasetIndex, type DatasetSnapshot, type Projection, type TaxonomicView } from '@extantape/onetaxonomy-core'
+import { radial, rectangular, type TreeLayout } from '@extantape/onetaxonomy-layout'
 import {
   CANVAS_THRESHOLD, canvasPlanOf, treeViewBox, chooseRenderer, describeLod, drawPlan, Explorer, hitTest, LIGHT_COLORS, planCanvas, prepareTree, shapeAt, shapePolygon, TreeView,
   type CanvasPlan, type Context2D, type PlanOptions,

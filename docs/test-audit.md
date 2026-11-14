@@ -312,7 +312,7 @@ Scope: `packages/payload` only (M7 part 3, ADR 0012 points 12 and 14): the atomi
 
 ## 2026-11-11: Payload plugin part 2
 
-Scope: `packages/payload` only (M7 part 2, ADR 0012 points 12 to 14): import jobs (`src/imports.ts`), coverage and snapshot export (`src/api.ts`), view projection and export (`src/views-api.ts`). No other package changed; the plugin now depends on `@captiveorigins/onetaxonomy-import`. Tests went from 395 to 429: payload 46 to 80 (`imports.test.ts` 20 new, `api.test.ts` 15 to 27, `tenants.test.ts` 7 to 9, and the plugin-shape test in `snapshots.test.ts` widened). All on a real Payload 3.93 with an in-memory MongoDB replica set, no network: the host `fetch` in the tests answers from memory and the upload collection writes to a temporary folder that is deleted afterwards. Endpoints were called through their handlers with a local request, as in part 1.
+Scope: `packages/payload` only (M7 part 2, ADR 0012 points 12 to 14): import jobs (`src/imports.ts`), coverage and snapshot export (`src/api.ts`), view projection and export (`src/views-api.ts`). No other package changed; the plugin now depends on `@extantape/onetaxonomy-import`. Tests went from 395 to 429: payload 46 to 80 (`imports.test.ts` 20 new, `api.test.ts` 15 to 27, `tenants.test.ts` 7 to 9, and the plugin-shape test in `snapshots.test.ts` widened). All on a real Payload 3.93 with an in-memory MongoDB replica set, no network: the host `fetch` in the tests answers from memory and the upload collection writes to a temporary folder that is deleted afterwards. Endpoints were called through their handlers with a local request, as in part 1.
 
 ### Covered
 
@@ -335,7 +335,7 @@ Scope: `packages/payload` only (M7 part 2, ADR 0012 points 12 to 14): import job
 - **Interruption inside a store** isn't simulated: that a run leaves no partial snapshot rests on the snapshot being one document written last, not on a test that kills a process mid-write.
 - **Two runs of one job at once** weren't raced; claiming a job isn't atomic (ADR 0012). Closed in part 3, above.
 - **Large inputs:** nothing near `maxBytes` was parsed for real, and an import's time on a large file wasn't measured.
-- **Payload's own reads of a view** don't carry the withdrawn flag; only the plugin's endpoints do. That waits for the lead's decision on point 14. Accepted and closed in part 3, above.
+- **Payload's own reads of a view** don't carry the withdrawn flag; only the plugin's endpoints do. That waits for the maintainers' decision on point 14. Accepted and closed in part 3, above.
 
 ### Left out as overkill
 
@@ -343,7 +343,7 @@ Scope: `packages/payload` only (M7 part 2, ADR 0012 points 12 to 14): import job
 - Every combination of adapter options: they go to the adapter unchanged.
 ## 2026-11-11: pan to the outline's selection
 
-Scope: `packages/react` only (K495, ADR 0010's follow-up). Tests went from 395 to 408: react 102 to 115, all in the new `test/reveal.test.tsx`. Nothing else changed.
+Scope: `packages/react` only (ADR 0010's follow-up). Tests went from 395 to 408: react 102 to 115, all in the new `test/reveal.test.tsx`. Nothing else changed.
 
 ### Covered
 
@@ -368,7 +368,7 @@ Scope: `packages/react` only (K495, ADR 0010's follow-up). Tests went from 395 t
 
 ## 2026-11-11: Payload plugin, part 1
 
-Scope: the new `packages/payload` (`@captiveorigins/payload-plugin-onetaxonomy`, M7 part 1, ADR 0012). No other package changed. Tests went from 283 to 329: payload 0 to 46, in five files, each on a real Payload 3.93 with an in-memory MongoDB replica set (indexes built, no network; the MongoDB binary was already cached). Endpoints were called through their handlers with a local request, as the sister plugins do, not through Payload's HTTP routing.
+Scope: the new `packages/payload` (`@extantape/payload-plugin-onetaxonomy`, M7 part 1, ADR 0012). No other package changed. Tests went from 283 to 329: payload 0 to 46, in five files, each on a real Payload 3.93 with an in-memory MongoDB replica set (indexes built, no network; the MongoDB binary was already cached). Endpoints were called through their handlers with a local request, as the sister plugins do, not through Payload's HTTP routing.
 
 ### Covered
 
@@ -400,7 +400,7 @@ Scope: the new `packages/payload` (`@captiveorigins/payload-plugin-onetaxonomy`,
 - Every status transition pair: the allowed ones and three refused ones (published to staged, withdrawn to published, and starting published) are tested.
 ## 2026-11-11: OneOrigin brand source
 
-Owner decision N105 (2026-11-11): "A: send it, accept guidelines (Recommended)". Tests went from 299 to 300: studio (Mac app) 40 to 41 (`apps/studio/test/theme.test.ts`). The rest are unchanged.
+Owner decision (2026-11-11): "A: send it, accept guidelines (Recommended)". Tests went from 299 to 300: studio (Mac app) 40 to 41 (`apps/studio/test/theme.test.ts`). The rest are unchanged.
 
 - **Promises:** `brand/oneorigin/` matches `brand/oneorigin.lock` byte for byte, and CI fails on a hand edit; `apps/studio/src/oneorigin.css` is what `build` writes from the copy's tokens; the app's shell colors are the suite's tokens; nothing that was drawn changes color.
 - **Covered:** `node scripts/oneorigin.mjs check` in CI (11 files and the built CSS). `theme.test.ts` (1 new): `--bg`, `--panel`, `--text`, `--muted`, `--border`, `--accent`, `--focus` and `--error` in `app.css` equal the built `--ot-` tokens in light, system dark and a chosen Dark. The script itself is tested in OnePhylogeny, where it comes from (`scripts/oneorigin.test.mjs`, 19 tests: build output, lock and check passing, a hand edit failing, the warning paths); this repo carries the same file.
@@ -470,7 +470,7 @@ Scope: M8's canvas renderer and benchmarks. React gains `CanvasTreeView`, chosen
 - Repeating the explorer's toolbar, outline and inspector tests on a canvas tree: they don't depend on the renderer.
 ## 2026-11-11: focus ring colour
 
-Scope: the focus-ring gap from the accessibility audit below, closed by owner decision N154 (2026-11-11, option A): "keep the brand orange everywhere else, but use the darker orange #a65f20 for focus rings on light backgrounds (4.6 to 1 or better). Dark mode keeps the lighter orange, which already passes." Only colour variables and focus rules changed; core, import, layout and education are unchanged. Tests went from 281 to 283: react 85 to 86 (`a11y.test.tsx`), studio 39 to 40 (`theme.test.ts`).
+Scope: the focus-ring gap from the accessibility audit below, closed by owner decision (2026-11-11, option A): "keep the brand orange everywhere else, but use the darker orange #a65f20 for focus rings on light backgrounds (4.6 to 1 or better). Dark mode keeps the lighter orange, which already passes." Only colour variables and focus rules changed; core, import, layout and education are unchanged. Tests went from 281 to 283: react 85 to 86 (`a11y.test.tsx`), studio 39 to 40 (`theme.test.ts`).
 
 - **Before and after (focus colour on the background it sits on):** light, explorer, outline, lesson and tip-links rings (`--ot-focus`): `#cf8137` 3.07:1 on the surface (`#ffffff`), 2.88:1 on the panel (`#fbf7f4`); now `#a65f20`, 4.91:1 and 4.61:1. Light, studio rings: `--accent` `#cf8137` 3.07:1 on the page and fields, 2.89:1 on the toolbar (`#fdf7f7`); now `--focus` `#a65f20`, 4.91:1 and 4.63:1. Dark, unchanged: `#e7a066` 8.36:1 on the explorer surface (`#1c1311`), 7.85:1 on its panel (`#241916`); 8.37:1 on the studio page, 7.82:1 on its panel, 7.11:1 on fields.
 - **Covered:** `a11y.test.tsx`: the contrast test now checks the focus ring on the panel as well as the surface (it checked only the surface, which is why 2.88:1 passed); a new test pins light `--ot-focus` at `#a65f20` (4.6:1 or better on surface and panel), dark at `#e7a066`, selection still `#cf8137`, and every outline focus rule on `var(--ot-focus)`. `theme.test.ts`: the studio's focus check now reads `--focus` on page, panel and field in light and dark (it read `--accent` on the page only); a new test pins `--focus` at `#a65f20` in light and `#e7a066` in both dark blocks, `--accent` still `#cf8137`, and both studio focus rules on `var(--focus)`. The existing check that a chosen appearance copies the library's values now covers the new `--ot-focus`.
@@ -523,7 +523,7 @@ Scope: two gaps from the sections below. The rooting note moves from the explore
 
 ## 2026-11-11: accessibility gaps closed
 
-Scope: the small and medium gaps from the accessibility audit below. The brand-orange focus ring is left as it is: that's the owner's decision (N154). Core and import are unchanged. Tests went from 248 to 263: react 58 to 71 (13 new in `a11y.test.tsx`), studio 37 to 39 (2 in `app.test.tsx`; `theme.test.ts` now checks the error color and the alert region). Everything ran in jsdom with Tauri mocked.
+Scope: the small and medium gaps from the accessibility audit below. The brand-orange focus ring is left as it is: that's the owner's decision. Core and import are unchanged. Tests went from 248 to 263: react 58 to 71 (13 new in `a11y.test.tsx`), studio 37 to 39 (2 in `app.test.tsx`; `theme.test.ts` now checks the error color and the alert region). Everything ran in jsdom with Tauri mocked.
 
 ### Fixed, with tests
 
@@ -538,7 +538,7 @@ Scope: the small and medium gaps from the accessibility audit below. The brand-o
 
 ### Gaps left
 
-- **The focus ring** is 2.88:1 on the panels: owner decision N154. Since fixed: see "2026-11-11: focus ring colour".
+- **The focus ring** is 2.88:1 on the panels: owner decision. Since fixed: see "2026-11-11: focus ring colour".
 - **Shapes repeat after six** highlights or trait states. Past that, color and the words in the inspector and legend tell them apart. (Addressed in "possible tip matches" above.)
 - **Only the first highlight on a node is drawn.** That hasn't changed: a node in two highlights shows one halo.
 - **The drawing's nodes still aren't reachable with Tab** (the outline is the way in; why is now ADR 0010), and live regions that mount with their first message (the clade check with a second taxon) still need a screen reader to confirm.
@@ -565,7 +565,7 @@ Scope: the gap left in the section below ("Comparison in the Mac app always refu
 
 ### Gaps left
 
-- **Only exact names are proposed.** Spelling variants, authorship in the label ("Alphus primus Fixture, 2026"), trinomials written differently, and labels with specimen codes ("Alphus_primus_AB123") match nothing and must be found by hand. Fuzzy or rule-based matching would be a separate, labelled method, and is a decision for the lead. (Addressed in "possible tip matches" above.)
+- **Only exact names are proposed.** Spelling variants, authorship in the label ("Alphus primus Fixture, 2026"), trinomials written differently, and labels with specimen codes ("Alphus_primus_AB123") match nothing and must be found by hand. Fuzzy or rule-based matching would be a separate, labelled method, and is a decision for the maintainers. (Addressed in "possible tip matches" above.)
 - **Long trees.** Every tip is a table row with a select. Not timed beyond the fixtures; a tree with thousands of tips may want paging or a filter for unmatched rows. (Addressed in "possible tip matches" above.)
 - **Not run for real:** VoiceOver reading the table, the selects' optgroups and the status region; the datalist suggestions in WebKit; the Tauri dialogs and writes in the built app.
 - **Add tree… needs the taxa first.** A tree opened alone can't be linked: the step says so. Opening a snapshot that holds both is the other way in.
@@ -589,7 +589,7 @@ Scope: the explorer and Mac app controls for the features in the previous sectio
 
 ### Gaps left
 
-- **Comparison in the Mac app always refuses files it imports itself.** Newick, NEXUS and phyloXML tips are never mapped to taxa (by design: no matching by label), and comparison needs mappings. It works on snapshots that carry mappings. A way to map tips explicitly in the app (a mapping table the person confirms) is a feature, for the lead's list.
+- **Comparison in the Mac app always refuses files it imports itself.** Newick, NEXUS and phyloXML tips are never mapped to taxa (by design: no matching by label), and comparison needs mappings. It works on snapshots that carry mappings. A way to map tips explicitly in the app (a mapping table the person confirms) is a feature, for the maintainers' list.
 - **Two controls are named "Show"** in the Mac app: the header's tree or classification picker and the explorer's living/extinct filter. They existed before; a clearer name for the header one ("Tree or classification") is a small wording change left to the owner. (Closed in "rooting in describeView" above.)
 - **Differing clades aren't highlighted in the drawing.** "Select" puts one in the selection; drawing all of them at once would need a highlight that isn't saved in the view. Clades only in the other tree have no node here, so they're listed only.
 - **The rooting note is added by the explorer, not by `describeView`.** Exports from the explorer include it; another app calling `describeView` directly won't see it. Adding it in core would change core's output, which this branch was asked not to do. (Closed in "rooting in describeView" above.)
@@ -664,7 +664,7 @@ Scope: milestone M8's accessibility audit. A code-level check of the React compo
 
 ### Gaps left
 
-- **The brand-orange focus ring is 2.88:1 on the explorer panel** (`#cf8137` on `#fbf7f4`) and 2.89:1 on the studio toolbar (`#fdf7f7`), under 3:1. It's 3.07:1 on white and 7.8:1 or more in dark. `brand/README.md` names this exact color for focus and is kept identical across the One tools, so changing it is the owner's call: a deeper orange such as `#a65f20` for the ring, or panels close to white (`#fefcfb` gives 3.00:1). **Fixed 2026-11-11** (owner decision N154, option A): the ring is now `#a65f20` in light, 4.61:1 on the explorer panel and 4.63:1 on the studio toolbar; dark keeps `#e7a066`. See "2026-11-11: focus ring colour" above.
+- **The brand-orange focus ring is 2.88:1 on the explorer panel** (`#cf8137` on `#fbf7f4`) and 2.89:1 on the studio toolbar (`#fdf7f7`), under 3:1. It's 3.07:1 on white and 7.8:1 or more in dark. `brand/README.md` names this exact color for focus and is kept identical across the One tools, so changing it is the owner's call: a deeper orange such as `#a65f20` for the ring, or panels close to white (`#fefcfb` gives 3.00:1). **Fixed 2026-11-11** (owner decision, option A): the ring is now `#a65f20` in light, 4.61:1 on the explorer panel and 4.63:1 on the studio toolbar; dark keeps `#e7a066`. See "2026-11-11: focus ring colour" above.
 - **Highlights and trait states are told apart by color in the drawing.** Each node's highlights and trait state are in words in the inspector, and the legend names each color, but the halos (35% opacity) and trait dots have no shape or pattern of their own, and trait colors come from the data unchecked. Fixing it means a shape or letter per highlight or state: a design change.
 - **Dragging has no single-pointer alternative for two actions (2.5.7).** Reordering siblings (Alt+Up/Down in the outline is keyboard only; "Flip children" only reverses) and panning (zoom and fit are buttons, panning isn't). Moving under a new parent has the "Move under" list. Small "move up/down" buttons in the inspector and pan buttons would close it.
 - **The drawing's nodes are `role="button"` inside an SVG with `role="img"`,** whose children screen readers ignore, and they can't be reached with Tab. The outline is the accessible way to the same nodes, by design. Making the drawing itself navigable is larger and overlaps the planned canvas renderer.
@@ -721,7 +721,7 @@ All new tests passed on the current code. No bug was found.
 
 ### Gaps left
 
-- **The studio says nothing when it opens an unsealed snapshot.** `readSnapshotJson` reports `unsealed`, but `openSnapshot` only warns on `mismatch`. A sealed file whose `checksum` line was deleted therefore opens with no notice. A notice such as "This file isn't sealed, so later changes to it can't be detected" is a small change to `apps/studio/src/open.ts` plus one test. It changes what the app shows, so it's left for the lead rather than done in an audit.
+- **The studio says nothing when it opens an unsealed snapshot.** `readSnapshotJson` reports `unsealed`, but `openSnapshot` only warns on `mismatch`. A sealed file whose `checksum` line was deleted therefore opens with no notice. A notice such as "This file isn't sealed, so later changes to it can't be detected" is a small change to `apps/studio/src/open.ts` plus one test. It changes what the app shows, so it's left for the maintainers rather than done in an audit.
 - **A failed rename leaves `<file>.tmp` beside the chosen file.** The old file is safe and the error is shown, but the temporary file isn't removed. Minor; fix with the next studio change.
 - CRC checks on ZIP entries, and large archives read into memory, as in the first audit. Both are stated limitations.
 - The studio's dialogs and file calls are mocked. Saving on a real disk is only checked by hand.

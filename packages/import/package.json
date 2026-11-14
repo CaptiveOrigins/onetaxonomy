@@ -1,6 +1,6 @@
 {
-  "name": "@captiveorigins/onetaxonomy-import",
-  "version": "0.1.0-alpha.3",
+  "name": "@extantape/onetaxonomy-import",
+  "version": "0.1.0-alpha.4",
   "description": "OneTaxonomy import: source adapters for CSV/TSV checklists, Darwin Core Archives, OneTaxonomy JSON, Newick, NEXUS and phyloXML, plus reconciliation, curated selective imports with provenance, and community presets.",
   "keywords": [
     "taxonomy",
@@ -14,14 +14,14 @@
     "import",
     "biodiversity"
   ],
-  "homepage": "https://github.com/CaptiveOrigins/onetaxonomy#readme",
+  "homepage": "https://github.com/ExtantApe/OneTaxonomy#readme",
   "bugs": {
-    "url": "https://github.com/CaptiveOrigins/onetaxonomy/issues"
+    "url": "https://github.com/ExtantApe/OneTaxonomy/issues"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CaptiveOrigins/onetaxonomy.git",
+    "url": "git+https://github.com/ExtantApe/OneTaxonomy.git",
     "directory": "packages/import"
   },
   "type": "module",
@@ -49,6 +49,6 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@captiveorigins/onetaxonomy-core": "workspace:^"
+    "@extantape/onetaxonomy-core": "workspace:^"
   }
 }
