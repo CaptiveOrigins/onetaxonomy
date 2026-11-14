@@ -1,6 +1,6 @@
 # OneTaxonomy Payload example
 
-A small Payload and Next.js site that uses [`@captiveorigins/payload-plugin-onetaxonomy`](../../packages/payload). It shows the plugin set up the way a real site would: accounts with two roles, public pages that draw published views, import jobs over uploaded files, and proposals that record a person by an id, with a public handle shown beside it and no email address.
+A small Payload and Next.js site that uses [`@extantape/payload-plugin-onetaxonomy`](../../packages/payload). It shows the plugin set up the way a real site would: accounts with two roles, public pages that draw published views, import jobs over uploaded files, and proposals that record a person by an id, with a public handle shown beside it and no email address.
 
 > **Status: an example, not a product.** It runs on this machine only, on a throwaway in-memory MongoDB, with made-up accounts and the repository's illustrative fixtures. Tested: 74 checks over HTTP with sign-in cookies (`pnpm smoke`, in CI), on `next dev` and on the built site, with Payload 3.93 and Next.js 16; the admin's panels clicked through in headless Chrome as the curator, in light and dark (`pnpm click-through`, 40 checks, not in CI: it needs Chrome and the network); and the three public pages looked at in headless Chrome by hand, in light and dark, at desktop width and at 520 px. Not tested: a screen reader, Safari, Firefox, a phone, Postgres or SQLite, or a deployed site.
 
@@ -24,7 +24,7 @@ From the repository root, with Node 22 or later and pnpm:
 ```bash
 pnpm install
 pnpm build      # the packages the site uses
-pnpm --filter @captiveorigins/onetaxonomy-payload-example dev
+pnpm --filter @extantape/onetaxonomy-payload-example dev
 ```
 
 The first run downloads a MongoDB binary (about 140 MB on a Mac, kept in `~/.cache/mongodb-binaries`). Then it prints the site's address, the two accounts and a password made up for this run:
@@ -48,7 +48,7 @@ Stop it with Ctrl-C. The database and the uploaded files go with it: every run s
 ## Check it
 
 ```bash
-pnpm --filter @captiveorigins/onetaxonomy-payload-example smoke
+pnpm --filter @extantape/onetaxonomy-payload-example smoke
 ```
 
 This builds the site, starts it on a free port with its own database, and sends it requests the way a browser would. It takes about 15 seconds on a recent Mac. It checks that:
@@ -76,7 +76,7 @@ This builds the site, starts it on a free port with its own database, and sends 
 ### In a browser
 
 ```bash
-pnpm --filter @captiveorigins/onetaxonomy-payload-example click-through
+pnpm --filter @extantape/onetaxonomy-payload-example click-through
 ```
 
 This builds the site, starts it the same way, opens a Chrome or Chromium already on the machine with no window and a throwaway profile, signs in as the curator and does what a curator would: publishes a snapshot with the keyboard, changes and saves a draft view, runs the three import jobs, renames a finished one with Payload's own Save, accepts a proposal into a new version, pastes a sealed snapshot into the new-snapshot form, and publishes it with Payload's own status field. It takes about two minutes. It checks what the panels say at each step, what was sent, that the form under a panel doesn't repeat it, that the panel's parts are spaced apart as the browser lays them out, and that no page asks any site but this one, apart from Payload's code editor.

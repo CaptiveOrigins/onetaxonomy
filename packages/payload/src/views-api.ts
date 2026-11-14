@@ -1,4 +1,4 @@
-import { describeView, projectView, type DatasetIndex, type Projection, type TaxonomicView, type ViewDisclosure } from '@captiveorigins/onetaxonomy-core'
+import { describeView, projectView, type DatasetIndex, type Projection, type TaxonomicView, type ViewDisclosure } from '@extantape/onetaxonomy-core'
 import type { Endpoint, PayloadRequest } from 'payload'
 
 import { idOf } from './access.js'

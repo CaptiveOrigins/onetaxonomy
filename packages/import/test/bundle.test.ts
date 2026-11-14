@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'no
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { createView, indexDataset, sealSnapshot, sha256Bytes, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { createView, indexDataset, sealSnapshot, sha256Bytes, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
 
 import { BUNDLE_FORMAT_VERSION, crc32, isSafeBundlePath, readBundle, readZip, writeBundle, writeZip, type BundleLesson, type BundleProblem } from '../src'
 import { makeZip } from './zip-helper'

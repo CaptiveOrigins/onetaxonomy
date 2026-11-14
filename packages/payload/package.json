@@ -1,6 +1,6 @@
 {
-  "name": "@captiveorigins/payload-plugin-onetaxonomy",
-  "version": "0.1.0-alpha.3",
+  "name": "@extantape/payload-plugin-onetaxonomy",
+  "version": "0.1.0-alpha.4",
   "description": "OneTaxonomy for Payload: sealed taxonomy snapshots verified by checksum, published views pinned to them, resumable import jobs that turn checklists, Darwin Core Archives and tree files into staged snapshots, and a bounded, permission-checked API for search, ancestors, descendants, MRCA, coverage, projected views and exports, with optional tenant scope.",
   "keywords": [
     "payload",
@@ -14,14 +14,14 @@
     "darwin-core",
     "newick"
   ],
-  "homepage": "https://github.com/CaptiveOrigins/onetaxonomy#readme",
+  "homepage": "https://github.com/ExtantApe/OneTaxonomy#readme",
   "bugs": {
-    "url": "https://github.com/CaptiveOrigins/onetaxonomy/issues"
+    "url": "https://github.com/ExtantApe/OneTaxonomy/issues"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CaptiveOrigins/onetaxonomy.git",
+    "url": "git+https://github.com/ExtantApe/OneTaxonomy.git",
     "directory": "packages/payload"
   },
   "type": "module",
@@ -55,9 +55,9 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@captiveorigins/onetaxonomy-core": "workspace:^",
-    "@captiveorigins/onetaxonomy-import": "workspace:^",
-    "@captiveorigins/onetaxonomy-react": "workspace:^"
+    "@extantape/onetaxonomy-core": "workspace:^",
+    "@extantape/onetaxonomy-import": "workspace:^",
+    "@extantape/onetaxonomy-react": "workspace:^"
   },
   "peerDependencies": {
     "@payloadcms/ui": "^3.80.0",

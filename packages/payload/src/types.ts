@@ -166,7 +166,7 @@ export function resolveOptions(o: OneTaxonomyPluginOptions = {}): ResolvedOption
 }
 
 /** Where Payload's import map finds the panels. */
-const CLIENT = '@captiveorigins/payload-plugin-onetaxonomy/client'
+const CLIENT = '@extantape/payload-plugin-onetaxonomy/client'
 
 /**
  * The panel at the top of a collection's edit page: a field that stores nothing and draws a client component.

@@ -1,4 +1,4 @@
-# @captiveorigins/payload-plugin-onetaxonomy
+# @extantape/payload-plugin-onetaxonomy
 
 OneTaxonomy for Payload: sealed taxonomy snapshots, views pinned to them, import jobs that turn source files into staged snapshots, people's own proposals that a manager can accept into a new staged version, and a small read API for search, ancestors, descendants, MRCA, coverage, projected views and exports, all behind your own access rules.
 
@@ -33,7 +33,7 @@ OneTaxonomy for Payload: sealed taxonomy snapshots, views pinned to them, import
 ## Install
 
 ```js
-import { oneTaxonomy } from '@captiveorigins/payload-plugin-onetaxonomy'
+import { oneTaxonomy } from '@extantape/payload-plugin-onetaxonomy'
 
 export default buildConfig({
   // …
@@ -64,7 +64,7 @@ Only `true` from a callback allows. `false`, any other value, or a throw is a no
 Store a snapshot from server code or as a manager:
 
 ```js
-import { sealSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { sealSnapshot } from '@extantape/onetaxonomy-core'
 
 const doc = await payload.create({ collection: 'taxonomy-snapshots', data: { snapshot: sealSnapshot(snapshot) }, user, overrideAccess: false })
 await payload.update({ collection: 'taxonomy-snapshots', id: doc.id, data: { status: 'published' }, user, overrideAccess: false })
@@ -222,4 +222,4 @@ pnpm test       # starts an in-memory MongoDB per test file; needs the MongoDB b
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](LICENSE). Source-available, not open source. Commercial use needs a separate license from Captive Origins.
+[PolyForm Noncommercial 1.0.0](LICENSE). Source-available, not open source. Commercial use needs a separate license from EXTANT APE.

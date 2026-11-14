@@ -1,6 +1,6 @@
 {
-  "name": "@captiveorigins/onetaxonomy-react",
-  "version": "0.1.0-alpha.3",
+  "name": "@extantape/onetaxonomy-react",
+  "version": "0.1.0-alpha.4",
   "description": "OneTaxonomy for React: a server-renderable SVG tree, an accessible keyboard tree outline, and an explorer with undo/redo, filters, layouts and an inspector that keeps clades and groups apart.",
   "keywords": [
     "taxonomy",
@@ -11,14 +11,14 @@
     "accessibility",
     "education"
   ],
-  "homepage": "https://github.com/CaptiveOrigins/onetaxonomy#readme",
+  "homepage": "https://github.com/ExtantApe/OneTaxonomy#readme",
   "bugs": {
-    "url": "https://github.com/CaptiveOrigins/onetaxonomy/issues"
+    "url": "https://github.com/ExtantApe/OneTaxonomy/issues"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CaptiveOrigins/onetaxonomy.git",
+    "url": "git+https://github.com/ExtantApe/OneTaxonomy.git",
     "directory": "packages/react"
   },
   "type": "module",
@@ -50,9 +50,9 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@captiveorigins/onetaxonomy-core": "workspace:^",
-    "@captiveorigins/onetaxonomy-layout": "workspace:^",
-    "@captiveorigins/onetaxonomy-education": "workspace:^"
+    "@extantape/onetaxonomy-core": "workspace:^",
+    "@extantape/onetaxonomy-layout": "workspace:^",
+    "@extantape/onetaxonomy-education": "workspace:^"
   },
   "peerDependencies": {
     "react": ">=18.2"

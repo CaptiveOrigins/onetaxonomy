@@ -345,7 +345,7 @@
 
 /*
  * The drawing of a view. It keeps the drawing's own colours (the --ot-* variables of
- * @captiveorigins/onetaxonomy-react) on the drawing's own surface, so its contrast is the one that package was
+ * @extantape/onetaxonomy-react) on the drawing's own surface, so its contrast is the one that package was
  * checked for. That package picks light or dark from the device's setting; here the choice follows Payload's theme
  * instead, which a person can set apart from their device. The values are copies: test/panels-css.test.ts fails if
  * they drift from the package's stylesheet.

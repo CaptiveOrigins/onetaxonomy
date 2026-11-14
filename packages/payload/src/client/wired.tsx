@@ -1,9 +1,9 @@
 'use client'
 
-import '@captiveorigins/onetaxonomy-react/styles.css'
+import '@extantape/onetaxonomy-react/styles.css'
 import './panels.css'
 
-import type { Highlight, LayoutKind } from '@captiveorigins/onetaxonomy-core'
+import type { Highlight, LayoutKind } from '@extantape/onetaxonomy-core'
 import { useConfig, useDocumentInfo, useForm, useFormModified } from '@payloadcms/ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 

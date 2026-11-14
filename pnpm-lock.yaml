@@ -23,13 +23,13 @@ importers:
 
   apps/payload-example:
     dependencies:
-      '@captiveorigins/onetaxonomy-core':
+      '@extantape/onetaxonomy-core':
         specifier: workspace:^
         version: link:../../packages/core
-      '@captiveorigins/onetaxonomy-react':
+      '@extantape/onetaxonomy-react':
         specifier: workspace:^
         version: link:../../packages/react
-      '@captiveorigins/payload-plugin-onetaxonomy':
+      '@extantape/payload-plugin-onetaxonomy':
         specifier: workspace:^
         version: link:../../packages/payload
       '@payloadcms/db-mongodb':
@@ -72,16 +72,16 @@ importers:
 
   apps/playground:
     dependencies:
-      '@captiveorigins/onetaxonomy-core':
+      '@extantape/onetaxonomy-core':
         specifier: workspace:^
         version: link:../../packages/core
-      '@captiveorigins/onetaxonomy-education':
+      '@extantape/onetaxonomy-education':
         specifier: workspace:^
         version: link:../../packages/education
-      '@captiveorigins/onetaxonomy-layout':
+      '@extantape/onetaxonomy-layout':
         specifier: workspace:^
         version: link:../../packages/layout
-      '@captiveorigins/onetaxonomy-react':
+      '@extantape/onetaxonomy-react':
         specifier: workspace:^
         version: link:../../packages/react
       react:
@@ -97,16 +97,16 @@ importers:
 
   apps/studio:
     dependencies:
-      '@captiveorigins/onetaxonomy-core':
+      '@extantape/onetaxonomy-core':
         specifier: workspace:^
         version: link:../../packages/core
-      '@captiveorigins/onetaxonomy-education':
+      '@extantape/onetaxonomy-education':
         specifier: workspace:^
         version: link:../../packages/education
-      '@captiveorigins/onetaxonomy-import':
+      '@extantape/onetaxonomy-import':
         specifier: workspace:^
         version: link:../../packages/import
-      '@captiveorigins/onetaxonomy-react':
+      '@extantape/onetaxonomy-react':
         specifier: workspace:^
         version: link:../../packages/react
       '@tauri-apps/api':
@@ -164,10 +164,10 @@ importers:
 
   examples:
     dependencies:
-      '@captiveorigins/onetaxonomy-core':
+      '@extantape/onetaxonomy-core':
         specifier: workspace:^
         version: link:../packages/core
-      '@captiveorigins/onetaxonomy-import':
+      '@extantape/onetaxonomy-import':
         specifier: workspace:^
         version: link:../packages/import
 
@@ -179,31 +179,31 @@ importers:
 
   packages/education:
     dependencies:
-      '@captiveorigins/onetaxonomy-core':
+      '@extantape/onetaxonomy-core':
         specifier: workspace:^
         version: link:../core
 
   packages/import:
     dependencies:
-      '@captiveorigins/onetaxonomy-core':
+      '@extantape/onetaxonomy-core':
         specifier: workspace:^
         version: link:../core
 
   packages/layout:
     dependencies:
-      '@captiveorigins/onetaxonomy-core':
+      '@extantape/onetaxonomy-core':
         specifier: workspace:^
         version: link:../core
 
   packages/payload:
     dependencies:
-      '@captiveorigins/onetaxonomy-core':
+      '@extantape/onetaxonomy-core':
         specifier: workspace:^
         version: link:../core
-      '@captiveorigins/onetaxonomy-import':
+      '@extantape/onetaxonomy-import':
         specifier: workspace:^
         version: link:../import
-      '@captiveorigins/onetaxonomy-react':
+      '@extantape/onetaxonomy-react':
         specifier: workspace:^
         version: link:../react
     devDependencies:
@@ -249,13 +249,13 @@ importers:
 
   packages/react:
     dependencies:
-      '@captiveorigins/onetaxonomy-core':
+      '@extantape/onetaxonomy-core':
         specifier: workspace:^
         version: link:../core
-      '@captiveorigins/onetaxonomy-education':
+      '@extantape/onetaxonomy-education':
         specifier: workspace:^
         version: link:../education
-      '@captiveorigins/onetaxonomy-layout':
+      '@extantape/onetaxonomy-layout':
         specifier: workspace:^
         version: link:../layout
     devDependencies:

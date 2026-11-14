@@ -45,7 +45,7 @@ describe('studio colors', () => {
     }
   })
 
-  it('draws focus rings in the darker orange in light, the lighter orange in dark, and keeps the brand orange as the accent (N154, 2026-11-11)', () => {
+  it('draws focus rings in the darker orange in light, the lighter orange in dark, and keeps the brand orange as the accent (owner decision, 2026-11-11)', () => {
     expect(light['--focus']).toBe('#a65f20')
     expect(dark['--focus']).toBe('#e7a066')
     expect(light['--accent']).toBe('#cf8137')

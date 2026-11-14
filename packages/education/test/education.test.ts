@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { createView, indexDataset, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { createView, indexDataset, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
 import amniotesJson from '../../../fixtures/amniotes.json'
 import { answerQuestion, checkResponse, createLesson, parseLesson, sceneAt, sceneFromView, serializeLesson, validateLesson, worksheetMarkdown, type LessonDeck } from '../src'
 

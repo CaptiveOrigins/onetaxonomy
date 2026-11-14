@@ -1,10 +1,10 @@
-# @captiveorigins/onetaxonomy-education
+# @extantape/onetaxonomy-education
 
 Lessons over a pinned OneTaxonomy snapshot: decks of **scenes** (a view, a camera, annotations and step-by-step **reveals**) and **worksheets** whose answers are computed by the core science functions, never stored. Portable JSON, no networking; a live classroom (Phase 2) only syncs scene and step numbers.
 
 ```js
-import { createView, indexDataset } from '@captiveorigins/onetaxonomy-core'
-import { createLesson, sceneAt, sceneFromView, validateLesson, worksheetMarkdown } from '@captiveorigins/onetaxonomy-education'
+import { createView, indexDataset } from '@extantape/onetaxonomy-core'
+import { createLesson, sceneAt, sceneFromView, validateLesson, worksheetMarkdown } from '@extantape/onetaxonomy-education'
 
 const data = indexDataset(snapshot)
 const deck = createLesson(data, { id: 'reptiles', title: 'Are reptiles a clade?' })
@@ -21,6 +21,6 @@ worksheetMarkdown(deck, 'w1', data, { answers: true }) // printable, with the co
 
 - **Questions**: `is-clade` (yes / no / can't tell), `mrca`, `missing` (what to add to make a clade), `open`. `answerQuestion` and `checkResponse` evaluate them with `isMonophyletic` and `findMRCA` over the scene's rooted hypothesis, with the reasons in words (`describeAssessment`). Clade questions on a classification are refused: a classification states no ancestry.
 - **Pinned data**: a deck records the snapshot id, version and checksum; opening it over another snapshot warns, and answers are recomputed from what is loaded.
-- **Players**: `LessonPlayer` in `@captiveorigins/onetaxonomy-react` presents (locked drawing), explores (full explorer from the current step) and authors (studio: scenes from the current view, annotations).
+- **Players**: `LessonPlayer` in `@extantape/onetaxonomy-react` presents (locked drawing), explores (full explorer from the current step) and authors (studio: scenes from the current view, annotations).
 
 PolyForm Noncommercial 1.0.0.

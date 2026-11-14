@@ -1,11 +1,11 @@
-# @captiveorigins/onetaxonomy-import
+# @extantape/onetaxonomy-import
 
 Source adapters, readers and writers, reconciliation and curated selective imports for OneTaxonomy. It ships no data and picks no sources: you bring yours. Adapters take file contents (text or bytes), not paths, so they run in browsers, Node, workers and desktop webviews.
 
 ## Newick
 
 ```js
-import { parseNewick, toNewick } from '@captiveorigins/onetaxonomy-import'
+import { parseNewick, toNewick } from '@extantape/onetaxonomy-import'
 
 const tree = parseNewick("((A_b:0.1,'C d':0.2)95:0.05,F:1e-3);", {
   id: 'my-tree', title: 'My tree', version: '1', sources: ['my-source'],
@@ -21,7 +21,7 @@ Polytomies are kept, quoted labels and comments preserved (comments become `anno
 ## NEXUS and phyloXML
 
 ```js
-import { nexusAdapter, phyloXmlAdapter } from '@captiveorigins/onetaxonomy-import'
+import { nexusAdapter, phyloXmlAdapter } from '@extantape/onetaxonomy-import'
 
 const source = { id: 'my-study', title: 'My study', citation: '…', license: 'CC BY 4.0' }
 const nexus = await nexusAdapter({ source, id: 'my-study', version: '1', lengthUnit: 'substitutions-per-site', mapLabel }).read(text)
@@ -40,7 +40,7 @@ Both refuse malformed input with the line (and the element, for phyloXML). Neith
 Every adapter implements `SourceAdapter<Input>` (`describe()`, `read(input) → ImportResult`) and returns names, concepts, one classification, the source's raw ids and **warnings** for anything it handled conservatively (missing parent → kept as a root; parent that is a synonym → its accepted taxon; synonym without its accepted taxon → skipped; unmapped status → `unknown`). `toSnapshot(results, { id, version, createdAt })` combines results into a snapshot; seal it with `sealSnapshot`.
 
 ```js
-import { csvAdapter, dwcaAdapter, readSnapshotJson, toSnapshot, DARWIN_CORE_COLUMNS } from '@captiveorigins/onetaxonomy-import'
+import { csvAdapter, dwcaAdapter, readSnapshotJson, toSnapshot, DARWIN_CORE_COLUMNS } from '@extantape/onetaxonomy-import'
 
 const source = { id: 'my-source', title: 'My checklist', citation: '…', license: 'CC BY 4.0', externalVersion: '2026-03' }
 
@@ -64,7 +64,7 @@ Concept ids are `<idPrefix>:<the source's id>` (prefix defaults to the source id
 ## Curated selective import
 
 ```js
-import { selectiveImport } from '@captiveorigins/onetaxonomy-import'
+import { selectiveImport } from '@extantape/onetaxonomy-import'
 
 const { snapshot, selection, coverage, diagnostics } = selectiveImport(full, {
   id: 'keepers', title: 'Groups we keep', version: '1', classification: 'col:classification',
@@ -87,7 +87,7 @@ A preset (`format: 'onetaxonomy-preset'`) shares curation, not data: pinned snap
 A `.onetaxonomy` bundle is a ZIP holding `manifest.json`, an optional sealed snapshot, views, lessons and media, each listed with its size and SHA-256. The format is documented in [docs/architecture/bundle-format.md](../../docs/architecture/bundle-format.md).
 
 ```js
-import { readBundle, writeBundle } from '@captiveorigins/onetaxonomy-import'
+import { readBundle, writeBundle } from '@extantape/onetaxonomy-import'
 
 const bytes = writeBundle({ createdAt, createdBy: { app: 'my-app', version: '1.0.0' }, snapshots: [{ snapshot, embed: true }], views: [view] })
 const result = await readBundle(bytes)

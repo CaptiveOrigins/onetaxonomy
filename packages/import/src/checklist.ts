@@ -1,4 +1,4 @@
-import type { Classification, CommonName, ExternalId, Id, NameStatus, NameUsage, Placement, ScientificName, Source, TaxonConcept } from '@captiveorigins/onetaxonomy-core'
+import type { Classification, CommonName, ExternalId, Id, NameStatus, NameUsage, Placement, ScientificName, Source, TaxonConcept } from '@extantape/onetaxonomy-core'
 import type { ImportResult, ImportWarning } from './adapter'
 
 /** One row of a parent-pointer checklist (Darwin Core Taxon terms, renamed for brevity). */

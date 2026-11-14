@@ -1,4 +1,4 @@
-import '@captiveorigins/onetaxonomy-react/styles.css'
+import '@extantape/onetaxonomy-react/styles.css'
 import './site.css'
 
 import type { Metadata } from 'next'

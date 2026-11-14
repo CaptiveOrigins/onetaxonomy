@@ -1,4 +1,4 @@
-import { canonicalJson, parseView, sealSnapshot, sha256Bytes, type DatasetSnapshot, type Id, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
+import { canonicalJson, parseView, sealSnapshot, sha256Bytes, type DatasetSnapshot, type Id, type TaxonomicView } from '@extantape/onetaxonomy-core'
 
 import { readSnapshotJson } from './json'
 import { decodeUtf8, encodeUtf8, readZip, writeZip, type Inflate } from './zip'

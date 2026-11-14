@@ -1,4 +1,4 @@
-import { createView, indexDataset, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
+import { createView, indexDataset, type TaxonomicView } from '@extantape/onetaxonomy-core'
 import type { Payload, TypedUser } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 

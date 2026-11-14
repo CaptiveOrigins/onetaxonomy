@@ -6,8 +6,8 @@ import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createView, indexDataset, verifySnapshot, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
-import { readBundle, writeBundle } from '@captiveorigins/onetaxonomy-import'
+import { createView, indexDataset, verifySnapshot, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
+import { readBundle, writeBundle } from '@extantape/onetaxonomy-import'
 
 const written = new Map<string, string>()
 const writtenBytes = new Map<string, Uint8Array>()

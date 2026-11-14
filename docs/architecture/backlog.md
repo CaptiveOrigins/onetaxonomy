@@ -1,6 +1,6 @@
 # Backlog
 
-Since 2026-11-10 the open items below are tracked as tasks in the maintainers' task log (K235 to K241). This page stays as the record of what each milestone covers; the task log is where open work is ranked.
+Since 2026-11-10 the open items below are tracked in the maintainers' own task list. This page stays as the record of what each milestone covers; that list is where open work is ranked.
 
 Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done with tests, `[ ]` to do. Integration dependencies on the project owner are marked **(owner)**.
 
@@ -11,7 +11,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] ADRs 0001–0008
 - [x] Illustrative fixtures: classification forest + conflicting hypotheses (amniotes); polytomy, forest, unrooted, fossil/time-calibrated, split names (structures)
 - [x] Release workflow (tag → staged npm publish → owner approval), lockstep versions
-- [x] GitHub repository `CaptiveOrigins/onetaxonomy` (public); npm names `@captiveorigins/onetaxonomy-*` (ADR 0008)
+- [x] GitHub repository `ExtantApe/OneTaxonomy` (public); npm names `@extantape/onetaxonomy-*` (ADR 0008)
 
 ## M2 — Core model, parser, validation, traversal ✅
 
@@ -21,7 +21,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] `validateDataset` diagnostics: duplicates, dangling refs, missing sources, cycles, multiple parents, self-edges, units, time calibration
 - [x] Snapshot sealing: canonical JSON, pure SHA-256 checksum, deep freeze, verification
 - [x] Name lookup with ambiguity (`findByName`)
-- [x] Newick reader/writer (`@captiveorigins/onetaxonomy-import`): quoting, comments, support, rooting stated explicitly, explicit concept mapping
+- [x] Newick reader/writer (`@extantape/onetaxonomy-import`): quoting, comments, support, rooting stated explicitly, explicit concept mapping
 - [x] Runnable example (`examples/`)
 - [x] JSON Schema export of the record types (M3: `packages/core/schema/snapshot.schema.json`)
 
@@ -44,8 +44,8 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 - [x] `TaxonomicView` + `ViewAction` reducer (`applyViewAction`), undo/redo, `serializeView`, `validateView`, `projectView`
 - [x] Filters (status incl. unknown, rank, geography, traits, period, source, custom) that disclose hidden counts
 - [x] Highlights: `group` vs validated `clade` (I3)
-- [x] `@captiveorigins/onetaxonomy-layout`: rectangular cladogram, radial, phylogram/time-scaled only when valid, classification sunburst (labelled as classification)
-- [x] `@captiveorigins/onetaxonomy-react`: SVG tree viewer, explorer state hook, inspector, view controls; keyboard and screen-reader navigation; reduced motion
+- [x] `@extantape/onetaxonomy-layout`: rectangular cladogram, radial, phylogram/time-scaled only when valid, classification sunburst (labelled as classification)
+- [x] `@extantape/onetaxonomy-react`: SVG tree viewer, explorer state hook, inspector, view controls; keyboard and screen-reader navigation; reduced motion
 - [x] Clade selector UI (pick members, see the assessment) (M5, 2026-11-02); Canvas rendering with level of detail for very large trees → M8
 - [x] `apps/playground`
 - [x] Acceptance (core): drag/collapse/filter/rotate with undo/redo; snapshot checksum unchanged (`view.test.ts`) and through the explorer (`react.test.tsx`)
@@ -54,7 +54,7 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 - [x] Profiles and evidence in the inspector; support, fossil, extinction and trait overlays (observed traits: `TraitSet`); citations
 - [x] Export SVG/PNG/PDF (labelled classification vs phylogeny, hidden branches disclosed), JSON view, embeds (PDF via print; embeds = server-rendered `TreeView`)
-- [x] `@captiveorigins/onetaxonomy-education`: scenes, annotations, camera states, reveals (step-by-step view actions; animated transitions are the renderer's), lesson decks, worksheets with computed answers; Present, Explore and Studio modes (`LessonPlayer`)
+- [x] `@extantape/onetaxonomy-education`: scenes, annotations, camera states, reveals (step-by-step view actions; animated transitions are the renderer's), lesson decks, worksheets with computed answers; Present, Explore and Studio modes (`LessonPlayer`)
 
 ## Proposed mode (owner 2026-11-03; done 2026-11-05)
 
@@ -71,11 +71,11 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 ## M7 — Payload plugin
 
-- [ ] `@captiveorigins/payload-plugin-onetaxonomy` with configurable slugs, locale, permissions, optional tenant scope, source adapters (part 1, 2026-11-11, [ADR 0012](adr/0012-payload-plugin.md): slugs, locale for common-name search, read and manage callbacks that fail closed, tenant scope, sealed snapshots and pinned views with staged/published/withdrawn states; part 2, 2026-11-11: the six import adapters run in import jobs, configured per job; part 4, 2026-11-11: proposals, with a third callback, `access.propose`. Not ticked: admin views remain; the example app is done, below)
+- [ ] `@extantape/payload-plugin-onetaxonomy` with configurable slugs, locale, permissions, optional tenant scope, source adapters (part 1, 2026-11-11, [ADR 0012](adr/0012-payload-plugin.md): slugs, locale for common-name search, read and manage callbacks that fail closed, tenant scope, sealed snapshots and pinned views with staged/published/withdrawn states; part 2, 2026-11-11: the six import adapters run in import jobs, configured per job; part 4, 2026-11-11: proposals, with a third callback, `access.propose`. Not ticked: admin views remain; the example app is done, below)
 - [ ] Admin views: import progress, conflicts, curation preview, tree authoring, profiles, publishing, lessons (part 5, 2026-11-11, [ADR 0012](adr/0012-payload-plugin.md), point 16: panels on the four collections' edit pages for import progress with re-runs, publishing and withdrawing snapshots and views with a bounded drawing of a view, and a manager's look at a proposal before accepting or declining. Tested in jsdom and over HTTP in the example site, and clicked through once in headless Chrome; no screen reader, Safari or Firefox. Not built: list views, conflicts, tree authoring, profiles, lessons, and a page for making a proposal)
 - [x] Bounded API: search, ancestors/descendants, MRCA, coverage, projected views, exports; access checks; cross-tenant denial tests (part 1, 2026-11-11: search, ancestors, descendants and MRCA with access checks, limits, 404 for anything unreadable and cross-tenant denial tests; part 2, 2026-11-11: coverage, projected views with their disclosure, and snapshot and view exports, under the same rules and tests; 2026-11-11: every endpoint also answers through Payload's own REST router with a signed-in token, in-process (`test/http.test.ts`). 2026-11-11: run in a real site behind Next.js, with cookies, by `apps/payload-example`'s smoke test, below)
 - [x] Resumable, idempotent import jobs (part 2, 2026-11-11: a `taxonomy-imports` collection, not Payload's jobs queue (ADR 0012, point 12); staged sealed snapshots, "already imported" on a re-run, failures store nothing, interrupted jobs restart from the file; part 3, 2026-11-11: a job is claimed by one conditional update, so runs started together can't both proceed; tested on an in-memory MongoDB, not in a real site or on Postgres or SQLite)
-- [x] Withdrawn snapshots' published views stay readable with a "withdrawn source" flag (ADR 0012, point 14, accepted by the area lead 2026-11-11): on the projection and export endpoints (part 2) and as a `source` field on Payload's own reads of a view (part 3)
+- [x] Withdrawn snapshots' published views stay readable with a "withdrawn source" flag (ADR 0012, point 14, accepted by the maintainers 2026-11-11): on the projection and export endpoints (part 2) and as a `source` field on Payload's own reads of a view (part 3)
 - [x] `apps/payload-example` (2026-11-11: a Payload 3.93 and Next.js 16 site on a throwaway in-memory MongoDB, on this machine only. Two roles; proposals record people by account id and show a public handle looked up when read (changed 2026-11-11); public Server Component pages that draw the published views with `TreeView` and `TreeOutline`; a seed of fixture data. `pnpm smoke` builds it, starts it and runs 47 checks over HTTP with sign-in cookies, in CI too. Not tested: a person clicking through the admin, a screen reader, Postgres or SQLite, a deployed site. It has no pages for proposals or imports: those wait for the admin views)
 
 ## M8 — Science and performance polish
@@ -89,4 +89,4 @@ Task-level plan per milestone ([`phase-plan.md`](phase-plan.md)). `[x]` done wit
 
 ## Phase 2 (not started by design)
 
-- [ ] `@captiveorigins/onetaxonomy-live` protocol and client; `services/live-server`; session codes; challenges evaluated by core
+- [ ] `@extantape/onetaxonomy-live` protocol and client; `services/live-server`; session codes; challenges evaluated by core

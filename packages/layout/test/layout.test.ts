@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { applyViewAction, createView, indexDataset, projectView, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { applyViewAction, createView, indexDataset, projectView, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
 import { edgePath, LayoutError, radial, rectangular, sunburst } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 import structuresJson from '../../../fixtures/structures.json'

@@ -28,8 +28,8 @@ import {
   type ViewAction,
   type ViewHistory,
   type ViewOverlays,
-} from '@captiveorigins/onetaxonomy-core'
-import type { TreeLayout } from '@captiveorigins/onetaxonomy-layout'
+} from '@extantape/onetaxonomy-core'
+import type { TreeLayout } from '@extantape/onetaxonomy-layout'
 import { layoutFor } from './layout.js'
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type PointerEvent, type ReactNode, type WheelEvent } from 'react'
 

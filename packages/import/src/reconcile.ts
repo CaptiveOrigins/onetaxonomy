@@ -1,4 +1,4 @@
-import type { DatasetSnapshot, Id, NameStatus } from '@captiveorigins/onetaxonomy-core'
+import type { DatasetSnapshot, Id, NameStatus } from '@extantape/onetaxonomy-core'
 
 export type ReconcileReport = {
   /** Concepts that share an external identifier in a namespace both sources use. Strong links. */

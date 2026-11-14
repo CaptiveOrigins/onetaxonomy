@@ -1,4 +1,4 @@
-import type { CommonName } from '@captiveorigins/onetaxonomy-core'
+import type { CommonName } from '@extantape/onetaxonomy-core'
 import type { ImportResult, ImportWarning, SourceAdapter } from './adapter'
 import { normalizeChecklist, type ChecklistOptions, type ChecklistRow } from './checklist'
 import { parseDelimited } from './delimited'

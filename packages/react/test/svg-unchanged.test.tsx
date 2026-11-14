@@ -1,8 +1,8 @@
 // @vitest-environment jsdom
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
-import { createView, indexDataset, makeHighlight, nodeOverlays, projectView, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
-import { radial, rectangular } from '@captiveorigins/onetaxonomy-layout'
+import { createView, indexDataset, makeHighlight, nodeOverlays, projectView, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
+import { radial, rectangular } from '@extantape/onetaxonomy-layout'
 import { traitShapes, TreeView } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 import amniotesJson from '../../../fixtures/amniotes.json'

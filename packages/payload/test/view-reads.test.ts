@@ -1,7 +1,7 @@
 import { createRequire } from 'node:module'
 
 import { configToSchema } from '@payloadcms/graphql'
-import { createView, indexDataset, sealSnapshot, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { createView, indexDataset, sealSnapshot, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
 import { configToJSONSchema, createLocalReq, type Payload, type TypedUser } from 'payload'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 

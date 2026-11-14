@@ -2,8 +2,8 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
-import { indexDataset, verifySnapshot, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
-import { writeZip } from '@captiveorigins/onetaxonomy-import'
+import { indexDataset, verifySnapshot, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
+import { writeZip } from '@extantape/onetaxonomy-import'
 import type { Payload, TypedUser } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 

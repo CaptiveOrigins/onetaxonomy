@@ -1,5 +1,5 @@
-import type { Highlight, Id, NodeOverlay, Projection } from '@captiveorigins/onetaxonomy-core'
-import { edgePath, type TreeLayout } from '@captiveorigins/onetaxonomy-layout'
+import type { Highlight, Id, NodeOverlay, Projection } from '@extantape/onetaxonomy-core'
+import { edgePath, type TreeLayout } from '@extantape/onetaxonomy-layout'
 import { useId, type KeyboardEvent, type MouseEvent } from 'react'
 
 import { CanvasTreeView } from './CanvasTreeView.js'

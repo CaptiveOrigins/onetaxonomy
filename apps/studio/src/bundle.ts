@@ -1,6 +1,6 @@
-import { indexDataset, snapshotChecksum, validateView, type DatasetSnapshot, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
-import { validateLesson, type LessonDeck } from '@captiveorigins/onetaxonomy-education'
-import { writeBundle, type Bundle, type BundleLesson, type BundleMedia, type BundleRead, type SnapshotPin } from '@captiveorigins/onetaxonomy-import'
+import { indexDataset, snapshotChecksum, validateView, type DatasetSnapshot, type TaxonomicView } from '@extantape/onetaxonomy-core'
+import { validateLesson, type LessonDeck } from '@extantape/onetaxonomy-education'
+import { writeBundle, type Bundle, type BundleLesson, type BundleMedia, type BundleRead, type SnapshotPin } from '@extantape/onetaxonomy-import'
 
 import pkg from '../package.json'
 

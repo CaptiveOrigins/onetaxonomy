@@ -1,4 +1,4 @@
-import type { ImportWarning } from '@captiveorigins/onetaxonomy-import'
+import type { ImportWarning } from '@extantape/onetaxonomy-import'
 
 import type { ImportDiagnostic, ImportPhase, ImportStatus } from '../imports.js'
 import { Button, count, Exact, Facts, Loading, Notice, OutcomeNotice, Panel, StatusLine, When, type Act, type Loadable, type Outcome } from './ui.js'

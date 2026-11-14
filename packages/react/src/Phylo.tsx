@@ -11,7 +11,7 @@ import {
   type Projection,
   type TaxonomicView,
   type ViewAction,
-} from '@captiveorigins/onetaxonomy-core'
+} from '@extantape/onetaxonomy-core'
 import { useEffect, useId, useMemo, useState } from 'react'
 
 import { Icon } from './icons.js'

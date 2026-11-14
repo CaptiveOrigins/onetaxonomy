@@ -218,7 +218,7 @@ describe('the panel field', () => {
       const panel = panelOf(collection)
       expect(collection.fields[0], component).toBe(panel)
       expect(panel?.admin.disableListColumn).toBe(true)
-      expect(panel?.admin.components.Field.path).toBe(`@captiveorigins/payload-plugin-onetaxonomy/client#${component}`)
+      expect(panel?.admin.components.Field.path).toBe(`@extantape/payload-plugin-onetaxonomy/client#${component}`)
       const sent = panel!.admin.components.Field.clientProps
       expect(sent).toEqual({ slugs: { snapshots: 'snaps', views: 'taxonomy-views', imports: 'taxonomy-imports', proposals: 'taxonomy-proposals' }, ...props })
       // Only plain values go to the browser: nothing of the host's options, callbacks or limits beyond these.

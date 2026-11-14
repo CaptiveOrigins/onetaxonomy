@@ -1,4 +1,4 @@
-import { createView, indexDataset, verifySnapshot, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { createView, indexDataset, verifySnapshot, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
 import { handleEndpoints, type Payload, type TypedUser } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 

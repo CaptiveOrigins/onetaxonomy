@@ -1,10 +1,10 @@
-# @captiveorigins/onetaxonomy-layout
+# @extantape/onetaxonomy-layout
 
 Deterministic tree layouts for OneTaxonomy projections, as plain coordinates any renderer can draw (SVG, Canvas, PDF, native). Same projection in, same numbers out.
 
 ```js
-import { createView, indexDataset, projectView } from '@captiveorigins/onetaxonomy-core'
-import { edgePath, radial, rectangular, sunburst } from '@captiveorigins/onetaxonomy-layout'
+import { createView, indexDataset, projectView } from '@extantape/onetaxonomy-core'
+import { edgePath, radial, rectangular, sunburst } from '@extantape/onetaxonomy-layout'
 
 const data = indexDataset(snapshot)
 const projection = projectView(data, createView(data, { id: 'v', title: 'Turtles', target: { kind: 'phylogeny', id: 'my-tree' } }))

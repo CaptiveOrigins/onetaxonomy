@@ -3,7 +3,7 @@
 // no screen reader was run, so "spoken" here means the text is in a status region that stays mounted.
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createView, indexDataset, rerootPhylogeny, sealSnapshot, type DatasetSnapshot, type Phylogeny, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
+import { createView, indexDataset, rerootPhylogeny, sealSnapshot, type DatasetSnapshot, type Phylogeny, type TaxonomicView } from '@extantape/onetaxonomy-core'
 import { Explorer, rootedRecord, supportSummary } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 import amniotesJson from '../../../fixtures/amniotes.json'

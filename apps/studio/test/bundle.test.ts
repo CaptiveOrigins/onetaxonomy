@@ -2,8 +2,8 @@
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { createView, indexDataset, sealSnapshot, snapshotChecksum, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
-import { readBundle, writeBundle, type BundleLesson, type BundleRead } from '@captiveorigins/onetaxonomy-import'
+import { createView, indexDataset, sealSnapshot, snapshotChecksum, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
+import { readBundle, writeBundle, type BundleLesson, type BundleRead } from '@extantape/onetaxonomy-import'
 
 import { APP, BundleRefusal, bundleBytes, keepPinned, NOTHING_CARRIED, pinOf, planBundleOpen, planBundleSave, relinkToAvailable, type BundleOpening } from '../src/bundle'
 

@@ -1,4 +1,4 @@
-import type { CuratedSelection, DatasetSnapshot, Id } from '@captiveorigins/onetaxonomy-core'
+import type { CuratedSelection, DatasetSnapshot, Id } from '@extantape/onetaxonomy-core'
 
 /**
  * A shareable community preset: references to pinned snapshots, curated

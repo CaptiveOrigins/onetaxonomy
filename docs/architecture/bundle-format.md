@@ -2,7 +2,7 @@
 
 A bundle keeps a piece of work together: the dataset, the views and lessons made with it, and media. It's a plain ZIP file, so you can open it with Finder, `unzip` or any ZIP library and read every file in it without OneTaxonomy. Why it's a file and not a database: [ADR 0011](adr/0011-bundle-not-sqlite.md).
 
-The code is `writeBundle` and `readBundle` in `@captiveorigins/onetaxonomy-import` ([`bundle.ts`](../../packages/import/src/bundle.ts)). The Mac app's Save as bundle… and Open… use them.
+The code is `writeBundle` and `readBundle` in `@extantape/onetaxonomy-import` ([`bundle.ts`](../../packages/import/src/bundle.ts)). The Mac app's Save as bundle… and Open… use them.
 
 ## Layout
 

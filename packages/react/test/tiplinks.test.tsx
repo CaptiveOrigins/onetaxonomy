@@ -3,7 +3,7 @@
 // the text is in a status region that stays mounted.
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { comparePhylogenies, indexDataset, indexPhylogeny, sealSnapshot, validateDataset, type DatasetSnapshot, type Phylogeny } from '@captiveorigins/onetaxonomy-core'
+import { comparePhylogenies, indexDataset, indexPhylogeny, sealSnapshot, validateDataset, type DatasetSnapshot, type Phylogeny } from '@extantape/onetaxonomy-core'
 import { linkedPhylogeny, proposeTipLinks, TipLinker } from '../src'
 import checklistJson from '../../../fixtures/checklist.json'
 

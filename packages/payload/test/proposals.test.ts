@@ -1,4 +1,4 @@
-import { verifySnapshot, type DatasetSnapshot, type Proposal } from '@captiveorigins/onetaxonomy-core'
+import { verifySnapshot, type DatasetSnapshot, type Proposal } from '@extantape/onetaxonomy-core'
 import type { Payload, TypedUser } from 'payload'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 

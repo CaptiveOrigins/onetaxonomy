@@ -11,7 +11,7 @@ import {
   type PhylogenyIndex,
   type TaxonomicView,
   type ViewAction,
-} from '@captiveorigins/onetaxonomy-core'
+} from '@extantape/onetaxonomy-core'
 
 /**
  * Lessons (M5): portable decks of scenes over one pinned snapshot. A scene is a

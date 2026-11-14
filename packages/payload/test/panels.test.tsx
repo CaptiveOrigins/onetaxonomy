@@ -4,7 +4,7 @@
 // them. No browser and no screen reader was run: they check the markup, the focus and what the buttons call.
 import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { createView, describeView, indexDataset, projectView, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { createView, describeView, indexDataset, projectView, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
 
 import amniotes from '../../../fixtures/amniotes.json'
 import type { ProposalPreview } from '../src/proposals.js'

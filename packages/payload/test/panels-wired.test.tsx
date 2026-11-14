@@ -7,7 +7,7 @@ import { act, cleanup, fireEvent, render, screen, waitFor, within } from '@testi
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { createView, describeView, indexDataset, projectView, type DatasetSnapshot } from '@captiveorigins/onetaxonomy-core'
+import { createView, describeView, indexDataset, projectView, type DatasetSnapshot } from '@extantape/onetaxonomy-core'
 
 import amniotes from '../../../fixtures/amniotes.json'
 import type { ImportJobSummary } from '../src/imports.js'

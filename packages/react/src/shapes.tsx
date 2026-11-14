@@ -1,4 +1,4 @@
-import type { Id, TraitSet } from '@captiveorigins/onetaxonomy-core'
+import type { Id, TraitSet } from '@extantape/onetaxonomy-core'
 
 /**
  * Shapes that tell highlights and trait states apart without color (WCAG 1.4.1). The

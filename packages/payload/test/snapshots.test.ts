@@ -1,4 +1,4 @@
-import { sealSnapshot, snapshotChecksum } from '@captiveorigins/onetaxonomy-core'
+import { sealSnapshot, snapshotChecksum } from '@extantape/onetaxonomy-core'
 import { readdirSync, readFileSync } from 'node:fs'
 import type { Payload, TypedUser } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'

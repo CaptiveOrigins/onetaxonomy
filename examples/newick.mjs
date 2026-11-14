@@ -1,6 +1,6 @@
 // Read a Newick tree, keep its polytomy, and ask questions with stated rooting.
-import { findMRCA, indexPhylogeny, isMonophyletic } from '@captiveorigins/onetaxonomy-core'
-import { parseNewick, toNewick } from '@captiveorigins/onetaxonomy-import'
+import { findMRCA, indexPhylogeny, isMonophyletic } from '@extantape/onetaxonomy-core'
+import { parseNewick, toNewick } from '@extantape/onetaxonomy-import'
 
 const tree = parseNewick('((A,B,C,D)Unresolved,(E,F)Pair)Root;', { id: 'demo', title: 'Demo', version: '1', sources: ['demo'], rooted: true })
 const index = indexPhylogeny(tree)

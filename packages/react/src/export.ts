@@ -1,4 +1,4 @@
-import type { Citation, ViewDisclosure } from '@captiveorigins/onetaxonomy-core'
+import type { Citation, ViewDisclosure } from '@extantape/onetaxonomy-core'
 
 /** Properties copied into exported SVGs (they carry no stylesheet). */
 const INLINE = ['fill', 'fill-opacity', 'stroke', 'stroke-width', 'stroke-dasharray', 'opacity', 'font-family', 'font-size', 'font-weight', 'font-style', 'visibility', 'display']

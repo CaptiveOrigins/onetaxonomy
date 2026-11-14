@@ -1,5 +1,5 @@
-import type { LayoutKind, Projection } from '@captiveorigins/onetaxonomy-core'
-import { radial, rectangular, type TreeLayout } from '@captiveorigins/onetaxonomy-layout'
+import type { LayoutKind, Projection } from '@extantape/onetaxonomy-core'
+import { radial, rectangular, type TreeLayout } from '@extantape/onetaxonomy-layout'
 
 /**
  * Lays out a projection for a view's layout kind (sunburst is drawn as a rectangular outline here).

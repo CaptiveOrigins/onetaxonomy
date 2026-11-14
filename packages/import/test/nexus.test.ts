@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { comparePhylogenies, indexPhylogeny, isMonophyletic, sealSnapshot, validateDataset } from '@captiveorigins/onetaxonomy-core'
+import { comparePhylogenies, indexPhylogeny, isMonophyletic, sealSnapshot, validateDataset } from '@extantape/onetaxonomy-core'
 import { nexusAdapter, NexusError, readNexus, toSnapshot, type NexusOptions } from '../src'
 
 const source = { id: 'src', title: 'Example trees', license: 'CC-BY-4.0', citation: 'Illustrative trees, 2026', illustrative: true }

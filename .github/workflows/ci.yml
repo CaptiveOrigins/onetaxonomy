@@ -30,7 +30,7 @@ jobs:
       # Builds the example Payload site, starts it with a throwaway in-memory database on the runner, and checks it
       # over HTTP with sign-in cookies. About a minute.
       - name: Example site smoke test
-        run: pnpm --filter @captiveorigins/onetaxonomy-payload-example smoke
+        run: pnpm --filter @extantape/onetaxonomy-payload-example smoke
       # The OneOrigin brand copy (brand/oneorigin/) must match brand/oneorigin.lock, and the CSS built from it must be current.
       # The source is OnePhylogeny's docs/oneorigin/; the check warns, without failing, when it has moved ahead of the copy.
       - name: OneOrigin brand check

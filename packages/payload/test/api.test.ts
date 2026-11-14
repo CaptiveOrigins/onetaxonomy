@@ -1,4 +1,4 @@
-import { applyViewAction, createView, indexDataset, parseView, sealSnapshot, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
+import { applyViewAction, createView, indexDataset, parseView, sealSnapshot, type TaxonomicView } from '@extantape/onetaxonomy-core'
 import { createLocalReq, type Payload, type TypedUser } from 'payload'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 

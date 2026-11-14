@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { comparePhylogenies, sealSnapshot, validateDataset } from '@captiveorigins/onetaxonomy-core'
+import { comparePhylogenies, sealSnapshot, validateDataset } from '@extantape/onetaxonomy-core'
 import { phyloXmlAdapter, PhyloXmlError, readPhyloXml, toSnapshot, type PhyloXmlOptions } from '../src'
 
 const source = { id: 'src', title: 'Example trees', license: 'CC0-1.0', illustrative: true }

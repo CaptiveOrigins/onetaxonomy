@@ -1,6 +1,6 @@
-import { createView, indexDataset, makeHighlight, type DatasetSnapshot, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
-import { createLesson, sceneFromView, type LessonDeck } from '@captiveorigins/onetaxonomy-education'
-import { Explorer, LessonPlayer } from '@captiveorigins/onetaxonomy-react'
+import { createView, indexDataset, makeHighlight, type DatasetSnapshot, type TaxonomicView } from '@extantape/onetaxonomy-core'
+import { createLesson, sceneFromView, type LessonDeck } from '@extantape/onetaxonomy-education'
+import { Explorer, LessonPlayer } from '@extantape/onetaxonomy-react'
 import { useMemo, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 
@@ -10,7 +10,7 @@ import structures from '../../fixtures/structures.json'
 
 /**
  * Playground (M4, M5 overlays and exports): the explorer over the illustrative fixtures. Build with
- * `pnpm --filter @captiveorigins/onetaxonomy-playground build`, then open dist/index.html.
+ * `pnpm --filter @extantape/onetaxonomy-playground build`, then open dist/index.html.
  */
 // M5 overlays: an illustrative trait set and support values added to the fixtures here (not science).
 const am = indexDataset({

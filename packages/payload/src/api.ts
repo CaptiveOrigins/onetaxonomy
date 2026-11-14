@@ -13,7 +13,7 @@ import {
   type NameStatus,
   type PhylogenyIndex,
   type TreeIndex,
-} from '@captiveorigins/onetaxonomy-core'
+} from '@extantape/onetaxonomy-core'
 import type { Endpoint, PayloadRequest } from 'payload'
 
 import { optionsOf, type ResolvedOptions } from './types.js'

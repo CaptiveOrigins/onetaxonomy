@@ -1,9 +1,9 @@
-# @captiveorigins/onetaxonomy-core
+# @extantape/onetaxonomy-core
 
 The scientific core of OneTaxonomy: taxon concepts, names, classifications and phylogenetic hypotheses, with validation, bounded traversal, MRCA and **tri-state monophyly**. No dependencies; no DOM, Node, React, CMS or database. It runs in browsers, Node, workers and desktop webviews.
 
 ```js
-import { assessTaxon, findMRCA, indexDataset, isMonophyletic, sealSnapshot, validateDataset } from '@captiveorigins/onetaxonomy-core'
+import { assessTaxon, findMRCA, indexDataset, isMonophyletic, sealSnapshot, validateDataset } from '@extantape/onetaxonomy-core'
 
 const problems = validateDataset(snapshot)          // diagnostics; nothing is repaired silently
 const sealed = sealSnapshot(snapshot)               // checksummed and frozen
@@ -27,7 +27,7 @@ assessTaxon(data.classification('traditional'), 'c:reptilia', null)
 ## Comparing and rooting hypotheses
 
 ```js
-import { comparePhylogenies, midpointRoot, rerootPhylogeny } from '@captiveorigins/onetaxonomy-core'
+import { comparePhylogenies, midpointRoot, rerootPhylogeny } from '@extantape/onetaxonomy-core'
 
 comparePhylogenies(treeA, treeB)
 // { status: 'compared', mode: 'unrooted', rf: 2, normalized: 0.5, shared, onlyInA, onlyInB, inAOnly, inBOnly, notes }
@@ -43,7 +43,7 @@ const midpoint = midpointRoot(unrootedTree, { id: 'my-tree-midpoint', version: '
 ## Curation, coverage and releases
 
 ```js
-import { applySelection, diffSnapshots, extractSubset, getCoverageReport, referenceImpact } from '@captiveorigins/onetaxonomy-core'
+import { applySelection, diffSnapshots, extractSubset, getCoverageReport, referenceImpact } from '@extantape/onetaxonomy-core'
 
 const result = applySelection(data, selection)            // curated + ancestor paths, omitted branches, diagnostics
 const coverage = getCoverageReport(data, {
@@ -54,6 +54,6 @@ const subset = extractSubset(snapshot, { id, version, createdAt, classification:
 const changes = referenceImpact(diffSnapshots(oldRelease, newRelease), mySavedIds) // renamed, relocated, split/merge candidates…
 ```
 
-`schema/snapshot.schema.json` (exported as `@captiveorigins/onetaxonomy-core/schema/snapshot.schema.json`) describes the snapshot format for non-TypeScript tools.
+`schema/snapshot.schema.json` (exported as `@extantape/onetaxonomy-core/schema/snapshot.schema.json`) describes the snapshot format for non-TypeScript tools.
 
 See the [data schema](../../docs/architecture/data-schema.md) and [invariants](../../docs/architecture/scientific-invariants.md).

@@ -12,7 +12,7 @@ import {
   type Id,
   type KnownCount,
   type SelectionResult,
-} from '@captiveorigins/onetaxonomy-core'
+} from '@extantape/onetaxonomy-core'
 
 export type SelectiveImportOptions = ApplySelectionOptions & {
   /** Identity of the new snapshot. */

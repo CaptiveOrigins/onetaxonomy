@@ -1,4 +1,4 @@
-import type { Id, Source } from '@captiveorigins/onetaxonomy-core'
+import type { Id, Source } from '@extantape/onetaxonomy-core'
 import type { Endpoint, PayloadRequest } from 'payload'
 
 import { clamp, contentOf, get, integrityGuard, NOT_FOUND, params, respond, routeId, type ApiResult, type SnapshotRef } from './api.js'

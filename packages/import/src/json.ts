@@ -1,4 +1,4 @@
-import { SCHEMA_VERSION, validateDataset, verifySnapshot, type DatasetSnapshot, type Diagnostic } from '@captiveorigins/onetaxonomy-core'
+import { SCHEMA_VERSION, validateDataset, verifySnapshot, type DatasetSnapshot, type Diagnostic } from '@extantape/onetaxonomy-core'
 
 /**
  * Reads a OneTaxonomy snapshot from JSON text: checks the schema version, the

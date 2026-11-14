@@ -1,6 +1,6 @@
-import { createView, indexDataset, parseView, serializeView, validateDataset, validateView, type DatasetSnapshot, type Phylogeny, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
-import { readBundle, type ChecklistColumns } from '@captiveorigins/onetaxonomy-import'
-import { Explorer, TipLinker } from '@captiveorigins/onetaxonomy-react'
+import { createView, indexDataset, parseView, serializeView, validateDataset, validateView, type DatasetSnapshot, type Phylogeny, type TaxonomicView } from '@extantape/onetaxonomy-core'
+import { readBundle, type ChecklistColumns } from '@extantape/onetaxonomy-import'
+import { Explorer, TipLinker } from '@extantape/onetaxonomy-react'
 import { invoke } from '@tauri-apps/api/core'
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 

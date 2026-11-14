@@ -7,7 +7,7 @@
   --muted: #5b6577;
   --border: #eeddde;
   --accent: #cf8137;
-  /* Focus ring: the darker orange on light backgrounds (owner decision N154, 2026-11-11), 4.63:1 on the panel. Dark keeps #e7a066. */
+  /* Focus ring: the darker orange on light backgrounds (owner decision, 2026-11-11), 4.63:1 on the panel. Dark keeps #e7a066. */
   --focus: #a65f20;
   --field: #ffffff;
   /* Text-field borders: 3:1 against the field and the page (WCAG 1.4.11). */
@@ -27,7 +27,7 @@
 /*
  * The explorer's own colors follow the system through a media query, so a chosen appearance has to set them too;
  * otherwise Light on a dark system draws light text on a white page. Same values as the light and dark blocks in
- * @captiveorigins/onetaxonomy-react/styles.css (test/theme.test.ts keeps them equal).
+ * @extantape/onetaxonomy-react/styles.css (test/theme.test.ts keeps them equal).
  */
 :root[data-appearance='light'] :is(.ot-root, .ot-explorer, .ot-lesson, .ot-tip-links) {
   --ot-ink: #4c312c; --ot-text: #1d2330; --ot-muted: #5b6577; --ot-edge: #a08a83; --ot-node: var(--ot-ink);

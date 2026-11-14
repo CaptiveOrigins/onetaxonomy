@@ -1,5 +1,5 @@
-import type { Highlight, Id, NodeOverlay, ProjectedNode, Projection } from '@captiveorigins/onetaxonomy-core'
-import type { LayoutEdge, LayoutNode, TreeLayout } from '@captiveorigins/onetaxonomy-layout'
+import type { Highlight, Id, NodeOverlay, ProjectedNode, Projection } from '@extantape/onetaxonomy-core'
+import type { LayoutEdge, LayoutNode, TreeLayout } from '@extantape/onetaxonomy-layout'
 
 import { FOLDED, innerLabelAt, leafLabelX } from './labelPlace.js'
 import { shapeAt, shapePolygon, type MarkShape } from './shapes.js'

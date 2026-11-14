@@ -2,9 +2,9 @@
 
 A source-available framework for importing, curating, browsing and publishing **scientifically faithful** taxonomic classifications and phylogenetic trees: for developers, and for teachers, museums, researchers and animal keepers who don't write code.
 
-Part of the [OneOrigin suite](https://github.com/CaptiveOrigins/onephylogeny/blob/main/docs/oneorigin/README.md): independent tools, with no subscriptions, that work alone or together.
+Part of the [OneOrigin suite](https://github.com/ExtantApe/OnePhylogeny/blob/main/docs/oneorigin/README.md): independent tools, with no subscriptions, that work alone or together.
 
-> **Status: early (Phase 1, milestone 4 of 8).** The pure TypeScript core, the importers (Newick, NEXUS, phyloXML, CSV/TSV checklists, Darwin Core Archives, OneTaxonomy JSON) and curated selective imports with coverage reports, views with undo/redo, layouts and the React explorer work and are tested (see `apps/playground`). A first Mac app (`apps/studio`) opens these files and saves views. Profiles and the Studio's project files are planned, and the Payload plugin has its first four parts (snapshots, views, import jobs, proposals and a small read API, tested on an in-memory database) and a small example site (`apps/payload-example`); see [the phase plan](docs/architecture/phase-plan.md). The five `@captiveorigins/onetaxonomy-*` packages are on npm as alpha versions; the Payload plugin isn't yet.
+> **Status: early (Phase 1, milestone 4 of 8).** The pure TypeScript core, the importers (Newick, NEXUS, phyloXML, CSV/TSV checklists, Darwin Core Archives, OneTaxonomy JSON) and curated selective imports with coverage reports, views with undo/redo, layouts and the React explorer work and are tested (see `apps/playground`). A first Mac app (`apps/studio`) opens these files and saves views. Profiles and the Studio's project files are planned, and the Payload plugin has its first four parts (snapshots, views, import jobs, proposals and a small read API, tested on an in-memory database) and a small example site (`apps/payload-example`); see [the phase plan](docs/architecture/phase-plan.md). The five `onetaxonomy-*` packages are on npm as alpha versions, under `@extantape` from 0.1.0-alpha.4; the Payload plugin isn't yet.
 
 ## Principles
 
@@ -20,12 +20,12 @@ The full rules are in [scientific invariants](docs/architecture/scientific-invar
 
 | Package | What it does | Status |
 | --- | --- | --- |
-| [`@captiveorigins/onetaxonomy-core`](packages/core) | Records, validation, bounded traversal, MRCA, tri-state monophyly, curated selections, coverage reports, snapshot checksums and diffs, views (actions, undo/redo, filters, highlights, projection), JSON Schema. No dependencies; runs anywhere. | Working |
-| [`@captiveorigins/onetaxonomy-import`](packages/import) | Source adapters (CSV/TSV, Darwin Core Archive, JSON, Newick, NEXUS, phyloXML), reconciliation, selective imports, community presets | Working |
-| [`@captiveorigins/onetaxonomy-layout`](packages/layout) | Rectangular, phylogram/time (only when valid), radial and sunburst layouts as plain coordinates | Working |
-| [`@captiveorigins/onetaxonomy-react`](packages/react) | Server-renderable SVG tree, accessible keyboard outline, explorer (undo/redo, drag, overlays, inspector, clade selector, SVG/PNG/JSON exports), lesson player | Working |
-| [`@captiveorigins/onetaxonomy-education`](packages/education) | Lesson decks (scenes, cameras, annotations, reveals) and worksheets with answers computed from the data | Working |
-| [`@captiveorigins/payload-plugin-onetaxonomy`](packages/payload) | Payload plugin: sealed snapshots checked by checksum, staged and published, views pinned to them, import jobs that turn source files into staged snapshots, people's own proposals that a curator can accept into a new staged version, a bounded read API (name search, ancestors, descendants, MRCA, coverage, projected views, exports) behind the host's access rules, with optional tenant scope, and admin panels for publishing, import progress and deciding on proposals | Early (M7 parts 1 to 5): tested on Payload with an in-memory MongoDB and in the example site on this machine, not yet in a deployed site. Not on npm |
+| [`@extantape/onetaxonomy-core`](packages/core) | Records, validation, bounded traversal, MRCA, tri-state monophyly, curated selections, coverage reports, snapshot checksums and diffs, views (actions, undo/redo, filters, highlights, projection), JSON Schema. No dependencies; runs anywhere. | Working |
+| [`@extantape/onetaxonomy-import`](packages/import) | Source adapters (CSV/TSV, Darwin Core Archive, JSON, Newick, NEXUS, phyloXML), reconciliation, selective imports, community presets | Working |
+| [`@extantape/onetaxonomy-layout`](packages/layout) | Rectangular, phylogram/time (only when valid), radial and sunburst layouts as plain coordinates | Working |
+| [`@extantape/onetaxonomy-react`](packages/react) | Server-renderable SVG tree, accessible keyboard outline, explorer (undo/redo, drag, overlays, inspector, clade selector, SVG/PNG/JSON exports), lesson player | Working |
+| [`@extantape/onetaxonomy-education`](packages/education) | Lesson decks (scenes, cameras, annotations, reveals) and worksheets with answers computed from the data | Working |
+| [`@extantape/payload-plugin-onetaxonomy`](packages/payload) | Payload plugin: sealed snapshots checked by checksum, staged and published, views pinned to them, import jobs that turn source files into staged snapshots, people's own proposals that a curator can accept into a new staged version, a bounded read API (name search, ancestors, descendants, MRCA, coverage, projected views, exports) behind the host's access rules, with optional tenant scope, and admin panels for publishing, import progress and deciding on proposals | Early (M7 parts 1 to 5): tested on Payload with an in-memory MongoDB and in the example site on this machine, not yet in a deployed site. Not on npm |
 | [`apps/studio`](apps/studio) | OneTaxonomy for Mac (Tauri 2): open checklists, Darwin Core Archives, Newick, NEXUS and phyloXML trees and snapshots; browse them; collapse weak branches, add a tree to an open checklist and link its tips to taxa (proposed by exact name, confirmed by you), compare two trees, and reroot or midpoint-root as a new tree; save views and sealed snapshots (never over the file that was opened), and save and open `.onetaxonomy` bundles (a documented ZIP with a manifest and checksums) | 0.1.0 on GitHub Releases. Not notarized, and it can't update itself yet |
 | [`apps/payload-example`](apps/payload-example) | A small Payload and Next.js site that uses the plugin: two roles, public pages that draw published views on the server, and proposals that record people by id, with a public handle shown beside it. Runs on your machine with a throwaway in-memory database | An example. Checked over HTTP by its smoke test; nobody has clicked through its admin yet |
 
@@ -35,11 +35,11 @@ The full rules are in [scientific invariants](docs/architecture/scientific-invar
 pnpm install
 pnpm build
 pnpm test
-pnpm --filter @captiveorigins/onetaxonomy-examples start
+pnpm --filter @extantape/onetaxonomy-examples start
 ```
 
 ```js
-import { assessTaxon, indexDataset } from '@captiveorigins/onetaxonomy-core'
+import { assessTaxon, indexDataset } from '@extantape/onetaxonomy-core'
 
 const data = indexDataset(snapshot)
 const result = assessTaxon(data.classification('traditional'), 'c:reptilia', data.phylogeny('archelosauria'))
@@ -49,7 +49,7 @@ const result = assessTaxon(data.classification('traditional'), 'c:reptilia', dat
 Curate a selective import from a checklist (see `examples/selective-import.mjs`):
 
 ```js
-import { csvAdapter, selectiveImport, toSnapshot } from '@captiveorigins/onetaxonomy-import'
+import { csvAdapter, selectiveImport, toSnapshot } from '@extantape/onetaxonomy-import'
 
 const read = await csvAdapter({ source: mySource }).read(csvText)        // Darwin Core column names by default
 const full = toSnapshot(read, { id: 'my-checklist', version: '2026-03', createdAt })
@@ -68,4 +68,4 @@ const { snapshot, coverage } = selectiveImport(full, {
 
 ## License
 
-[PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) for the software: free for noncommercial use, with attribution; commercial use needs a separate license from Captive Origins. Versions published before this change remain under MIT. Data you import keeps its own license; OneTaxonomy records it with every snapshot.
+[PolyForm Noncommercial 1.0.0](https://polyformproject.org/licenses/noncommercial/1.0.0) for the software: free for noncommercial use, with attribution; commercial use needs a separate license from EXTANT APE. Versions published before this change remain under MIT. Data you import keeps its own license; OneTaxonomy records it with every snapshot.

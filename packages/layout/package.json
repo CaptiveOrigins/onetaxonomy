@@ -1,6 +1,6 @@
 {
-  "name": "@captiveorigins/onetaxonomy-layout",
-  "version": "0.1.0-alpha.3",
+  "name": "@extantape/onetaxonomy-layout",
+  "version": "0.1.0-alpha.4",
   "description": "OneTaxonomy layout: deterministic tree layouts (rectangular cladogram, phylogram and time scale only when the data supports them, radial, classification sunburst) as plain coordinates for any renderer.",
   "keywords": [
     "taxonomy",
@@ -11,14 +11,14 @@
     "sunburst",
     "visualization"
   ],
-  "homepage": "https://github.com/CaptiveOrigins/onetaxonomy#readme",
+  "homepage": "https://github.com/ExtantApe/OneTaxonomy#readme",
   "bugs": {
-    "url": "https://github.com/CaptiveOrigins/onetaxonomy/issues"
+    "url": "https://github.com/ExtantApe/OneTaxonomy/issues"
   },
   "license": "PolyForm-Noncommercial-1.0.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/CaptiveOrigins/onetaxonomy.git",
+    "url": "git+https://github.com/ExtantApe/OneTaxonomy.git",
     "directory": "packages/layout"
   },
   "type": "module",
@@ -46,6 +46,6 @@
     "prepack": "pnpm run build"
   },
   "dependencies": {
-    "@captiveorigins/onetaxonomy-core": "workspace:^"
+    "@extantape/onetaxonomy-core": "workspace:^"
   }
 }

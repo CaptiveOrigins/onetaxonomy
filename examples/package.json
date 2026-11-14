@@ -1,5 +1,5 @@
 {
-  "name": "@captiveorigins/onetaxonomy-examples",
+  "name": "@extantape/onetaxonomy-examples",
   "private": true,
   "type": "module",
   "scripts": {
@@ -8,7 +8,7 @@
     "fixtures": "node build-fixtures.mjs"
   },
   "dependencies": {
-    "@captiveorigins/onetaxonomy-core": "workspace:^",
-    "@captiveorigins/onetaxonomy-import": "workspace:^"
+    "@extantape/onetaxonomy-core": "workspace:^",
+    "@extantape/onetaxonomy-import": "workspace:^"
   }
 }

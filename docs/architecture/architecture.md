@@ -1,6 +1,6 @@
 # OneTaxonomy architecture
 
-OneTaxonomy imports, curates, browses, rearranges the *presentation* of, and publishes scientifically faithful taxonomic classifications and phylogenetic trees. It is independent of any application: Captive Origins is its first consumer, but nothing here knows about Captive Origins, reptiles, Payload, Next.js or MongoDB.
+OneTaxonomy imports, curates, browses, rearranges the *presentation* of, and publishes scientifically faithful taxonomic classifications and phylogenetic trees. It is independent of any application: nothing here knows about a particular site, reptiles, Payload, Next.js or MongoDB.
 
 The authoritative specification is the *OneTaxonomy — Architecture & Implementation Specification* (v1.0, November 2026). This document records how the repository implements it. Decisions with alternatives are in [`adr/`](adr/), the rules every component must keep are in [`scientific-invariants.md`](scientific-invariants.md), and the record formats are in [`data-schema.md`](data-schema.md).
 

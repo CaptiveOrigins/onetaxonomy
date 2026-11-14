@@ -1,5 +1,5 @@
-import type { Highlight, LayoutKind, Projection } from '@captiveorigins/onetaxonomy-core'
-import { layoutFor, TreeOutline, treeViewBox, TreeView } from '@captiveorigins/onetaxonomy-react'
+import type { Highlight, LayoutKind, Projection } from '@extantape/onetaxonomy-core'
+import { layoutFor, TreeOutline, treeViewBox, TreeView } from '@extantape/onetaxonomy-react'
 
 /** The parts of a stored view the drawing needs. */
 export type StoredView = { layout: { kind: LayoutKind }; highlights: Highlight[] }

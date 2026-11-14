@@ -1,4 +1,4 @@
-import '@captiveorigins/onetaxonomy-react/styles.css'
+import '@extantape/onetaxonomy-react/styles.css'
 import './oneorigin.css'
 import './app.css'
 import { createRoot } from 'react-dom/client'

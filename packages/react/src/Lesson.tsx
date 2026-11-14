@@ -1,8 +1,8 @@
 'use client'
 
-import { projectView, type DatasetIndex, type Id, type TaxonomicView } from '@captiveorigins/onetaxonomy-core'
-import { sceneAt, sceneFromView, type Annotation, type Camera, type LessonDeck } from '@captiveorigins/onetaxonomy-education'
-import type { TreeLayout } from '@captiveorigins/onetaxonomy-layout'
+import { projectView, type DatasetIndex, type Id, type TaxonomicView } from '@extantape/onetaxonomy-core'
+import { sceneAt, sceneFromView, type Annotation, type Camera, type LessonDeck } from '@extantape/onetaxonomy-education'
+import type { TreeLayout } from '@extantape/onetaxonomy-layout'
 import { useMemo, useState, type KeyboardEvent } from 'react'
 
 import { Explorer } from './Explorer.js'
