@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- **New Mac app identifier:** the desktop app's identifier is now `com.extantape.onetaxonomy`. macOS treats it as a new app, so the first launch after updating starts with default settings and asks again for any permissions it needs. This happens once. Your files are untouched. The shared OneOrigin guidelines now say every tool's identifier is `com.extantape.<tool>`.
+
 ## 0.1.0-alpha.4
 
 - **New home and package names:** the packages now publish under `@extantape`: `@extantape/onetaxonomy-core`, `@extantape/onetaxonomy-import`, `@extantape/onetaxonomy-layout`, `@extantape/onetaxonomy-react`, `@extantape/onetaxonomy-education` and `@extantape/payload-plugin-onetaxonomy` (still not on npm). The repo now lives at [ExtantApe/OneTaxonomy](https://github.com/ExtantApe/OneTaxonomy). The old names of the five published packages are deprecated, with a pointer to these. To move, change the scope in your `package.json` and imports; nothing else in the API changes. EXTANT APE owns and licenses the tools, and the license is unchanged.
